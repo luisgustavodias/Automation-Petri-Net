@@ -36,7 +36,7 @@ abstract class AGenericPetriElement {
         return this.svgElement.id
     }
 
-    private getPETextElement(attrName: string) {
+    protected getPETextElement(attrName: string) {
         return this.svgElement.querySelector(`[pe-text="${attrName}"]`)
     }
 
@@ -192,7 +192,17 @@ class PetriArc extends AGenericPetriElement {
     get placeId() { return this.svgElement.getAttribute('place-id') }
     get transId() { return this.svgElement.getAttribute('trans-id') }
     get weight() { return this.getPEText('weight') }
-    set weight(val) { this.setPEText('weight', val) }
+    set weight(val) { 
+        this.setPEText('weight', val)
+        if (val === '1') {
+            this.getPETextElement('weight')
+                .setAttribute('visibility', 'hidden')
+        } else {
+            this.getPETextElement('weight')
+                .setAttribute('visibility', 'visible')
+        }
+
+    }
     get arcType() { return this._arcType }
     set arcType(val: ArcType) {
         if (val === "Test") {
