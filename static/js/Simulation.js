@@ -1,4 +1,6 @@
-const FIRE_TRANS_ANIMATION_TIME = 700;
+const FIRE_TRANS_ANIMATION_TIME = 1000;
+const TRANS_ENABLE_COLOR = '#04c200';
+const TRANS_FIRE_COLOR = 'red';
 class LogicalSimulator {
     constructor(placeMarks, arcsBytrans) {
         this.placeMarks = placeMarks;
@@ -61,7 +63,7 @@ class Simulator {
     constructor(net) {
         this.net = net;
         this.playing = false;
-        this.init();
+        this.simulator = null;
     }
     init() {
         const placeMarks = {};
@@ -103,7 +105,7 @@ class Simulator {
     }
     enableTrans(id) {
         const trans = this.net.elements[id];
-        this.setTransColor(trans, 'green');
+        this.setTransColor(trans, TRANS_ENABLE_COLOR);
     }
     disableTrans(id) {
         const trans = this.net.elements[id];
@@ -111,18 +113,21 @@ class Simulator {
     }
     fireTrans(transId, marksToUpdate) {
         const trans = this.net.elements[transId];
-        this.setTransColor(trans, 'red');
+        this.setTransColor(trans, TRANS_FIRE_COLOR);
         setTimeout(() => {
             this.disableTrans(transId);
             this.updatePlaceMarks(marksToUpdate);
             if (this.playing) {
-                this.step();
+                this._step();
             }
         }, FIRE_TRANS_ANIMATION_TIME);
     }
     start() {
+        if (!this.simulator) {
+            this.init();
+        }
         this.playing = true;
-        this.step();
+        this._step();
     }
     pause() {
         this.playing = false;
@@ -130,15 +135,33 @@ class Simulator {
     restart() {
         this.init();
     }
-    step() {
+    _step() {
         const stepResult = this.simulator.step();
         console.log(stepResult);
         stepResult.enabledTransitions.forEach(transId => {
-            this.enableTrans;
+            this.enableTrans(transId);
         });
         if (stepResult.transToFire) {
             this.fireTrans(stepResult.transToFire, stepResult.marksToUpdate);
         }
     }
+    step() {
+        if (!this.simulator) {
+            this.init();
+        }
+        this._step();
+    }
 }
-export { Simulator };
+function createSimulator(net) {
+    const simulator = new Simulator(net);
+    document.getElementById('step-button').onclick =
+        _ => { simulator.step(); };
+    document.getElementById('play-button').onclick =
+        _ => { simulator.start(); };
+    document.getElementById('pause-button').onclick =
+        _ => { simulator.pause(); };
+    document.getElementById('restart-button').onclick =
+        _ => { simulator.restart(); };
+    return simulator;
+}
+export { Simulator, createSimulator };

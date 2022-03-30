@@ -2,7 +2,7 @@ import { PetriNetManager } from './PetriNet.js';
 import Vector from './utils/Vector.js';
 import ToolBar from './ToolBar.js';
 import { PropertyWindow } from './PropertyWindow.js';
-import { Simulator } from './Simulation.js';
+import { createSimulator } from './Simulation.js';
 function addListeners(toolBar) {
     console.log('adding listeners');
     const eventNames = ['mousedown', 'mouseup', 'mousemove', 'mouseleave', 'wheel'];
@@ -25,21 +25,14 @@ function testNetManager(netManager) {
     const transId3 = netManager.createTrans(new Vector(50, 50));
     netManager.createArc(placeId2, transId2, "Output");
     netManager.createArc(placeId, transId2, "Inhibitor");
-    netManager.createArc(placeId2, transId2, "Inhibitor");
+    const arcId = netManager.createArc(placeId2, transId2, "Inhibitor");
     netManager.createArc(placeId2, transId3, "Input");
     netManager.createArc(placeId, transId3, "Output");
     netManager.zoom(new Vector(100, 100), 0.7);
     netManager.moveScreen(new Vector(20, 20));
     netManager.selectPE(placeId);
-    const simulator = new Simulator(netManager.net);
-    document.getElementById('step-button').onclick =
-        _ => { simulator.step(); };
-    document.getElementById('play-button').onclick =
-        _ => { simulator.start(); };
-    document.getElementById('pause-button').onclick =
-        _ => { simulator.pause(); };
-    document.getElementById('restart-button').onclick =
-        _ => { simulator.restart(); };
+    netManager.setGenericPEAttr(arcId, 'weight', '3');
+    netManager.setGenericPEAttr(placeId, 'initialMark', '1');
 }
 function main() {
     console.log('Creating net');
@@ -54,6 +47,7 @@ function main() {
     };
     netManager.deselectObserver = () => { propertyWindow.close(); };
     addListeners(toolBar);
+    const simulator = createSimulator(netManager.net);
     testNetManager(netManager);
 }
 window.onload = main;

@@ -7,7 +7,9 @@ import {
     ArcType
 } from "./PNElements.js"
 
-const FIRE_TRANS_ANIMATION_TIME = 700
+const FIRE_TRANS_ANIMATION_TIME = 1000
+const TRANS_ENABLE_COLOR = '#04c200'
+const TRANS_FIRE_COLOR = 'red'
 
 type PlaceMarks = {[id: string]: number}
 
@@ -102,13 +104,12 @@ class LogicalSimulator {
 class Simulator {
     private net: PetriNet
     private playing: boolean
-    // private simulator: LogicalSimulator
     simulator: LogicalSimulator
 
     constructor(net: PetriNet) {
         this.net = net
         this.playing = false
-        this.init()
+        this.simulator = null
     }
 
     private init() {
@@ -162,7 +163,7 @@ class Simulator {
 
     enableTrans(id: string) {
         const trans = <PetriTrans>this.net.elements[id]
-        this.setTransColor(trans, 'green')
+        this.setTransColor(trans, TRANS_ENABLE_COLOR)
     }
 
     disableTrans(id: string) {
@@ -172,20 +173,23 @@ class Simulator {
 
     fireTrans(transId: string, marksToUpdate: PlaceMarks) {
         const trans = <PetriTrans>this.net.elements[transId]
-        this.setTransColor(trans, 'red')
+        this.setTransColor(trans, TRANS_FIRE_COLOR)
         setTimeout(() => {
             this.disableTrans(transId)
             this.updatePlaceMarks(marksToUpdate)
 
             if (this.playing) {
-                this.step()
+                this._step()
             }
         }, FIRE_TRANS_ANIMATION_TIME)
     }
 
     start() {
+        if (!this.simulator) {
+            this.init()
+        } 
         this.playing = true
-        this.step()
+        this._step()
     }
 
     pause() {
@@ -196,11 +200,11 @@ class Simulator {
         this.init()
     }
 
-    step() {
+    private _step() {
         const stepResult = this.simulator.step()
         console.log(stepResult)
         stepResult.enabledTransitions.forEach(transId => {
-            this.enableTrans
+            this.enableTrans(transId)
         })
 
         if (stepResult.transToFire) {
@@ -210,6 +214,31 @@ class Simulator {
             )
         }
     }
+
+    step() {
+        if (!this.simulator) {
+            this.init()
+        } 
+        this._step()
+    }
 }
 
-export { Simulator }
+function createSimulator(net: PetriNet) {
+    const simulator = new Simulator(net)
+
+    document.getElementById('step-button').onclick = 
+        _ => { simulator.step() }
+    
+    document.getElementById('play-button').onclick = 
+        _ => { simulator.start() }
+
+    document.getElementById('pause-button').onclick = 
+        _ => { simulator.pause() }
+
+    document.getElementById('restart-button').onclick = 
+        _ => { simulator.restart() }
+
+    return simulator
+}
+
+export { Simulator, createSimulator }
