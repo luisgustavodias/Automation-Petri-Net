@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Automation Petri Net</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/toolbar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
+    <style>
+        body {
+            font-family: Arial, Helvetica, sans-serif;
+            overflow: hidden;
+            user-select: none;
+        }
+
+        .test {
+            display: flex;
+            flex-direction: row;
+        }
+
+        #svg-div {
+            position: absolute;
+            left: 202px;
+            width: 100%;
+            height: 100%;
+            border-bottom: 2px solid black;
+        }
+
+        #my-svg {
+            height: 100%;
+            border-bottom: 2px solid black;
+        }
+
+        .draggable {
+            cursor: pointer;
+        }
+
+        text {
+            font-size: 4.5pt;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+
+        .place-type {
+            font-size: 4pt;
+            -webkit-user-select: none;
+            -moz-user-select: none;
+            -ms-user-select: none;
+            user-select: none;
+        }
+    </style>
+</head>
+
+<body>
+    <div class="navbar">
+        <div class="dropdown">
+            <button class="dropbtn">File
+                <i class="fa fa-caret-down"></i>
+            </button>
+            <div class="dropdown-content">
+                <a id="new-button">New</a>
+                <a id="load-button">Load</a>
+                <a id="save-button">Save</a>
+                <a id="save-as-button">Save as</a>
+            </div>
+        </div>
+        <a href="#news">View</a>
+        <div class="dropdown">
+            <button class="dropbtn">Simulation
+                <i class="fa fa-caret-down"></i>
+            </button>
+            <div class="dropdown-content">
+                <a href="#">Run</a>
+                <a href="#">Step</a>
+                <a href="#">Restart</a>
+                <a id="sim-config-button">Configuration</a>
+            </div>
+        </div>
+        <a id="inputs-button">Inputs</a>
+    </div>
+
+    <div id="tool-bar">
+        <svg id="mouse-tool" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item selected-tool-bar-item"
+            viewBox="0 0 38 38">
+            <path d="M4 0l16 12.279-6.951 1.17 4.325 8.817-3.596 1.734-4.35-8.879-5.428 4.702z" fill="white"
+                stroke="black" transform="translate(7 7)" />
+        </svg>
+        <svg id="place-tool" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <circle cx="50" cy="50" r="28" fill="white" stroke="black" stroke-width="4" />
+        </svg>
+        <svg id="trans-tool" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect x="-27.5" y="-15" width="55" height="30" transform="translate(50 50)" fill="black" stroke="black" />
+        </svg>
+
+        <svg id="arc-tool" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <line x1="20" y1="20" x2="70" y2="70" stroke="black" stroke-width="4" />
+            <polygon points="80,80 70,60 60,70" stroke="black" stroke-width="4" />
+        </svg>
+
+        <div class="tool-bar-separation"></div>
+
+        <svg id="compile-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 38 38">
+            <g transform="translate(6 6)">
+                <path
+                    d="M20,12c0,4.411-3.589,8-8,8s-8-3.589-8-8c0-2.52,1.174-4.768,3-6.235V3.353C4.016,5.085,2,8.309,2,12c0,5.514,4.486,10,10,10s10-4.486,10-10S17.514,2,12,2v2C16.411,4,20,7.589,20,12z"
+                    stroke="black" stroke-width="0.5" />
+                <path d="M2 2L9 2 9 9z" stroke="black" stroke-width="0.5" />
+            </g>
+
+        </svg>
+
+        <svg id="play-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 26 26">
+            <path d="M -6 -6 L 5 0 L -6 6, L -6 6" transform="translate(13 13)" />
+        </svg>
+
+        <svg id="step-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 30 30">
+            <g transform="translate(13 15)">
+                <path d="M -6 -6 L 5 0 L -6 6, L -6 6" />
+                <rect x="6" y="-6" width="4" height="12" />
+            </g>
+        </svg>
+
+        <svg id="pause-button" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect x=25 y=25 width=20 height="50" />
+            <rect x=55 y=25 width=20 height="50" />
+        </svg>
+    </div>
+
+    <div id="inputs-modal" class="modal">
+        <template id="input-row">
+            <tr>
+                <td><input type="text"></td>
+                <td>
+                    <select>
+                        <option value="BOOL">BOOL</option>
+                        <option value="INT">INT</option>
+                    </select>
+                </td>
+                <td><input type="text"></td>
+            </tr>
+        </template>
+
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="inputs-modal-close" class="modal-close">&times;</span>
+                <h2>Inputs Configuration</h2>
+            </div>
+            <div class="modal-body">
+                <button id="new-input-button">New Input</button>
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Name</th>
+                            <th>Type</th>
+                            <th>Description</th>
+                        </tr>
+                    </thead>
+                    <tbody id="inputs-config">
+
+                    </tbody>
+                </table>
+            </div>
+            <div class="modal-footer">
+                <div style="float: right">
+                    <button id="inputs-config-save">Save</button>
+                    <button id="inputs-config-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div id="sim-config-modal" class="modal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <span id="sim-config-close" class="modal-close">&times;</span>
+                <h2>Simulation Configuration</h2>
+            </div>
+            <div class="modal-body">
+                <h3>Simulation Mode</h3>
+                <select name="sim-mode" id="sim-mode">
+                    <option value="1" selected>Mode 1</option>
+                    <option value="2">Mode 2</option>
+                    <option value="3">Mode 3</option>
+                </select>
+                <p><b>Mode 1:</b>Fire only 1 transition by scan cicle <br>
+                    <b>Mode 2:</b>Fire multiple transitions by scan cicle <br>
+                    <b>Mode 3:</b>Fire multiple transitions by scan cicle, but only the transitions
+                    that started the scan cicle enabled
+                </p>
+
+                <h3>Pre Script</h3>
+                <p>This piece of code runs at each beagning of a scan cicle</p>
+                <textarea name="pre-script" id="pre-script" cols="120" rows="10"
+                    placeholder="Write your script here"></textarea>
+            </div>
+            <div class="modal-footer">
+                <div style="float: right">
+                    <button id="sim-config-save">Save</button>
+                    <button id="sim-config-cancel">Cancel</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="test">
+        <div id="side-bar">
+            <div class="tab">
+                <button class="tablinks" id="property-window-tablink">Properties</button>
+                <button class="tablinks" id="inputs-window-tablink">Inputs</button>
+            </div>
+
+            <div id="property-window" class="tabcontent" style="display: block;">
+                <div id="pw-div">
+                    <div id="pw-place" style="display: none;">
+                        <label>Name</label>
+                        <input id="pw-place-name" type="text" class="pw-text-input">
+                        <label>Type</label>
+                        <select id="pw-place-type" class="pw-select">
+                            <option value="BOOL">BOOL</option>
+                            <option value="INT">INT</option>
+                        </select>
+                        <label>Initial Mark</label>
+                        <input id="pw-place-initialMark" type="text" class="pw-text-input">
+                    </div>
+                    <div id="pw-trans" style="display: none;">
+                        <label>Name</label>
+                        <input id="pw-trans-name" type="text" class="pw-text-input">
+                        <label>Time</label>
+                        <input id="pw-trans-time" type="text" class="pw-text-input">
+                        <label>Guard</label>
+                        <input id="pw-trans-guard" type="text" class="pw-text-input">
+                    </div>
+                    <div id="pw-arc" style="display: none;">
+                        <label>Type</label>
+                        <select id="pw-arc-type" class="pw-select">
+                            <option value="input">Input</option>
+                            <option value="output">Output</option>
+                            <option value="test">Test arc</option>
+                            <option value="inhibitor">Inhibitor</option>
+                        </select>
+                        <label>Weight</label>
+                        <input id="pw-arc-weight" class="pw-text-input" type="text" value="1">
+                    </div>
+                </div>
+            </div>
+
+
+            <div id="inputs-window" class="tabcontent">
+
+            </div>
+        </div>
+
+
+        <div id="svg-div">
+            <svg id="my-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 300">
+                <defs>
+                    <g class="place draggable" id=place-model transform="translate(0 0)" arcsId="[]" initialMark="0">
+                        <circle r="7.5" fill="white" stroke="black" PE-parent="place-model" />
+                        <text class="draggable place-name" transform="translate(6.5 -8)"
+                            PE-parent="place-model">p1</text>
+                        <text class="draggable place-type" transform="translate(7 8.5)"
+                            PE-parent="place-model">INT</text>
+                        <text class="place-mark" transform="translate(0 0.5)" text-anchor="middle"
+                            dominant-baseline="middle" PE-parent="place-model">0</text>
+                    </g>
+                    <g class="trans draggable" id="trans-model" transform="translate(0 0)" arcsId="">
+                        <rect x="-5.5" y="-3" width="11" height="6" fill="black" stroke="black"
+                            PE-parent="trans-model" />
+                        <text class="draggable trans-name" transform="translate(6 -5.5)"
+                            PE-parent="trans-model">t1</text>
+                        <text class="draggable trans-time" transform="translate(6 5.5)" PE-parent="trans-model"></text>
+                        <text class="draggable trans-guard" transform="translate(-6 -5.5)" text-anchor="end"
+                            style="font-family: courier" PE-parent="trans-model"></text>
+                    </g>
+                    <g class="arc" id="arc-model" placeId="place-model" transId="trans-model" arcType="input">
+                        <g stroke="black" stroke-linecap="round">
+                            <line x1="10" y1="20" x2="30" y2="20" PE-parent="arc-model" />
+                        </g>
+                        <polygon points="36,20 30,22 30,18" PE-parent="arc-model" />
+                        <circle r='2' fill='white' stroke='black' stroke-width='0.7' visibility="hidden"
+                            PE-parent="arc-model" />
+                        <text class="draggable arc-weight" transform="translate(0 0)" visibility="hidden"
+                            text-anchor="middle" dominant-baseline="middle" PE-parent="arc-model">1</text>
+                    </g>
+                    <rect id="arc-node-model" x="-1.5" y="-1.5" width="3" height="3" fill="blue" stroke="black"
+                        stroke-width="0.5" transform="translate(0 0)" PE-parent="arc-model" />
+                    <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
+                        <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.7"/>
+                    </pattern>
+                </defs>
+                <rect id="svg-background" x="-5000" y="-5000" width="10000" height="10000" fill="white"/>
+                <g id="arcs"></g>
+                <g id="PEs"></g>
+                <g id="IEs">
+                    <g class="arc" id="arc-aux" visibility="hidden">
+                        <g>
+                            <line x1="10" y1="20" x2="30" y2="20" stroke="black" />
+                        </g>
+                        <polygon points="36,20 30,22 30,18" />
+                    </g>
+                    <g id="arc-nodes">
+
+                    </g>
+                </g>
+            </svg>
+        </div>
+
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
+    <script type="module" src="{{ url_for('static', filename='js/PNElements.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/ToolBar.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/PropertyWindow.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/UndoRedoHandler.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/inputs-config.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/Simulation.js') }}"></script>
+    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+</body>
+
+</html>

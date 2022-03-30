@@ -1,0 +1,8 @@
+{
+    "compilerOptions": {
+        "target": "ES2021",
+        "watch": true,
+        "outDir": "static/js"
+    },
+    "include": ["ts/**/*"]
+}
