@@ -287,10 +287,12 @@ export class PetriNetManager {
     removeElement(elementId: string) {
         if (this.net.elements[elementId].PEType !== 'arc') {
             let ele = <APetriElement>this.net.elements[elementId]
-            for (let arcId of ele.connectedArcs) {
-                this.removeElement(arcId)
+            while (ele.connectedArcs.length) {
+                this.removeElement(ele.connectedArcs[0])
             }
         }
+
+        this.net.removeGenericPE(elementId)
         
         // undoRedoManager.registryChange(
         //     new RemoveElementChange(
@@ -299,6 +301,8 @@ export class PetriNetManager {
         //     )
         // )
     }
+
+    toggleGrid() { this.net.grid = !this.net.grid }
 
     addIE(element: SVGAElement) {
         document.getElementById('IEs').appendChild(element)

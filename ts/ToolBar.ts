@@ -189,20 +189,20 @@ class MouseTool extends GenericTool {
         this.dragging = false
     }
 
-    // onMouseLeave(evt) {
-    //     this.dragManager.endDrag()
-    // }
+    onMouseLeave(evt) {
+        this.dragging = false
+    }
 
-    // onKeyDown(evt: KeyboardEvent) {
-    //     if (evt.key === "Delete" && this.PEId) {
-    //         let PEId = this.PEId
-    //         this.deselect()
-    //         PNManager.removeElement(PEId)
-    //     }
-    //     else if (evt.key === 'z' && evt.ctrlKey) {
-    //         undoRedoManager.undo()
-    //     }
-    // }
+    onKeyDown(evt: KeyboardEvent) {
+        if (evt.key === "Delete" && this.netManager.selectedPE) {
+            const PEId = this.netManager.selectedPE.id
+            this.netManager.deselectPE()
+            this.netManager.removeElement(PEId)
+        }
+        // else if (evt.key === 'z' && evt.ctrlKey) {
+        //     undoRedoManager.undo()
+        // }
+    }
 
     onChangeTool() {
         this.netManager.deselectPE()
@@ -273,14 +273,13 @@ export default class ToolBar {
 
     keydown(evt) {
         console.log('keydown')
-        // let ele = <HTMLElement>evt.target
-        // if(ele.tagName === "BODY") {
-        //     if (evt.key === 'Shift') {
-        //         PNManager.net.grid = !PNManager.net.grid
-        //     }
-        //     this.currentTool.onKeyDown(evt)
-
-        // }
+        let ele = <HTMLElement>evt.target
+        if(ele.tagName === "BODY") {
+            if (evt.key === 'Shift') {
+                this.netManager.toggleGrid()
+            }
+            this.currentTool.onKeyDown(evt)
+        }
     }
     
     
