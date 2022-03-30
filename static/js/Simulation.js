@@ -1,5 +1,4 @@
 const FIRE_TRANS_ANIMATION_TIME = 700;
-const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
 class LogicalSimulator {
     constructor(placeMarks, arcsBytrans) {
         this.placeMarks = placeMarks;
@@ -61,6 +60,10 @@ class LogicalSimulator {
 class Simulator {
     constructor(net) {
         this.net = net;
+        this.playing = false;
+        this.init();
+    }
+    init() {
         const placeMarks = {};
         const places = this.filterNetElementsByType('place');
         places.forEach((place) => {
@@ -70,7 +73,7 @@ class Simulator {
         const trasitions = this.filterNetElementsByType('trans');
         trasitions.forEach((trans) => {
             arcsByTrans[trans.id] = trans.connectedArcs.map((arcId) => {
-                const arc = net.elements[arcId];
+                const arc = this.net.elements[arcId];
                 return {
                     placeId: arc.placeId,
                     arcType: arc.arcType,
@@ -79,16 +82,10 @@ class Simulator {
             });
         });
         this.simulator = new LogicalSimulator(placeMarks, arcsByTrans);
+        this.updatePlaceMarks(placeMarks);
     }
     filterNetElementsByType(PEType) {
         return Object.values(this.net.elements).filter((ele) => ele.PEType === PEType);
-    }
-    start() {
-        const placeMarks = {};
-        const places = this.filterNetElementsByType('place');
-        places.forEach((place) => {
-            placeMarks[place.id] = parseInt(place.initialMark);
-        });
     }
     updatePlaceMarks(marksToUpdate) {
         for (const placeId in marksToUpdate) {
@@ -118,7 +115,20 @@ class Simulator {
         setTimeout(() => {
             this.disableTrans(transId);
             this.updatePlaceMarks(marksToUpdate);
+            if (this.playing) {
+                this.step();
+            }
         }, FIRE_TRANS_ANIMATION_TIME);
+    }
+    start() {
+        this.playing = true;
+        this.step();
+    }
+    pause() {
+        this.playing = false;
+    }
+    restart() {
+        this.init();
     }
     step() {
         const stepResult = this.simulator.step();

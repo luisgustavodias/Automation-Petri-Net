@@ -19,13 +19,20 @@ function addListeners(toolBar) {
 }
 
 function testNetManager(netManager: PetriNetManager) {
-    const placeId = netManager.createPlace(new Vector(50, 50))
-    const transId = netManager.createTrans(new Vector(100, 50))
+    const placeId = netManager.createPlace(new Vector(100, 50))
+    const transId = netManager.createTrans(new Vector(150, 50))
     netManager.createArc(placeId, transId, "Input")
 
     const placeId2 = netManager.createPlace(new Vector(50, 100))
     const transId2 = netManager.createTrans(new Vector(75, 150))
+    
+    const transId3 = netManager.createTrans(new Vector(50, 50))
+
     netManager.createArc(placeId2, transId2, "Output")
+    netManager.createArc(placeId, transId2, "Inhibitor")
+    netManager.createArc(placeId2, transId2, "Inhibitor")
+    netManager.createArc(placeId2, transId3, "Input")
+    netManager.createArc(placeId, transId3, "Output")
 
     netManager.zoom(new Vector(100, 100), 0.7)
     netManager.moveScreen(new Vector(20, 20))
@@ -36,6 +43,15 @@ function testNetManager(netManager: PetriNetManager) {
 
     document.getElementById('step-button').onclick = 
         _ => { simulator.step() }
+    
+    document.getElementById('play-button').onclick = 
+        _ => { simulator.start() }
+
+    document.getElementById('pause-button').onclick = 
+        _ => { simulator.pause() }
+
+    document.getElementById('restart-button').onclick = 
+        _ => { simulator.restart() }
 }
 
 function main() {

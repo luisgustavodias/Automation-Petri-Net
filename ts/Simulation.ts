@@ -25,10 +25,6 @@ interface IStepResult {
     marksToUpdate: PlaceMarks
 }
 
-const delay = (ms: number) => new Promise(
-    (resolve) => setTimeout(resolve, ms)
-)
-
 class LogicalSimulator {
     private placeMarks: PlaceMarks
     private arcsByTrans: ArcsByTrans
@@ -53,7 +49,7 @@ class LogicalSimulator {
                 }
             }
         }
-
+        
         return true
     }
 
@@ -105,12 +101,17 @@ class LogicalSimulator {
 
 class Simulator {
     private net: PetriNet
+    private playing: boolean
     // private simulator: LogicalSimulator
     simulator: LogicalSimulator
 
     constructor(net: PetriNet) {
         this.net = net
+        this.playing = false
+        this.init()
+    }
 
+    private init() {
         const placeMarks: PlaceMarks = {}
         const places = <PetriPlace[]>this.filterNetElementsByType('place')
         places.forEach((place) => { 
@@ -122,7 +123,7 @@ class Simulator {
         trasitions.forEach((trans) => { 
             arcsByTrans[trans.id] = trans.connectedArcs.map(
                 (arcId) => {
-                    const arc = <PetriArc>net.elements[arcId]
+                    const arc = <PetriArc>this.net.elements[arcId]
                     return {
                         placeId: arc.placeId,
                         arcType: arc.arcType,
@@ -133,20 +134,13 @@ class Simulator {
         })
 
         this.simulator = new LogicalSimulator(placeMarks, arcsByTrans)
+        this.updatePlaceMarks(placeMarks)
     }
 
     filterNetElementsByType(PEType: string) {
         return Object.values(this.net.elements).filter(
             (ele) => ele.PEType === PEType
         )
-    }
-
-    start() {
-        const placeMarks = {}
-        const places = <PetriPlace[]>this.filterNetElementsByType('place')
-        places.forEach((place) => { 
-            placeMarks[place.id] = parseInt(place.initialMark) 
-        })
     }
 
     updatePlaceMarks(marksToUpdate: PlaceMarks) {
@@ -182,7 +176,24 @@ class Simulator {
         setTimeout(() => {
             this.disableTrans(transId)
             this.updatePlaceMarks(marksToUpdate)
+
+            if (this.playing) {
+                this.step()
+            }
         }, FIRE_TRANS_ANIMATION_TIME)
+    }
+
+    start() {
+        this.playing = true
+        this.step()
+    }
+
+    pause() {
+        this.playing = false
+    }
+
+    restart() {
+        this.init()
     }
 
     step() {
