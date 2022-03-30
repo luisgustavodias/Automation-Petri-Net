@@ -6,10 +6,10 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automation Petri Net</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/navbar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/toolbar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/sidebar.css') }}">
-    <link rel="stylesheet" href="{{ url_for('static', filename='css/modal.css') }}">
+    <link rel="stylesheet" href="static/css/navbar.css">
+    <link rel="stylesheet" href="static/css/toolbar.css">
+    <link rel="stylesheet" href="static/css/sidebar.css">
+    <link rel="stylesheet" href="static/css/modal.css">
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -54,6 +54,12 @@
             -ms-user-select: none;
             user-select: none;
         }
+
+        #pw-div label {
+            display: block;
+            padding-top: 10px;
+        }
+
     </style>
 </head>
 
@@ -210,18 +216,13 @@
 
     <div class="test">
         <div id="side-bar">
-            <div class="tab">
-                <button class="tablinks" id="property-window-tablink">Properties</button>
-                <button class="tablinks" id="inputs-window-tablink">Inputs</button>
-            </div>
-
             <div id="property-window" class="tabcontent" style="display: block;">
                 <div id="pw-div">
                     <div id="pw-place" style="display: none;">
                         <label>Name</label>
                         <input id="pw-place-name" type="text" class="pw-text-input">
                         <label>Type</label>
-                        <select id="pw-place-type" class="pw-select">
+                        <select id="pw-place-placeType" class="pw-select">
                             <option value="BOOL">BOOL</option>
                             <option value="INT">INT</option>
                         </select>
@@ -238,7 +239,7 @@
                     </div>
                     <div id="pw-arc" style="display: none;">
                         <label>Type</label>
-                        <select id="pw-arc-type" class="pw-select">
+                        <select id="pw-arc-arcType" class="pw-select">
                             <option value="input">Input</option>
                             <option value="output">Output</option>
                             <option value="test">Test arc</option>
@@ -251,76 +252,69 @@
             </div>
 
 
-            <div id="inputs-window" class="tabcontent">
+            <div id="inputs-window" class="tabcontent" style="display: none;">
 
             </div>
         </div>
 
+        <svg xmlns="http://www.w3.org/2000/svg">
+            <defs>
+                <g class="place draggable" id=place-model transform="translate(0 0)" arcsId="[]" initialMark="0">
+                    <circle r="7.5" fill="white" stroke="black" PE-parent="place-model" />
+                    <text class="draggable place-name" transform="translate(6.5 -8)"
+                        pe-text="name" pe-parent="place-model">p1</text>
+                    <text class="draggable place-type" transform="translate(7 8.5)"
+                        pe-text="placeType" pe-parent="place-model">INT</text>
+                    <text class="place-mark" transform="translate(0 0.5)" text-anchor="middle"
+                        dominant-baseline="middle" pe-text="mark" pe-parent="place-model">0</text>
+                </g>
+                <g class="trans draggable" id="trans-model" transform="translate(0 0)" arcsId="">
+                    <rect x="-5.5" y="-3" width="11" height="6" fill="black" stroke="black"
+                        PE-parent="trans-model" />
+                    <text class="draggable trans-name" transform="translate(6 -5.5)"
+                        pe-text="name" PE-parent="trans-model">t1</text>
+                    <text class="draggable trans-time" transform="translate(6 5.5)" 
+                        pe-text="time" pe-parent="trans-model"></text>
+                    <text class="draggable trans-guard" transform="translate(-6 -5.5)" text-anchor="end"
+                        style="font-family: courier" pe-text="guard" pe-parent="trans-model"></text>
+                </g>
+                <g class="arc" id="arc-model" placeId="place-model" transId="trans-model" arcType="input">
+                    <g stroke="black" stroke-linecap="round">
+                        <line x1="10" y1="20" x2="30" y2="20" PE-parent="arc-model" />
+                    </g>
+                    <polygon points="36,20 30,22 30,18" PE-parent="arc-model" />
+                    <circle r='2' fill='white' stroke='black' stroke-width='0.7' visibility="hidden"
+                        PE-parent="arc-model" />
+                    <text class="draggable arc-weight" transform="translate(0 0)" visibility="hidden"
+                        text-anchor="middle" dominant-baseline="middle" pe-text="weight" pe-parent="arc-model">1</text>
+                </g>
+                <rect id="arc-node-model" x="-1.5" y="-1.5" width="3" height="3" fill="blue" stroke="black"
+                    stroke-width="0.5" transform="translate(0 0)" PE-parent="arc-model" />
+                <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
+                    <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.7"/>
+                </pattern>
+            </defs>
+        </svg>
 
         <div id="svg-div">
             <svg id="my-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 300">
                 <defs>
-                    <g class="place draggable" id=place-model transform="translate(0 0)" arcsId="[]" initialMark="0">
-                        <circle r="7.5" fill="white" stroke="black" PE-parent="place-model" />
-                        <text class="draggable place-name" transform="translate(6.5 -8)"
-                            PE-parent="place-model">p1</text>
-                        <text class="draggable place-type" transform="translate(7 8.5)"
-                            PE-parent="place-model">INT</text>
-                        <text class="place-mark" transform="translate(0 0.5)" text-anchor="middle"
-                            dominant-baseline="middle" PE-parent="place-model">0</text>
-                    </g>
-                    <g class="trans draggable" id="trans-model" transform="translate(0 0)" arcsId="">
-                        <rect x="-5.5" y="-3" width="11" height="6" fill="black" stroke="black"
-                            PE-parent="trans-model" />
-                        <text class="draggable trans-name" transform="translate(6 -5.5)"
-                            PE-parent="trans-model">t1</text>
-                        <text class="draggable trans-time" transform="translate(6 5.5)" PE-parent="trans-model"></text>
-                        <text class="draggable trans-guard" transform="translate(-6 -5.5)" text-anchor="end"
-                            style="font-family: courier" PE-parent="trans-model"></text>
-                    </g>
-                    <g class="arc" id="arc-model" placeId="place-model" transId="trans-model" arcType="input">
-                        <g stroke="black" stroke-linecap="round">
-                            <line x1="10" y1="20" x2="30" y2="20" PE-parent="arc-model" />
-                        </g>
-                        <polygon points="36,20 30,22 30,18" PE-parent="arc-model" />
-                        <circle r='2' fill='white' stroke='black' stroke-width='0.7' visibility="hidden"
-                            PE-parent="arc-model" />
-                        <text class="draggable arc-weight" transform="translate(0 0)" visibility="hidden"
-                            text-anchor="middle" dominant-baseline="middle" PE-parent="arc-model">1</text>
-                    </g>
-                    <rect id="arc-node-model" x="-1.5" y="-1.5" width="3" height="3" fill="blue" stroke="black"
-                        stroke-width="0.5" transform="translate(0 0)" PE-parent="arc-model" />
-                    <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
-                        <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.7"/>
-                    </pattern>
+
                 </defs>
                 <rect id="svg-background" x="-5000" y="-5000" width="10000" height="10000" fill="white"/>
-                <g id="arcs"></g>
-                <g id="PEs"></g>
+                <g id="elements">
+                    <g id="arcs"></g>
+                    <g id="pe"></g>
+                </g>
                 <g id="IEs">
-                    <g class="arc" id="arc-aux" visibility="hidden">
-                        <g>
-                            <line x1="10" y1="20" x2="30" y2="20" stroke="black" />
-                        </g>
-                        <polygon points="36,20 30,22 30,18" />
-                    </g>
-                    <g id="arc-nodes">
-
-                    </g>
+                    
                 </g>
             </svg>
         </div>
 
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.1.3/socket.io.js"></script>
-    <script type="module" src="{{ url_for('static', filename='js/PNElements.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/ToolBar.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/PropertyWindow.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/UndoRedoHandler.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/inputs-config.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/Simulation.js') }}"></script>
-    <script type="module" src="{{ url_for('static', filename='js/main.js') }}"></script>
+    <script type="module" src="static/js/main.js"></script>
 </body>
 
 </html>

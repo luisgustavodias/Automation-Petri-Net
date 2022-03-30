@@ -1,107 +1,96 @@
 import Vector from "./utils/Vector.js";
 import { getLineEndPoint, getLineStartPoint, getLineMidPoint, setLineEndPoint, setLineStartPoint, getLineDirection } from './utils/Line.js';
+import { Arrow } from "./utils/Arrow.js";
 const arcNodeModel = document.getElementById('arc-node-model');
-export class GenericPetriElement {
+class AGenericPetriElement {
     constructor(ele) {
-        this._element = ele;
-    }
-    get PNElementType() {
-        return 'generic';
+        this.svgElement = ele;
     }
     get id() {
-        return this._element.id;
+        return this.svgElement.id;
     }
-    select() {
-        this._element.children[0].setAttribute('stroke', 'blue');
+    getPETextElement(attrName) {
+        return this.svgElement.querySelector(`[pe-text="${attrName}"]`);
     }
-    deselect() {
-        this._element.children[0].setAttribute('stroke', 'black');
+    getPEText(attrName) {
+        return this.getPETextElement(attrName).innerHTML;
     }
-    remove() {
-        this._element.remove();
-    }
-    getProperty(name) {
-        return this._element.getElementsByClassName(this.PNElementType + "-" + name)[0].innerHTML;
-    }
-    setProperty(name, val) {
-        this._element.getElementsByClassName(this.PNElementType + "-" + name)[0].innerHTML = val;
-    }
-    get isDraggable() {
-        return this._element.classList.contains('draggable');
+    setPEText(attrName, val) {
+        this.getPETextElement(attrName).innerHTML = val;
     }
 }
-export class PetriElement extends GenericPetriElement {
+class APetriElement extends AGenericPetriElement {
     constructor(ele) {
         super(ele);
-        this.arcs = [];
+        this._connectedArcs = [];
+        this._position = this.getPosition();
     }
-    setPosition(coord) {
-        let transform = this._element.transform.baseVal.getItem(0);
+    get name() { return this.getPEText('name'); }
+    set name(val) { this.setPEText('name', val); }
+    get connectedArcs() { return this._connectedArcs; }
+    get position() {
+        return this._position;
+    }
+    set position(coord) {
+        this._position = coord;
+        let transform = this.svgElement.transform.baseVal.getItem(0);
         transform.setTranslate(coord.x, coord.y);
     }
+    move(displacement) {
+        this.position = this._position.add(displacement);
+    }
     getPosition() {
-        let matrix = this._element.transform.baseVal.getItem(0).matrix;
+        let matrix = this.svgElement.transform.baseVal.getItem(0).matrix;
         return new Vector(matrix.e, matrix.f);
     }
-    get name() {
-        return this.getProperty("name");
+    select() {
+        this.svgElement.children[0].setAttribute('stroke', 'blue');
     }
-    set name(val) {
-        this.setProperty("name", val);
+    deselect() {
+        this.svgElement.children[0].setAttribute('stroke', 'black');
+    }
+    connectArc(PEId) {
+        if (this.connectedArcs.indexOf(PEId) !== -1) {
+            throw "A reference to this arc already exists.";
+        }
+        this.connectedArcs.push(PEId);
+    }
+    disconnectArc(PEId) {
+        const index = this.connectedArcs.indexOf(PEId);
+        if (index !== -1) {
+            this.connectedArcs.splice(index, 1);
+        }
     }
 }
-export class PetriPlace extends PetriElement {
+class PetriPlace extends APetriElement {
     constructor(ele) {
         super(ele);
-        this.placeRadius = 7.5;
+        this.PEType = 'place';
+        this.initialMark = '0';
     }
-    get PNElementType() {
-        return 'place';
-    }
-    get type() {
-        return this.getProperty("type");
-    }
-    set type(val) {
-        this.setProperty("type", val);
-    }
-    get mark() {
-        return parseInt(this.getProperty("mark"));
-    }
-    set mark(val) {
-        this.setProperty("mark", String(val));
-    }
-    get initialMark() {
-        return this._element.getAttribute('initialmark');
-    }
+    get placeType() { return this.getPEText('placeType'); }
+    set placeType(val) { this.setPEText('placeType', val); }
+    set mark(val) { this.setPEText('mark', val); }
+    get initialMark() { return this.svgElement.getAttribute('initialMark'); }
     set initialMark(val) {
-        this._element.setAttribute('initialmark', val);
+        this.svgElement.setAttribute('initialMark', val);
+        this.mark = val;
     }
-    getConnectionPoint(u) {
-        return this.getPosition().add(u.mul(-this.placeRadius));
+    static getConnectionPoint(placePos, u) {
+        return placePos.add(u.mul(-this.placeRadius));
     }
 }
-export class PetriTrans extends PetriElement {
+PetriPlace.placeRadius = 7.5;
+class PetriTrans extends APetriElement {
     constructor(ele) {
         super(ele);
-        this.transWidth = 5.5;
-        this.transHeight = 3;
+        this.PEType = 'trans';
     }
-    get PNElementType() {
-        return 'trans';
-    }
-    get time() {
-        return this.getProperty('time');
-    }
-    set time(val) {
-        this.setProperty('time', val);
-    }
-    get guard() {
-        return this.getProperty('guard');
-    }
-    set guard(val) {
-        this.setProperty('guard', val);
-    }
-    getConnectionPoint(u) {
+    get delay() { return this.getPEText('delay'); }
+    set delay(val) { this.setPEText('delay', val); }
+    get guard() { return this.getPEText('guard'); }
+    set guard(val) { this.setPEText('guard', val); }
+    static getConnectionPoint(transPos, u) {
         if (u.y !== 0) {
             let k;
             if (Math.abs(u.x * this.transHeight / u.y) > this.transWidth) {
@@ -110,239 +99,186 @@ export class PetriTrans extends PetriElement {
             else {
                 k = this.transHeight / Math.abs(u.y);
             }
-            return this.getPosition().add(u.mul(k));
+            return transPos.add(u.mul(k));
         }
-        return this.getPosition().add(u.mul(this.transWidth));
+        return transPos.add(u.mul(this.transWidth));
     }
 }
-export class AbstractPetriArc extends GenericPetriElement {
-    constructor(ele, place, trans, type) {
+PetriTrans.transWidth = 5.5;
+PetriTrans.transHeight = 3;
+class PetriArc extends AGenericPetriElement {
+    constructor(ele, placeId, transId, arctype) {
         super(ele);
-        this.headWidth = 6;
-        this.headHeight = 2;
-        this.place = place;
-        this.trans = trans;
-        this._type = type;
+        this.PEType = 'arc';
+        this.svgElement.setAttribute('place-id', placeId);
+        this.svgElement.setAttribute('trans-id', transId);
+        this._placePos = new Vector(0, 0);
+        this._transPos = new Vector(1, 0);
+        this.arrow = new Arrow(this.svgElement.children[0].children[0], this.svgElement.children[1]);
+        this.arcType = arctype;
     }
-    get placePos() {
-        return this.place.getPosition();
-    }
-    get transPos() {
-        return this.trans.getPosition();
-    }
-    get lines() {
-        return this._element.children[0].children;
-    }
-    getPlaceConnectionPoint(u) {
-        return this.place.getConnectionPoint(u);
-    }
-    getTransConnectionPoint(u) {
-        return this.trans.getConnectionPoint(u);
-    }
-    updateLine(startPoint, endPoint) {
-        this.lines[0].setAttribute('x1', String(startPoint.x));
-        this.lines[0].setAttribute('y1', String(startPoint.y));
-        this.lines[0].setAttribute('x2', String(endPoint.x));
-        this.lines[0].setAttribute('y2', String(endPoint.y));
-    }
-    drawHead(u, w1) {
-        let v = u.ortogonal();
-        let w2 = w1.add(u.mul(this.headWidth)).add(v.mul(this.headHeight));
-        let w3 = w2.sub(v.mul(2 * this.headHeight));
-        let points = w1.str() + ' ' + w2.str() + ' ' + w3.str();
-        this._element.children[1].setAttribute('points', points);
-    }
-}
-export class PetriArc extends AbstractPetriArc {
-    constructor(ele, place, trans, type) {
-        super(ele, place, trans, type);
-        this.negBallRadius = 2;
-        this.updatePos(place.id);
-    }
-    get PNElementType() {
-        return 'arc';
-    }
-    get type() {
-        return this._type;
-    }
-    set type(val) {
-        if (val === 'test') {
-            this._element.children[0].setAttribute('stroke-dasharray', '2 2');
+    get placeId() { return this.svgElement.getAttribute('place-id'); }
+    get transId() { return this.svgElement.getAttribute('trans-id'); }
+    get weight() { return this.getPEText('weight'); }
+    set weight(val) { this.setPEText('weight', val); }
+    get arcType() { return this._arcType; }
+    set arcType(val) {
+        if (val === "Test") {
+            this.svgElement.children[0].setAttribute('stroke-dasharray', '2 2');
         }
         else {
-            this._element.children[0].setAttribute('stroke-dasharray', '');
+            this.svgElement.children[0].setAttribute('stroke-dasharray', '');
         }
-        if (val === 'inhibitor') {
-            this._element.children[2].setAttribute('visibility', 'visible');
-        }
-        else {
-            this._element.children[2].setAttribute('visibility', 'hidden');
-        }
-        this._type = val;
-        this._element.setAttribute('arcType', val);
-        this.updatePos();
-    }
-    get weight() {
-        return this.getProperty('weight');
-    }
-    set weight(val) {
-        if (val === '1') {
-            this._element.children[3].setAttribute('visibility', 'hidden');
+        if (val === "Inhibitor") {
+            this.svgElement.children[2].setAttribute('visibility', 'visible');
         }
         else {
-            this._element.children[3].setAttribute('visibility', 'visible');
+            this.svgElement.children[2].setAttribute('visibility', 'hidden');
         }
-        this.setProperty('weight', val);
+        this._arcType = val;
+        this.svgElement.setAttribute('arc-type', val);
+        let lines = this.getLines();
+        if (lines.length === 1) {
+            this.singleLineUpdate();
+        }
+        else {
+            setLineEndPoint(lines[0], getLineStartPoint(lines[1]));
+            setLineStartPoint(lines[lines.length - 1], getLineEndPoint(lines[lines.length - 2]));
+            this.updatePlacePos(this._placePos);
+            this.updateTransPos(this._transPos);
+        }
     }
-    updateWeightPosition() {
-        let n = this.lines.length;
+    getLines() {
+        return this.svgElement.children[0].children;
+    }
+    updateWeightPos() {
+        let lines = this.getLines();
+        let n = lines.length;
         let line;
-        let v, direction;
+        let anchorPoint;
         if (n % 2 === 1) {
-            line = this.lines[(n - 1) / 2];
-            v = getLineMidPoint(line);
+            line = lines[(n - 1) / 2];
+            anchorPoint = getLineMidPoint(line);
         }
         else {
-            line = this.lines[n / 2];
-            v = getLineStartPoint(line);
+            line = lines[n / 2];
+            anchorPoint = getLineStartPoint(line);
         }
-        direction = getLineDirection(line).norm();
-        let pos = v.add(direction.ortogonal().mul(4.5));
-        this._element.children[3].setAttribute('x', String(pos.x));
-        this._element.children[3].setAttribute('y', String(pos.y));
+        let pos = anchorPoint.add(getLineDirection(line).norm().ortogonal().mul(4.5));
+        this.svgElement.children[3].setAttribute('x', String(pos.x));
+        this.svgElement.children[3].setAttribute('y', String(pos.y));
     }
-    oneLineUpdate() {
-        let u = (this.placePos.sub(this.transPos)).norm();
-        let w1;
-        let transPoint = this.getTransConnectionPoint(u);
-        let placePoint = this.getPlaceConnectionPoint(u);
-        if (this._type === 'output') {
-            u = u.neg();
-            w1 = placePoint;
-            placePoint = placePoint.add(u.mul(this.headWidth));
-        }
-        else {
-            if (this._type === 'inhibitor') {
-                transPoint = transPoint.add(u.mul(this.negBallRadius));
-                this._element.children[2].setAttribute('cx', String(transPoint.x));
-                this._element.children[2].setAttribute('cy', String(transPoint.y));
-                transPoint = transPoint.add(u.mul(this.negBallRadius));
-            }
-            w1 = transPoint;
-            transPoint = transPoint.add(u.mul(this.headWidth));
-        }
-        this.updateLine(placePoint, transPoint);
-        this.drawHead(u, w1);
+    updateNegBall(pos) {
+        this.svgElement.children[2].setAttribute('cx', String(pos.x));
+        this.svgElement.children[2].setAttribute('cy', String(pos.y));
     }
-    updatePosByTrans() {
-        let line = this.lines[this.lines.length - 1];
-        let u = (getLineStartPoint(line).sub(this.transPos)).norm();
-        let transPoint = this.getTransConnectionPoint(u);
-        if (this._type === 'output') {
-            setLineEndPoint(line, transPoint);
-        }
-        else {
-            if (this._type === 'inhibitor') {
-                transPoint = transPoint.add(u.mul(this.negBallRadius));
-                this._element.children[2].setAttribute('cx', String(transPoint.x));
-                this._element.children[2].setAttribute('cy', String(transPoint.y));
-                transPoint = transPoint.add(u.mul(this.negBallRadius));
-            }
-            this.drawHead(u, transPoint);
-            setLineEndPoint(line, transPoint.add(u.mul(this.headWidth)));
-        }
+    updateInhibitorArrow(tailPos, connectionPoint, u) {
+        this.updateNegBall(connectionPoint.add(u.mul(PetriArc.negBallRadius)));
+        this.arrow.update(tailPos, connectionPoint.add(u.mul(2 * PetriArc.negBallRadius)));
     }
-    updatePosByPlace() {
-        let line = this.lines[0];
-        let u = (this.placePos.sub(getLineEndPoint(line))).norm();
-        let placePoint = this.getPlaceConnectionPoint(u);
-        if (this._type === 'output') {
-            this.drawHead(u.neg(), placePoint);
-            setLineStartPoint(line, placePoint.add(u.neg().mul(this.headWidth)));
+    singleLineUpdate() {
+        let u = (this._placePos.sub(this._transPos)).norm();
+        let placePoint = PetriPlace.getConnectionPoint(this._placePos, u);
+        let transPoint = PetriTrans.getConnectionPoint(this._transPos, u);
+        if (this._arcType === 'Output') {
+            this.arrow.update(transPoint, placePoint);
         }
         else {
-            setLineStartPoint(line, placePoint);
-        }
-    }
-    updatePos(callerId = '') {
-        if (this.lines.length === 1) {
-            this.oneLineUpdate();
-        }
-        else {
-            if (callerId === this.place.id) {
-                this.updatePosByPlace();
-            }
-            else if (callerId === this.trans.id) {
-                this.updatePosByTrans();
+            if (this._arcType === 'Inhibitor') {
+                this.updateInhibitorArrow(placePoint, transPoint, u);
             }
             else {
-                this.updatePosByPlace();
-                this.updatePosByTrans();
+                this.arrow.update(placePoint, transPoint);
             }
         }
-        this.updateWeightPosition();
+        this.updateWeightPos();
+    }
+    updatePlacePos(pos) {
+        this._placePos = pos;
+        let lines = this.getLines();
+        if (lines.length === 1) {
+            this.singleLineUpdate();
+        }
+        else if (this._arcType === "Output") {
+            this.arrow.updateHeadPos(PetriPlace.getConnectionPoint(pos, this.arrow.getDirection()));
+        }
+        else {
+            setLineStartPoint(lines[0], PetriPlace.getConnectionPoint(pos, this.arrow.getDirection()));
+        }
+    }
+    updateTransPos(pos) {
+        this._transPos = pos;
+        let lines = this.getLines();
+        if (lines.length === 1) {
+            this.singleLineUpdate();
+        }
+        else {
+            let u = this.arrow.getDirection();
+            let connectionPoint = PetriTrans.getConnectionPoint(pos, u);
+            if (this._arcType === "Output") {
+                setLineStartPoint(lines[0], connectionPoint);
+            }
+            else {
+                if (this._arcType === "Inhibitor") {
+                    this.updateInhibitorArrow(getLineEndPoint(lines[lines.length - 2]), connectionPoint, u);
+                }
+                this.arrow.updateHeadPos(connectionPoint);
+            }
+        }
+    }
+    select() {
+        this.svgElement.children[0].setAttribute('stroke', 'blue');
+        this.svgElement.children[1].setAttribute('fill', 'blue');
+        this.svgElement.children[2].setAttribute('stroke', 'blue');
+        // this.showNodes()
+    }
+    deselect() {
+        this.svgElement.children[0].setAttribute('stroke', 'black');
+        this.svgElement.children[1].setAttribute('fill', 'black');
+        this.svgElement.children[2].setAttribute('stroke', 'black');
+        // this.cleanNodes()
     }
     splitLine(i) {
-        let ele = this.lines[i].cloneNode(true);
-        this._element.children[0].insertBefore(ele, this.lines[i]);
-        let midPoint = getLineMidPoint(this.lines[i]);
-        setLineEndPoint(this.lines[i], midPoint);
-        setLineStartPoint(this.lines[i + 1], midPoint);
+        let lines = this.getLines();
+        let ele = lines[i].cloneNode(true);
+        this.svgElement.children[0].insertBefore(ele, lines[i]);
+        let midPoint = getLineMidPoint(lines[i]);
+        setLineEndPoint(lines[i], midPoint);
+        setLineStartPoint(lines[i + 1], midPoint);
     }
     setNodePos(node, coord) {
         let transform = node.transform.baseVal.getItem(0);
         transform.setTranslate(coord.x, coord.y);
     }
-    createNode(type, i) {
+    createNode(nodeType, i, line) {
         let group = document.getElementById('arc-nodes');
         let node = arcNodeModel.cloneNode(true);
-        node.id = 'arc-' + type + '-node-' + i;
+        node.id = 'arc-' + nodeType + '-node-' + i;
         node.setAttribute('pe-parent', this.id);
-        node.setAttribute('arc-node-type', type);
+        node.setAttribute('arc-node-type', nodeType);
         node.setAttribute('arc-node-line', String(i));
-        if (type === 'mid') {
-            let point = getLineMidPoint(this.lines[i]);
-            this.setNodePos(node, point);
+        if (nodeType === 'mid') {
+            node.setAttribute('fill', 'blue');
+            this.setNodePos(node, getLineMidPoint(line));
         }
         else {
             node.setAttribute('fill', 'yellow');
-            let point = getLineMidPoint(this.lines[i]);
-            this.setNodePos(node, getLineStartPoint(this.lines[i]));
+            this.setNodePos(node, getLineStartPoint(line));
         }
         group.appendChild(node);
     }
     showNodes() {
-        for (let i = 0; i < this.lines.length; i++) {
-            this.createNode('mid', i);
+        let lines = this.getLines();
+        for (let i = 0; i < lines.length; i++) {
+            this.createNode('mid', i, lines[i]);
             if (i > 0) {
-                this.createNode('corner', i);
+                this.createNode('corner', i, lines[i]);
             }
         }
     }
     cleanNodes() {
         document.getElementById('arc-nodes').innerHTML = '';
     }
-    select() {
-        this._element.children[0].setAttribute('stroke', 'blue');
-        this._element.children[1].setAttribute('fill', 'blue');
-        this._element.children[2].setAttribute('stroke', 'blue');
-        this.showNodes();
-    }
-    deselect() {
-        this._element.children[0].setAttribute('stroke', 'black');
-        this._element.children[1].setAttribute('fill', 'black');
-        this._element.children[2].setAttribute('stroke', 'black');
-        this.cleanNodes();
-    }
-    removeArcReference(ele) {
-        const index = ele.arcs.indexOf(this.id);
-        if (index > -1) {
-            ele.arcs.splice(index, 1);
-        }
-    }
-    remove() {
-        this.removeArcReference(this.place);
-        this.removeArcReference(this.trans);
-        super.remove();
-    }
 }
+PetriArc.negBallRadius = 2;
+export { AGenericPetriElement, APetriElement, PetriPlace, PetriTrans, PetriArc };

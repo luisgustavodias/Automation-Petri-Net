@@ -1,140 +1,89 @@
-import { GenericPetriElement } from "./PNElements.js"
-import { Change } from "./UndoRedoHandler.js"
 
-type Properties = { [attrName: string]: string }
+type ChangeObserver = (attr: string, val: string) => void
 
-class propertyChanges implements Change {
-    element: GenericPetriElement
-    initialValues: Properties
-    currentValues: Properties
+class ElementPropertyWindow {
+    private _PEType: string
+    private idPrefix: string
+    private _attrNames: string[]
+    private propertyWindow: HTMLElement
+    private changeObserver: ChangeObserver
 
-    constructor(element: GenericPetriElement, initialValues: Properties, 
-            currentValues: Properties) {
-        this.element = element
-        this.initialValues = initialValues
-        this.currentValues = currentValues
+    constructor(PEType: string, attrNames: string[]) {
+        this.propertyWindow = document.getElementById('pw-' + PEType)
+        console.log(this.propertyWindow)
+        this._PEType = PEType
+        this.idPrefix = "pw-" + PEType
+        this._attrNames = attrNames
+        this.changeObserver = null
     }
 
-    setProps(props: Properties) {
-        for (let propertyName in props) {
-            this.element[propertyName] = props[propertyName]
-        }
+    getInputElement(attrName: string) {
+        return <HTMLFormElement>document.getElementById(
+            this.idPrefix + '-' + attrName
+        )
     }
 
-    undo() {
-        this.setProps(this.initialValues)
+    change(attrName: string) {
+        this.changeObserver(
+            attrName,
+            this.getInputElement(attrName).value
+        )
     }
 
-    redo() {
-        this.setProps(this.currentValues)
-    }
-}
-
-class ElementPropertiesWindow {
-    propertyWindow: HTMLElement
-    propertyNames: Array<string>
-    element: any
-    idPrefix: string
-    initialValues: Properties
-
-    constructor(PNElementName: string, propertyNames: Array<string>) {
-        this.propertyWindow = document.getElementById('pw-' + PNElementName);
-        this.propertyNames = propertyNames
-        this.element = null
-        this.idPrefix = "pw-" + PNElementName
-        this.initialValues = {}
-    }
-
-    open() {
+    open(changeObserver: ChangeObserver, data: any) {
+        this.changeObserver = changeObserver
         this.propertyWindow.style.display = "block";
+        for(const attrName of this._attrNames) {
+            let inputElement = this.getInputElement(attrName)
+            inputElement.value = data[attrName]
+        }
     }
 
     close() {
+        // this.changeObserver = null
         this.propertyWindow.style.display = "none";
-    }
-
-    show(element) {
-        this.open()
-        this.element = element
-        this.initialValues = {}
-        for(let propertyName of this.propertyNames) {
-            let input = <HTMLFormElement>document.getElementById(this.idPrefix + '-' + propertyName)
-            input.value = element[propertyName]
-            this.initialValues[propertyName] = element[propertyName]
-        }
-    }
-
-    resumeChanges(): propertyChanges {
-        let currentValues = {}
-        for(let propertyName of this.propertyNames) {
-            currentValues[propertyName] = this.element[propertyName]
-        }
-        return new propertyChanges(
-            this.element, this.initialValues, currentValues
-        )
-            
-    }
-
-    change(evt) {
-        let attr = evt.target.id.split('-').pop();
-        if (evt.target.value !== this.element[attr]) {
-            this.element[attr] = evt.target.value;
-        }
     }
 }
 
-const propertyNames = {
-    place: ["name", "type", "initialMark"],
+const attrNames = {
+    place: ["name", "placeType", "initialMark"],
     trans: ["name", "time", "guard"],
-    arc: ["type", "weight"]
+    arc: ["arcType", "weight"]
 }
 
 class PropertyWindow {
-    windows: { [name: string]: ElementPropertiesWindow }
-    current: ElementPropertiesWindow
+    private currentWindow: ElementPropertyWindow
+    private elePropWindows: {[PEType: string]: ElementPropertyWindow}
 
     constructor() {
-        this.windows = {}
-        for (let key in propertyNames) {
-            this.windows[key] = new ElementPropertiesWindow(
-                key, propertyNames[key]
+        this.currentWindow = null
+        this.elePropWindows = {}
+        for(const PEType in attrNames) {
+            const ePW = new ElementPropertyWindow(
+                PEType,
+                attrNames[PEType]
             )
+            for(const attrName of attrNames[PEType]) {
+                let inputElement = ePW.getInputElement(attrName)
+                inputElement.addEventListener('change', evt => { ePW.change(attrName) })
+            }
+            this.elePropWindows[PEType] = ePW
         }
-        this.current = null;
     }
 
-    show(element: GenericPetriElement) {
-        this.current = this.windows[element.PNElementType];
-        this.current.show(element);
+    open(PEType: string, changeObserver: ChangeObserver, data: any) {
+        this.currentWindow = this.elePropWindows[PEType]
+        this.currentWindow.open(changeObserver, data)
+        console.log(this.currentWindow)
     }
 
     close() {
-        if (this.current) {
-            this.current.close()
-            this.current = null
-        }
-    }
-
-    resumeChanges() {
-        if (this.current) {
-            return this.current.resumeChanges()
+        console.log(this.currentWindow)
+        if (this.currentWindow) {
+            this.currentWindow.close()
+            this.currentWindow = null
         }
     }
 }
 
-export var propertyWindow = new PropertyWindow();
-
-for(let windowName in propertyWindow.windows) {
-    let window = propertyWindow.windows[windowName];
-    for(let propertyName of window.propertyNames) {
-        document.getElementById(window.idPrefix + "-" + propertyName)
-            .addEventListener('blur', focusOut);
-    }
-    
-}
-
-function focusOut(evt) {
-    if (propertyWindow.current) {
-        propertyWindow.current.change(evt);
-    }
-}
+export { PropertyWindow }

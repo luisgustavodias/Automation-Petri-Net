@@ -1,114 +1,105 @@
 import Vector from "./utils/Vector.js"
-import { GenericPetriElement, PetriElement, PetriPlace, 
-    PetriTrans, PetriArc } from "./PNElements.js";
-import { Change, undoRedoManager, UndoRedoManager } from "./UndoRedoHandler.js";
+// import { v4 as uuidv4 } from 'uuid';
+// import { v4 as uuidv4 } from '../node_modules/uuid/wrapper.mjs';
+import { AGenericPetriElement, APetriElement, PetriPlace, 
+    PetriTrans, PetriArc, ArcType } from "./PNElements.js";
+// import { Change, undoRedoManager, UndoRedoManager } from "./UndoRedoHandler.js";
 
-export var svg: any = document.getElementById('my-svg');
-
-const models = {
-    'place': <SVGAElement><unknown>document.getElementById('place-model'),
-    'trans': <SVGAElement><unknown>document.getElementById('trans-model'),
-    'arc': <SVGAElement><unknown>document.getElementById('arc-model')
-}
-
+export var svg: SVGElement = <SVGElement><unknown>document.getElementById('my-svg');
 
 export class PetriNet {
-    elements: { [id: string]: GenericPetriElement }
+    readonly svgElement: SVGSVGElement
+    elements: { [id: string]: AGenericPetriElement }
     inputs: Array<any>
     simMode: number
     preScript: string
     placeNumber: number
     transNumber: number
-    _nextId: number
     _grid: boolean
     metadata: { fileName: string, filePath: string }
 
-    constructor() {
-        this.elements = {};
-        this.inputs = [];
-        this.simMode = 1;
-        this.preScript = "";
-        this.placeNumber = 1;
-        this.transNumber = 1;
-        this._nextId = 1
+    constructor(svgElement: SVGSVGElement) {
+        this.svgElement = svgElement
+        this.elements = {}
+        this.inputs = []
+        this.simMode = 1
+        this.preScript = ""
+        this.placeNumber = 1
+        this.transNumber = 1
         this._grid = false
-        this.metadata = { fileName: '', filePath: '' };
+        this.metadata = { fileName: '', filePath: '' }
     }
 
-    get grid() {
-        return this._grid
-    }
+    // get svgELement() { return this._svgElement }
+    get grid() { return this._grid }
 
     set grid(val: boolean) {
         if (val) {
-            document.getElementById('svg-background').setAttribute('fill', 'url(#grid-pattern)')
+            document.getElementById('svg-background')
+                .setAttribute('fill', 'url(#grid-pattern)')
         } else {
-            document.getElementById('svg-background').setAttribute('fill', 'white')
+            document.getElementById('svg-background')
+                .setAttribute('fill', 'white')
         }
         this._grid = val
     }
 
-    getClone(model: SVGAElement) {
-        let ele = <SVGAElement>model.cloneNode(true);
-        ele.id = PETRI_ELEMENT_ID_PREFIX + this._nextId++;
-        for (let i = 0; i < ele.children.length; i++) {
-            ele.children[i].setAttribute('pe-parent', ele.id)
-            for (let j = 0; j < ele.children[i].children.length; j++) {
-                ele.children[i].children[j].setAttribute('pe-parent', ele.id)
+    addGenericPE(genericPE: AGenericPetriElement) {
+        if (genericPE.PEType === 'arc') {
+            let arc = <PetriArc>genericPE
+            let place = <PetriPlace>this.elements[arc.placeId]
+            let trans = <PetriTrans>this.elements[arc.transId]
+
+            if (place.PEType !== 'place' || trans.PEType !== 'trans') {
+                throw "Invalid placeId or transId"
+            }
+
+            place.connectArc(arc.id)
+            trans.connectArc(arc.id)
+            arc.updatePlacePos(place.position)
+            arc.updateTransPos(trans.position)
+
+            this.svgElement.querySelector('#arcs')
+                .appendChild(genericPE.svgElement)
+        } else {
+            let petriElement = <APetriElement>genericPE;
+
+            if (petriElement.connectedArcs.length) {
+                throw "Can't add a place or trans with connected arcs"
+            }
+
+            this.svgElement.querySelector('#pe')
+                .appendChild(genericPE.svgElement)
+        }
+
+        this.elements[genericPE.id] = genericPE
+    }
+
+    removeGenericPE(PEId: string) {
+        if (this.elements[PEId].PEType === 'arc') {
+            let arc = <PetriArc>this.elements[PEId]
+            let place = <PetriPlace>this.elements[arc.placeId]
+            let trans = <PetriTrans>this.elements[arc.transId]
+
+            place.disconnectArc(arc.id)
+            trans.disconnectArc(arc.id)
+        } else {
+            let petriElement = <APetriElement>this.elements[PEId]
+            if (petriElement.connectedArcs.length) {
+                throw "Can't remove a place or trans with connected arcs"
             }
         }
-        return ele
+
+        let element = this.elements[PEId]
+        element.svgElement.remove()
+        delete this.elements[PEId]
+
+        return element
     }
 
-    addGenericPetriElement(petriElement: GenericPetriElement) {
-        svg.children[2].appendChild(petriElement._element)
-        this.elements[petriElement.id] = petriElement
-        if (petriElement.PNElementType === 'arc') {
-            let arc = <PetriArc>petriElement
-            arc.place.arcs.push(arc.id)
-            arc.trans.arcs.push(arc.id)
-        }
-    }
-
-    createSVGElement(model: SVGAElement) {
-        let ele = <SVGAElement>model.cloneNode(true);
-        ele.id = PETRI_ELEMENT_ID_PREFIX + this._nextId++;
-        for (let i = 0; i < ele.children.length; i++) {
-            ele.children[i].setAttribute('pe-parent', ele.id)
-            for (let j = 0; j < ele.children[i].children.length; j++) {
-                ele.children[i].children[j].setAttribute('pe-parent', ele.id)
-            }
-        }
-        return ele
-    }
-
-    createPetriElement(model: SVGAElement, coord: Vector, 
-                createElement: (ele: SVGAElement) => PetriElement) {
-        let ele = this.createSVGElement(model)
-        let petriElement = createElement(ele)
-        this.addGenericPetriElement(petriElement)
-        petriElement.setPosition(coord)
-        return petriElement
-    }
-
-    createPlace(coord: Vector) {
-        let place = this.createPetriElement(models.place, 
-            coord, (ele) => { return new PetriPlace(ele) })
-        place.name = PLACE_DEFAULT_NAME_PREFIX + this.placeNumber++
-    }
-
-    createTrans(coord: Vector) {
-        let trans = this.createPetriElement(models.trans, 
-            coord, (ele) => { return new PetriTrans(ele) })
-        trans.name = TRANS_DEFAULT_NAME_PREFIX + this.transNumber++
-    }
-
-    createArc(placeId: string, transId: string, type: string) {
-        let ele = this.createSVGElement(models.arc)
-        let place = <PetriPlace>this.elements[placeId]
-        let trans = <PetriTrans>this.elements[transId]
-        let arc = new PetriArc(ele, place, trans, type)
-        this.addGenericPetriElement(arc)
+    setGenericPEAttr(PEId: string, attr: string, val: string) {
+        const ele = this.elements[PEId]
+        ele[attr] = val
     }
 }
 
@@ -116,118 +107,262 @@ const PLACE_GROUP_INDEX = 2, TRANS_GROUP_INDEX = 2, ARC_GROUP_INDEX = 2;
 const PETRI_ELEMENT_ID_PREFIX = "PE", PLACE_DEFAULT_NAME_PREFIX = "p", TRANS_DEFAULT_NAME_PREFIX = "t";
 
 // class CreateElementChange implements Change {
-//     elementId: string
+//     net: PetriNet
+//     genericPE: AGenericPetriElement
 
-//     constructor(elementId: string) {
-//         this.elementId = elementId
+//     constructor(net: PetriNet, genericPE: AGenericPetriElement) {
+//         this.net = net
+//         this.genericPE = genericPE
 //     }
 
 //     undo() {
-//         PNManager.removeElement(this.elementId)
+//         this.net.removeGenericPE(this.genericPE.id)
 //     }
 
 //     redo() {
-//         PNManager.recoveryElement(this.elementId)
+//         this.net.addGenericPE(this.genericPE)
 //     }
 // }
 
-class RemoveElementChange implements Change {
-    elementId: string
+// class RemoveElementChange implements Change {
+//     net: PetriNet
+//     genericPE: AGenericPetriElement
 
-    constructor(elementId: string) {
-        this.elementId = elementId
-    }
+//     constructor(net: PetriNet, genericPE: AGenericPetriElement) {
+//         this.net = net
+//         this.genericPE = genericPE
+//     }
 
-    undo() {
-        PNManager.recoveryElement(this.elementId)
-    }
+//     undo() {
+//         this.net.addGenericPE(this.genericPE)
+//     }
 
-    redo() {
-        PNManager.removeElement(this.elementId)
-    }
-}
+//     redo() {
+//         this.net.removeGenericPE(this.genericPE.id)
+//     }
+// }
 
-class PetriNetManager {
-    net: PetriNet
-    removedElements: { [id: string]: GenericPetriElement }
-    undoRedoManager: UndoRedoManager
+const GRID_SIZE = 10;
+
+export class PetriNetManager {
+    readonly net: PetriNet
+    private _selectedPE: AGenericPetriElement
+    selectObserver: (PEId: string) => void
+    deselectObserver: () => void
+    // private undoRedoManager: UndoRedoManager
 
     constructor() {
-        this.net = new PetriNet()
-        this.removedElements = {}
+        this.net = new PetriNet(
+            <SVGSVGElement><unknown>document.getElementById('my-svg')
+        )
+        this._selectedPE = null
     }
 
-    _removeElement(elementId: string) {
-        if (this.net.elements[elementId].PNElementType !== 'arc') {
-            let ele = <PetriElement>this.net.elements[elementId]
-            for (let arcId of ele.arcs) {
-                this.removeElement(arcId)
-            }
+    get selectedPE() { return this._selectedPE }
+
+    private createSVGElement(modelId: string) {
+        const model = <SVGAElement><unknown>document.getElementById(modelId)
+        const clone = <SVGAElement>model.cloneNode(true)
+        const PEId = String(Math.random())
+        
+        clone.id = PEId
+
+        for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
+            ele.setAttribute('pe-parent', PEId)
         }
-        this.net.elements[elementId].remove()
-        this.removedElements[elementId] = this.net.elements[elementId]
-        delete this.net.elements[elementId]
+        
+        return clone
     }
 
-    removeElement(elementId: string) {
-        this._removeElement(elementId)
-        undoRedoManager.registryChange(
-            new RemoveElementChange(elementId)
+    private addGenericPE(genericPE: AGenericPetriElement) {
+        this.net.addGenericPE(genericPE)
+        // this.undoRedoManager.registryChange(
+        //     new CreateElementChange(
+        //         this.net,
+        //         genericPE
+        //     )
+        // )
+
+        return genericPE.id
+    }
+
+    private createPetriElement(PEType: 'place' | 'trans', coord: Vector) {
+        const ele = this.createSVGElement(PEType + '-model')
+
+        let petriElement: APetriElement;
+        if (PEType == 'place') {
+            petriElement = new PetriPlace(ele)
+            petriElement.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++
+        } else {
+            petriElement = new PetriTrans(ele)
+            petriElement.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++
+        }
+        petriElement.position = coord
+
+        return petriElement
+    }
+
+    getMousePosition(evt) {
+        const CTM = this.net.svgElement.getScreenCTM();
+        const pos = new Vector(
+            (evt.clientX - CTM.e) / CTM.a,
+            (evt.clientY - CTM.f) / CTM.d
+        )
+
+        if (this.net.grid) {
+            return new Vector(
+                Math.round(pos.x/GRID_SIZE)*GRID_SIZE, 
+                Math.round(pos.y/GRID_SIZE)*GRID_SIZE
+            )
+        }
+
+        return pos
+    }
+
+    createPlace(coord: Vector) {
+        return this.addGenericPE(this.createPetriElement('place', coord))
+    }
+
+    createTrans(coord: Vector) {
+        return this.addGenericPE(this.createPetriElement('trans', coord))
+    }
+
+    createArc(placeId: string, transId: string, arcType: ArcType) {
+        return this.addGenericPE(
+            new PetriArc(
+                    this.createSVGElement('arc-model'), 
+                    placeId, 
+                    transId, 
+                    arcType
+                )
         )
     }
 
-    recoveryElement(elementId: string) {
-        this.net.addGenericPetriElement(this.removedElements[elementId])
-        delete this.removedElements[elementId]
+    getPE(elementId: string) {
+        return this.net.elements[elementId]
     }
 
-    loadNet(netData) {
-        console.log("Loading Data")
-        svg.innerHTML = netData.svg.innerHTML;
-        svg.viewBox.baseVal.x = netData.svg.viewBox.x;
-        svg.viewBox.baseVal.y = netData.svg.viewBox.y;
-        svg.viewBox.baseVal.width = netData.svg.viewBox.width;
-        svg.viewBox.baseVal.height = netData.svg.viewBox.height;
-        this.net.inputs = netData.net.inputs;
-        this.net.simMode = netData.net.simMode;
-        this.net.preScript = netData.net.preScript;
-        this.net.placeNumber = netData.net.placeNumber;
-        this.net.transNumber = netData.net.transNumber;
-        this.net._nextId = netData.net._nextId;
-        this.net.metadata = netData.net.metadata;
-        this.net.elements = {};
-        for (let elementId in netData.net.elements) {
-            let savedElement = netData.net.elements[elementId];
-            console.log(savedElement)
-            if (savedElement.PNElementType === "place") {
-                let place = new PetriPlace(
-                    <SVGAElement><unknown>document.getElementById(elementId)
-                )
-                place.name = savedElement.name;
-                place.arcs = savedElement.arcs;
-                place.initialMark = savedElement.initialMark;
-                this.net.elements[elementId] = place;
-                console.log(place)
-            } else if (savedElement.PNElementType === "trans") {
-                let trans = new PetriTrans(
-                    <SVGAElement><unknown>document.getElementById(elementId)
-                )
-                trans.name = savedElement.name;
-                trans.arcs = savedElement.arcs;
-                this.net.elements[elementId] = trans;
-            } else if (savedElement.PNElementType === "arc") {
-                let arc = new PetriArc(
-                    <SVGAElement><unknown>document.getElementById(elementId),
-                    <PetriPlace>this.net.elements[savedElement.placeId],
-                    <PetriTrans>this.net.elements[savedElement.transId],
-                    savedElement.type
-                );
-                arc.weight = savedElement.weight;
-                this.net.elements[elementId] = arc;
+    selectPE(id: string) {
+        this._selectedPE = this.net.elements[id]
+        this._selectedPE.select()
+        this.selectObserver(id)
+        // propertyWindow.show(selectedPE)
+    }
+
+    deselectPE() {
+        if (!this._selectedPE) { return }
+        
+        this._selectedPE.deselect()
+        this._selectedPE = null
+        this.deselectObserver()
+        // propertyWindow.show(selectedPE)
+    }
+
+    movePE(id: string, displacement: Vector) {
+        const genericPE = this.net.elements[id]
+
+        if (genericPE.PEType === 'arc') {
+            return
+        }
+
+        const petriElement = <APetriElement>genericPE;
+
+        petriElement.move(displacement)
+
+        for (const arcId of petriElement.connectedArcs) {
+            if (genericPE.PEType === 'place') {
+                //@ts-ignore
+                this.net.elements[arcId].updatePlacePos(petriElement.position);
+            } else {
+                //@ts-ignore
+                this.net.elements[arcId].updateTransPos(petriElement.position);
             }
         }
-        console.log(this.net.elements);
     }
-}
 
-export var PNManager = new PetriNetManager();
+    setGenericPEAttr(PEId: string, attr: string, val: string) {
+        this.net.setGenericPEAttr(PEId, attr, val)
+    }
+
+    removeElement(elementId: string) {
+        if (this.net.elements[elementId].PEType !== 'arc') {
+            let ele = <APetriElement>this.net.elements[elementId]
+            for (let arcId of ele.connectedArcs) {
+                this.removeElement(arcId)
+            }
+        }
+        
+        // undoRedoManager.registryChange(
+        //     new RemoveElementChange(
+        //         this.net,
+        //         this.net.removeGenericPE(elementId)
+        //     )
+        // )
+    }
+
+    addIE(element: SVGAElement) {
+        document.getElementById('IEs').appendChild(element)
+    }
+
+    moveScreen(displacement: Vector) {
+        const viewBox = this.net.svgElement.viewBox.baseVal
+        viewBox.x -= displacement.x
+        viewBox.y -= displacement.y
+    }
+
+    zoom(focusPoint: Vector, scale: number) {
+        const viewBox = this.net.svgElement.viewBox.baseVal
+        viewBox.x += (focusPoint.x - viewBox.x)*(1 - scale)
+        viewBox.y += (focusPoint.y - viewBox.y)*(1 - scale)
+        viewBox.width = viewBox.width*scale
+        viewBox.height = viewBox.height*scale
+    }
+
+    // loadNet(netData) {
+    //     console.log("Loading Data")
+    //     svg.innerHTML = netData.svg.innerHTML;
+    //     svg.viewBox.baseVal.x = netData.svg.viewBox.x;
+    //     svg.viewBox.baseVal.y = netData.svg.viewBox.y;
+    //     svg.viewBox.baseVal.width = netData.svg.viewBox.width;
+    //     svg.viewBox.baseVal.height = netData.svg.viewBox.height;
+    //     this.net.inputs = netData.net.inputs;
+    //     this.net.simMode = netData.net.simMode;
+    //     this.net.preScript = netData.net.preScript;
+    //     this.net.placeNumber = netData.net.placeNumber;
+    //     this.net.transNumber = netData.net.transNumber;
+    //     this.net._nextId = netData.net._nextId;
+    //     this.net.metadata = netData.net.metadata;
+    //     this.net.elements = {};
+    //     for (let elementId in netData.net.elements) {
+    //         let savedElement = netData.net.elements[elementId];
+    //         console.log(savedElement)
+    //         if (savedElement.PNElementType === "place") {
+    //             let place = new PetriPlace(
+    //                 <SVGAElement><unknown>document.getElementById(elementId)
+    //             )
+    //             place.name = savedElement.name;
+    //             place.arcs = savedElement.arcs;
+    //             place.initialMark = savedElement.initialMark;
+    //             this.net.elements[elementId] = place;
+    //             console.log(place)
+    //         } else if (savedElement.PNElementType === "trans") {
+    //             let trans = new PetriTrans(
+    //                 <SVGAElement><unknown>document.getElementById(elementId)
+    //             )
+    //             trans.name = savedElement.name;
+    //             trans.arcs = savedElement.arcs;
+    //             this.net.elements[elementId] = trans;
+    //         } else if (savedElement.PNElementType === "arc") {
+    //             let arc = new PetriArc(
+    //                 <SVGAElement><unknown>document.getElementById(elementId),
+    //                 <PetriPlace>this.net.elements[savedElement.placeId],
+    //                 <PetriTrans>this.net.elements[savedElement.transId],
+    //                 savedElement.type
+    //             );
+    //             arc.weight = savedElement.weight;
+    //             this.net.elements[elementId] = arc;
+    //         }
+    //     }
+    //     console.log(this.net.elements);
+    // }
+}

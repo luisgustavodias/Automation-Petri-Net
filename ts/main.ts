@@ -1,13 +1,13 @@
-import { PNManager, svg } from './PetriNet.js';
-import { PetriArc } from './PNElements.js';
-import ToolBar from './ToolBar.js'
+import { PetriNetManager } from './PetriNet.js';
 import Vector from './utils/Vector.js';
+import ToolBar from './ToolBar.js';
+import { PropertyWindow } from './PropertyWindow.js';
+import { Simulator } from './Simulation.js'
 
-export var toolBar = new ToolBar()
-
-window.onload = function addListeners() {
+function addListeners(toolBar) {
     console.log('adding listeners');
-    let eventNames = ['mousedown', 'mouseup', 'mousemove', 'mouseleave', 'wheel']
+    const eventNames = ['mousedown', 'mouseup', 'mousemove', 'mouseleave', 'wheel']
+    const svg = document.getElementById('my-svg')
     for (let name of eventNames) {
         svg.addEventListener(name, (evt) => { toolBar[name](evt) });
     }
@@ -18,87 +18,45 @@ window.onload = function addListeners() {
     }
 }
 
+function testNetManager(netManager: PetriNetManager) {
+    const placeId = netManager.createPlace(new Vector(50, 50))
+    const transId = netManager.createTrans(new Vector(100, 50))
+    netManager.createArc(placeId, transId, "Input")
 
-// window.onload = function addListeners() {
-//     console.log('adding listeners');
-//     svg.addEventListener('mousedown', mouseDownHandler);
-//     svg.addEventListener('mousemove', mouseMoveHandler);
-//     svg.addEventListener('mouseup', mouseUpHandler);
-//     svg.addEventListener('mouseleave', mouseLeaveHandler);
-//     svg.addEventListener('wheel', zoom);
-//     document.addEventListener('keydown', keyDown)
-//     for (let tool in toolBar.tools) {
-//         document.getElementById(tool)
-//             .addEventListener('mousedown', (evt) => { changeTool(tool) });
-//     }
-// }
+    const placeId2 = netManager.createPlace(new Vector(50, 100))
+    const transId2 = netManager.createTrans(new Vector(75, 150))
+    netManager.createArc(placeId2, transId2, "Output")
 
-// function zoom(evt) {
-//     evt.preventDefault();
+    netManager.zoom(new Vector(100, 100), 0.7)
+    netManager.moveScreen(new Vector(20, 20))
 
-//     var scale = 1 + 0.01 * evt.deltaY;
-//     scale = Math.min(Math.max(.9, scale), 1.1);
-    
-//     var coord = getMousePosition(evt);
+    netManager.selectPE(placeId)
 
-//     svg.viewBox.baseVal.x += (coord.x - svg.viewBox.baseVal.x)*(1 - scale);
-//     svg.viewBox.baseVal.y += (coord.y - svg.viewBox.baseVal.y)*(1 - scale);
-//     svg.viewBox.baseVal.width = svg.viewBox.baseVal.width*scale;
-//     svg.viewBox.baseVal.height = svg.viewBox.baseVal.height*scale;
-// }
+    const simulator = new Simulator(netManager.net)
 
-// function mouseDownHandler (evt) {
-//     if (evt.ctrlKey) {
-//         PNManager.movingScreen = true;
-//         offset = getMousePosition(evt);
-//     } else {
-//         toolBar.currentTool.onMouseDown(evt);
-//     }
-// }
+    document.getElementById('step-button').onclick = 
+        _ => { simulator.step() }
+}
 
-// function mouseUpHandler (evt) {
-//     PNManager.movingScreen = false;
-//     toolBar.currentTool.onMouseUp(evt);
-// }
+function main() {
+    console.log('Creating net')
+    const netManager = new PetriNetManager()
+    const toolBar = new ToolBar(netManager)
+    const propertyWindow = new PropertyWindow()
+    netManager.selectObserver = (PEId: string) => {
+        const genericPE = netManager.getPE(PEId)
+        propertyWindow.open(
+            genericPE.PEType,
+            (attr, val) => { 
+                netManager.setGenericPEAttr(PEId, attr, val) 
+            },
+            genericPE
+        )
+    }
+    netManager.deselectObserver = () => { propertyWindow.close() }
+    addListeners(toolBar)
 
-// function mouseMoveHandler (evt) {
-//     if (PNManager.movingScreen) {
-//         var coord = getMousePosition(evt);
-//         svg.viewBox.baseVal.x -= (coord.x - offset.x);
-//         svg.viewBox.baseVal.y -= (coord.y - offset.y);
-//     } else {
-//         toolBar.currentTool.onMouseMove(evt);
-//     }
-// }
+    testNetManager(netManager)
+}
 
-// function mouseLeaveHandler (evt) {
-//     PNManager.movingScreen = false;
-//     toolBar.currentTool.onMouseLeave(evt);
-// }
-
-// function changeTool (tool) {
-//     toolBar.currentTool.onChangeTool();
-//     toolBar.currentTool = toolBar.tools[tool];
-//     console.log(tool)
-//     document.getElementById(tool).classList.add("selected-tool-bar-item");
-// }
-
-// function keyDown(evt) {
-//     if(evt.target.tagName === "BODY") {
-//         if (evt.key === "Delete") {
-//             if(toolBar.tools['mouse-tool'].selectedPE) {
-//                 let elementId = toolBar.tools['mouse-tool'].selectedPE.id;
-//                 toolBar.tools['mouse-tool'].deselect();
-//                 PNManager.removeElement(elementId);
-//                 console.log(PNManager.elements)
-//             }
-//         }
-//     }
-// }
-
-// PNManager.addPlace({x: 50, y: 50});
-// PNManager.addTrans({x: 100, y: 50});
-// PNManager.addArc('PE1', 'PE2', 'intput');
-// let arc = PNManager.net.elements['PE3']
-// arc.splitLine(0)
-// arc.lines[0].setAttribute('stroke', 'green')
+window.onload = main

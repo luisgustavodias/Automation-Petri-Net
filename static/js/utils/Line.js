@@ -17,5 +17,12 @@ export function getLineMidPoint(line) {
     return getLineStartPoint(line).add(getLineEndPoint(line)).mul(0.5);
 }
 export function getLineDirection(line) {
-    return getLineEndPoint(line).sub(getLineStartPoint(line));
+    return getLineEndPoint(line).sub(getLineStartPoint(line)).norm();
+}
+export function updateLine(line, startPoint, endPoint) {
+    setLineStartPoint(line, startPoint);
+    setLineEndPoint(line, endPoint);
+}
+export function invertLine(line) {
+    updateLine(line, getLineEndPoint(line), getLineStartPoint(line));
 }

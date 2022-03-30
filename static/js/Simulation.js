@@ -1,161 +1,134 @@
-import { toolBar } from "./main.js";
-import { PNManager } from "./PetriNet.js";
-function build() {
-    var json = {};
-    for (let elmentId in PNManager.net.elements) {
-        let element = PNManager.net.elements[elmentId];
-        if (element.PNElementType == "place") {
-            let ele = element;
-            json[elmentId] = {
-                PNElementType: "place",
-                name: ele.name,
-                type: ele.type,
-                arcs: ele.arcs,
-                initialMark: ele.initialMark
+const FIRE_TRANS_ANIMATION_TIME = 700;
+const delay = (ms) => new Promise((resolve) => setTimeout(resolve, ms));
+class LogicalSimulator {
+    constructor(placeMarks, arcsBytrans) {
+        this.placeMarks = placeMarks;
+        this.arcsByTrans = arcsBytrans;
+        console.log(placeMarks);
+        console.log(arcsBytrans);
+    }
+    checkTrans(transId) {
+        for (const arc of this.arcsByTrans[transId]) {
+            if (arc.arcType === "Input" || arc.arcType === "Test") {
+                if (this.placeMarks[arc.placeId] < arc.weight) {
+                    return false;
+                }
+            }
+            else if (arc.arcType === "Inhibitor") {
+                if (this.placeMarks[arc.placeId] >= arc.weight) {
+                    return false;
+                }
+            }
+        }
+        return true;
+    }
+    fireTransResult(transId) {
+        const result = {};
+        for (const arc of this.arcsByTrans[transId]) {
+            if (arc.arcType === "Input") {
+                result[arc.placeId] = this.placeMarks[arc.placeId]
+                    - arc.weight;
+            }
+            if (arc.arcType === "Output") {
+                result[arc.placeId] = this.placeMarks[arc.placeId]
+                    + arc.weight;
+            }
+        }
+        return result;
+    }
+    upadatePlaceMarks(marksToUpdate) {
+        Object.assign(this.placeMarks, marksToUpdate);
+    }
+    step() {
+        const enabledTransitions = Object.keys(this.arcsByTrans)
+            .filter(transId => this.checkTrans(transId));
+        if (!enabledTransitions.length) {
+            return {
+                enabledTransitions: [],
+                transToFire: null,
+                marksToUpdate: null
             };
         }
-        else if (element.PNElementType == "trans") {
-            let ele = element;
-            json[elmentId] = {
-                PNElementType: "trans",
-                name: ele.name,
-                time: ele.time,
-                guard: ele.guard,
-                arcs: ele.arcs
-            };
+        const marksToUpdate = this.fireTransResult(enabledTransitions[0]);
+        this.upadatePlaceMarks(marksToUpdate);
+        return {
+            enabledTransitions: enabledTransitions,
+            transToFire: enabledTransitions[0],
+            marksToUpdate: marksToUpdate
+        };
+    }
+}
+class Simulator {
+    constructor(net) {
+        this.net = net;
+        const placeMarks = {};
+        const places = this.filterNetElementsByType('place');
+        places.forEach((place) => {
+            placeMarks[place.id] = parseInt(place.initialMark);
+        });
+        const arcsByTrans = {};
+        const trasitions = this.filterNetElementsByType('trans');
+        trasitions.forEach((trans) => {
+            arcsByTrans[trans.id] = trans.connectedArcs.map((arcId) => {
+                const arc = net.elements[arcId];
+                return {
+                    placeId: arc.placeId,
+                    arcType: arc.arcType,
+                    weight: parseInt(arc.weight)
+                };
+            });
+        });
+        this.simulator = new LogicalSimulator(placeMarks, arcsByTrans);
+    }
+    filterNetElementsByType(PEType) {
+        return Object.values(this.net.elements).filter((ele) => ele.PEType === PEType);
+    }
+    start() {
+        const placeMarks = {};
+        const places = this.filterNetElementsByType('place');
+        places.forEach((place) => {
+            placeMarks[place.id] = parseInt(place.initialMark);
+        });
+    }
+    updatePlaceMarks(marksToUpdate) {
+        for (const placeId in marksToUpdate) {
+            const place = this.net.elements[placeId];
+            place.mark = String(marksToUpdate[placeId]);
         }
-        else if (element.PNElementType == "arc") {
-            let ele = element;
-            json[elmentId] = {
-                PNElementType: "arc",
-                type: ele.type,
-                weight: ele.weight,
-                placeId: ele.place.id,
-                transId: ele.trans.id
-            };
+    }
+    setTransColor(trans, color) {
+        trans.svgElement.children[0].setAttribute('stroke', color);
+    }
+    setArcColor(arc, color) {
+        arc.svgElement.children[0].setAttribute('stroke', color);
+        arc.svgElement.children[1].setAttribute('fill', color);
+        arc.svgElement.children[2].setAttribute('stroke', color);
+    }
+    enableTrans(id) {
+        const trans = this.net.elements[id];
+        this.setTransColor(trans, 'green');
+    }
+    disableTrans(id) {
+        const trans = this.net.elements[id];
+        this.setTransColor(trans, 'black');
+    }
+    fireTrans(transId, marksToUpdate) {
+        const trans = this.net.elements[transId];
+        this.setTransColor(trans, 'red');
+        setTimeout(() => {
+            this.disableTrans(transId);
+            this.updatePlaceMarks(marksToUpdate);
+        }, FIRE_TRANS_ANIMATION_TIME);
+    }
+    step() {
+        const stepResult = this.simulator.step();
+        console.log(stepResult);
+        stepResult.enabledTransitions.forEach(transId => {
+            this.enableTrans;
+        });
+        if (stepResult.transToFire) {
+            this.fireTrans(stepResult.transToFire, stepResult.marksToUpdate);
         }
     }
-    return json;
 }
-function save() {
-    for (let elementId in PNManager.net.elements) {
-        PNManager.net.elements[elementId].deselect();
-    }
-    let svg = document.getElementById("my-svg");
-    let viewBox = {
-        x: svg.viewBox.baseVal.x,
-        y: svg.viewBox.baseVal.y,
-        width: svg.viewBox.baseVal.width,
-        height: svg.viewBox.baseVal.height
-    };
-    return {
-        svg: {
-            innerHTML: svg.innerHTML,
-            viewBox: viewBox
-        },
-        net: {
-            elements: build(),
-            inputs: PNManager.net.inputs,
-            simMode: PNManager.net.simMode,
-            preScript: PNManager.net.preScript,
-            placeNumber: PNManager.net.placeNumber,
-            transNumber: PNManager.net.transNumber,
-            _nextId: PNManager.net._nextId,
-            metadata: PNManager.net.metadata
-        }
-    };
-}
-var intervalId = null;
-//@ts-ignore
-const socket = io('http://127.0.0.1:5000');
-function updateInput(evt) {
-    let input = {};
-    input[evt.target.id.split('-')[1]] = evt.target.checked;
-    console.log(input);
-    socket.emit("updateInput", input);
-}
-function simulate() {
-    let inputElements = document.getElementById('inputs-window').getElementsByTagName('input');
-    let inputs = {};
-    for (let i = 0; i < inputElements.length; i++) {
-        inputElements[i].addEventListener('change', updateInput);
-        inputs[inputElements[i].id.split('-')[1]] = inputElements[i].checked;
-    }
-    socket.emit("simulate", {
-        elements: build(),
-        inputs: inputs,
-        simMode: PNManager.net.simMode,
-        preScript: PNManager.net.preScript
-    });
-}
-socket.on("stepresp", (msg) => {
-    console.log('step');
-    console.log(msg);
-    for (let placeId in msg) {
-        let place = PNManager.net.elements[placeId];
-        place.mark = msg[placeId];
-    }
-});
-socket.on("loadresp", (msg) => {
-    PNManager.loadNet(msg);
-    toolBar.restartArcTool();
-});
-socket.on("saveresp", (msg) => {
-    PNManager.net.metadata = msg.net.metadata;
-});
-function pause() {
-    if (intervalId) {
-        clearInterval(intervalId);
-        intervalId = null;
-    }
-}
-document.getElementById("compile-button").onclick = () => {
-    pause();
-    simulate();
-};
-document.getElementById("step-button").onclick = () => { socket.emit("step", build()); };
-document.getElementById("save-button").onclick = () => {
-    if (PNManager.net.metadata.fileName) {
-        socket.emit("save", save());
-    }
-    else {
-        socket.emit("saveas", save());
-    }
-};
-document.getElementById("save-as-button").onclick = () => { socket.emit("saveas", save()); };
-document.getElementById("load-button").onclick = () => { socket.emit("load", {}); };
-document.getElementById("play-button").onclick = () => {
-    intervalId = setInterval(() => { socket.emit("step", build()); }, 200);
-};
-document.getElementById("play-button").onclick = () => {
-    if (!intervalId) {
-        intervalId = setInterval(() => { socket.emit("step", build()); }, 200);
-    }
-};
-document.getElementById("pause-button").onclick = pause;
-//=================================================================================
-//=================================================================================
-var modal = document.getElementById("sim-config-modal");
-var simModeElement = document.getElementById("sim-mode");
-var preScriptElement = document.getElementById("pre-script");
-function closeModal() {
-    modal.style.display = "none";
-}
-document.getElementById("sim-config-button").onclick = function (evt) {
-    simModeElement.value = PNManager.net.simMode;
-    preScriptElement.value = PNManager.net.preScript;
-    modal.style.display = "block";
-};
-document.getElementById("sim-config-save").onclick = function (evt) {
-    PNManager.net.simMode = simModeElement.value;
-    PNManager.net.preScript = preScriptElement.value;
-    closeModal();
-};
-modal.onmousedown = function (event) {
-    let ele = event.target;
-    if (ele.id == "inputs-modal") {
-        closeModal();
-    }
-};
-document.getElementById("sim-config-close").onclick = closeModal;
-document.getElementById("sim-config-cancel").onclick = closeModal;
+export { Simulator };

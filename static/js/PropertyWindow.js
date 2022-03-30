@@ -1,98 +1,60 @@
-class propertyChanges {
-    constructor(element, initialValues, currentValues) {
-        this.element = element;
-        this.initialValues = initialValues;
-        this.currentValues = currentValues;
+class ElementPropertyWindow {
+    constructor(PEType, attrNames) {
+        this.propertyWindow = document.getElementById('pw-' + PEType);
+        console.log(this.propertyWindow);
+        this._PEType = PEType;
+        this.idPrefix = "pw-" + PEType;
+        this._attrNames = attrNames;
+        this.changeObserver = null;
     }
-    setProps(props) {
-        for (let propertyName in props) {
-            this.element[propertyName] = props[propertyName];
-        }
+    getInputElement(attrName) {
+        return document.getElementById(this.idPrefix + '-' + attrName);
     }
-    undo() {
-        this.setProps(this.initialValues);
+    change(attrName) {
+        this.changeObserver(attrName, this.getInputElement(attrName).value);
     }
-    redo() {
-        this.setProps(this.currentValues);
-    }
-}
-class ElementPropertiesWindow {
-    constructor(PNElementName, propertyNames) {
-        this.propertyWindow = document.getElementById('pw-' + PNElementName);
-        this.propertyNames = propertyNames;
-        this.element = null;
-        this.idPrefix = "pw-" + PNElementName;
-        this.initialValues = {};
-    }
-    open() {
+    open(changeObserver, data) {
+        this.changeObserver = changeObserver;
         this.propertyWindow.style.display = "block";
+        for (const attrName of this._attrNames) {
+            let inputElement = this.getInputElement(attrName);
+            inputElement.value = data[attrName];
+        }
     }
     close() {
+        // this.changeObserver = null
         this.propertyWindow.style.display = "none";
     }
-    show(element) {
-        this.open();
-        this.element = element;
-        this.initialValues = {};
-        for (let propertyName of this.propertyNames) {
-            let input = document.getElementById(this.idPrefix + '-' + propertyName);
-            input.value = element[propertyName];
-            this.initialValues[propertyName] = element[propertyName];
-        }
-    }
-    resumeChanges() {
-        let currentValues = {};
-        for (let propertyName of this.propertyNames) {
-            currentValues[propertyName] = this.element[propertyName];
-        }
-        return new propertyChanges(this.element, this.initialValues, currentValues);
-    }
-    change(evt) {
-        let attr = evt.target.id.split('-').pop();
-        if (evt.target.value !== this.element[attr]) {
-            this.element[attr] = evt.target.value;
-        }
-    }
 }
-const propertyNames = {
-    place: ["name", "type", "initialMark"],
+const attrNames = {
+    place: ["name", "placeType", "initialMark"],
     trans: ["name", "time", "guard"],
-    arc: ["type", "weight"]
+    arc: ["arcType", "weight"]
 };
 class PropertyWindow {
     constructor() {
-        this.windows = {};
-        for (let key in propertyNames) {
-            this.windows[key] = new ElementPropertiesWindow(key, propertyNames[key]);
+        this.currentWindow = null;
+        this.elePropWindows = {};
+        for (const PEType in attrNames) {
+            const ePW = new ElementPropertyWindow(PEType, attrNames[PEType]);
+            for (const attrName of attrNames[PEType]) {
+                let inputElement = ePW.getInputElement(attrName);
+                inputElement.addEventListener('change', evt => { ePW.change(attrName); });
+            }
+            this.elePropWindows[PEType] = ePW;
         }
-        this.current = null;
     }
-    show(element) {
-        this.current = this.windows[element.PNElementType];
-        this.current.show(element);
+    open(PEType, changeObserver, data) {
+        this.currentWindow = this.elePropWindows[PEType];
+        this.currentWindow.open(changeObserver, data);
+        console.log(this.currentWindow);
     }
     close() {
-        if (this.current) {
-            this.current.close();
-            this.current = null;
-        }
-    }
-    resumeChanges() {
-        if (this.current) {
-            return this.current.resumeChanges();
+        console.log(this.currentWindow);
+        if (this.currentWindow) {
+            this.currentWindow.close();
+            this.currentWindow = null;
         }
     }
 }
-export var propertyWindow = new PropertyWindow();
-for (let windowName in propertyWindow.windows) {
-    let window = propertyWindow.windows[windowName];
-    for (let propertyName of window.propertyNames) {
-        document.getElementById(window.idPrefix + "-" + propertyName)
-            .addEventListener('blur', focusOut);
-    }
-}
-function focusOut(evt) {
-    if (propertyWindow.current) {
-        propertyWindow.current.change(evt);
-    }
-}
+export { PropertyWindow };

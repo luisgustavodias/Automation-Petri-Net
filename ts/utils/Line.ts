@@ -29,5 +29,22 @@ export function getLineMidPoint(line: SVGLineElement) {
 }
 
 export function getLineDirection(line: SVGLineElement) {
-    return getLineEndPoint(line).sub(getLineStartPoint(line))
+    return getLineEndPoint(line).sub(getLineStartPoint(line)).norm()
+}
+
+export function updateLine(
+    line: SVGLineElement, 
+    startPoint: Vector, 
+    endPoint: Vector
+) {
+    setLineStartPoint(line, startPoint)
+    setLineEndPoint(line, endPoint)
+}
+
+export function invertLine(line: SVGLineElement) {
+    updateLine(
+        line,
+        getLineEndPoint(line),
+        getLineStartPoint(line),
+    )
 }
