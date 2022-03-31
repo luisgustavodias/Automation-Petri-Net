@@ -26,3 +26,10 @@ export function updateLine(line, startPoint, endPoint) {
 export function invertLine(line) {
     updateLine(line, getLineEndPoint(line), getLineStartPoint(line));
 }
+export function createLine(startPoint, endPoint) {
+    const line = document
+        .createElementNS('http://www.w3.org/2000/svg', 'line');
+    setLineStartPoint(line, startPoint);
+    setLineEndPoint(line, endPoint);
+    return line;
+}

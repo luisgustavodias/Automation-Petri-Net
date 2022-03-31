@@ -1,5 +1,5 @@
 import Vector from "./utils/Vector.js";
-import { setLineStartPoint, setLineEndPoint } from "./utils/Line.js";
+import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/Line.js";
 const SVG_BG_ID = 'svg-background';
 class GenericTool {
     constructor(netManager, buttonId) {
@@ -32,10 +32,7 @@ class PetriElementTool extends GenericTool {
 class ArcTool extends GenericTool {
     constructor(netManager) {
         super(netManager, "arc-tool");
-        this.line = document
-            .createElementNS('http://www.w3.org/2000/svg', 'line');
-        setLineStartPoint(this.line, new Vector(20, 20));
-        setLineEndPoint(this.line, new Vector(20, 80));
+        this.line = createLine(new Vector(20, 20), new Vector(20, 80));
         // this.netManager.addIE(<SVGAElement><unknown>this.line)
         this.line.setAttribute('stroke', 'black');
         this.line.setAttribute('stroke-dasharray', '3 1');

@@ -48,3 +48,12 @@ export function invertLine(line: SVGLineElement) {
         getLineStartPoint(line),
     )
 }
+
+export function createLine(startPoint: Vector, endPoint: Vector) {
+    const line = <SVGLineElement><unknown>document
+        .createElementNS('http://www.w3.org/2000/svg', 'line')
+    setLineStartPoint(line, startPoint)
+    setLineEndPoint(line, endPoint)
+
+    return line
+}

@@ -18,21 +18,26 @@ function addListeners(toolBar) {
 }
 function testNetManager(netManager) {
     const placeId = netManager.createPlace(new Vector(100, 50));
-    const transId = netManager.createTrans(new Vector(150, 50));
-    netManager.createArc(placeId, transId, "Input");
     const placeId2 = netManager.createPlace(new Vector(50, 100));
+    const placeId3 = netManager.createPlace(new Vector(150, 150));
+    const transId = netManager.createTrans(new Vector(150, 50));
     const transId2 = netManager.createTrans(new Vector(75, 150));
     const transId3 = netManager.createTrans(new Vector(50, 50));
-    netManager.createArc(placeId2, transId2, "Output");
-    netManager.createArc(placeId, transId2, "Inhibitor");
-    const arcId = netManager.createArc(placeId2, transId2, "Inhibitor");
+    const arcId = netManager.createArc(placeId2, transId2, "Output");
+    const arcId2 = netManager.createArc(placeId, transId, "Input");
+    const arcId3 = netManager.createArc(placeId, transId2, "Inhibitor");
+    netManager.createArc(placeId3, transId2, "Input");
     netManager.createArc(placeId2, transId3, "Input");
     netManager.createArc(placeId, transId3, "Output");
+    netManager.createArc(placeId3, transId, "Output");
     netManager.zoom(new Vector(100, 100), 0.7);
     netManager.moveScreen(new Vector(20, 20));
     netManager.selectPE(placeId);
-    netManager.setGenericPEAttr(arcId, 'weight', '3');
-    netManager.setGenericPEAttr(placeId, 'initialMark', '1');
+    netManager.setGenericPEAttr(arcId, 'weight', '2');
+    netManager.setGenericPEAttr(arcId2, 'weight', '2');
+    netManager.setGenericPEAttr(arcId3, 'weight', '3');
+    netManager.setGenericPEAttr(placeId, 'initialMark', '6');
+    netManager.setGenericPEAttr(placeId3, 'initialMark', '7');
 }
 function main() {
     console.log('Creating net');

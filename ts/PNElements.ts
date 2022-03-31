@@ -4,6 +4,7 @@ import {
     getLineMidPoint, setLineEndPoint, setLineStartPoint, getLineDirection
 } from './utils/Line.js';
 import { Arrow } from "./utils/Arrow.js";
+import { createCircle } from "./utils/Circle.js";
 
 const arcNodeModel = <SVGAElement><unknown>document.getElementById('arc-node-model')
 
@@ -109,7 +110,8 @@ class APetriElement extends AGenericPetriElement {
 }
 
 class PetriPlace extends APetriElement {
-    static placeRadius = 7.5
+    static placeRadius = 8
+    static tokenRadius = 1.5
     readonly PEType = 'place'
 
     constructor (ele: SVGGElement) {
@@ -120,12 +122,104 @@ class PetriPlace extends APetriElement {
     get placeType() { return this.getPEText('placeType') }
     set placeType(val: string) { this.setPEText('placeType', val) }
 
-    set mark(val: string) { this.setPEText('mark', val) }
+    set mark(val: string) { 
+        this.svgElement.children[1].innerHTML = ''
+
+        let tokens: SVGCircleElement[] = []
+        if (val === '0') {
+            return
+        } else if (val === '1') {
+            tokens = [this.createToken(new Vector(0, 0))]
+        } else if (val === '2') {
+            const d = PetriPlace.tokenRadius * 1.3
+            tokens = [
+                this.createToken(new Vector(-d, 0)),
+                this.createToken(new Vector(d, 0))                
+            ]
+        } else if (val === '3') {
+            const d = PetriPlace.tokenRadius * 1.3
+            tokens = [
+                this.createToken(new Vector(0, -d)),
+                this.createToken(new Vector(-d, d)),                
+                this.createToken(new Vector(d, d))                
+            ]
+        } else if (val === '4') {
+            const d = PetriPlace.tokenRadius * 1.3
+            tokens = [
+                this.createToken(new Vector(-d, -d)),
+                this.createToken(new Vector(-d, d)),
+                this.createToken(new Vector(d, -d)),                
+                this.createToken(new Vector(d, d))                
+            ]
+        } else if (val === '5') {
+            const d = PetriPlace.tokenRadius * 1.7
+            tokens = [
+                this.createToken(new Vector(0, 0)),
+                this.createToken(new Vector(-d, -d)),
+                this.createToken(new Vector(-d, d)),
+                this.createToken(new Vector(d, -d)),                
+                this.createToken(new Vector(d, d))                
+            ]
+        } else if (val === '6') {
+            const d1 = PetriPlace.tokenRadius * 1.3
+            const d2 = PetriPlace.tokenRadius * 2.3
+            tokens = [
+                this.createToken(new Vector(-d2, -d1)),
+                this.createToken(new Vector(-d2, d1)),
+                this.createToken(new Vector(0, -d1)),
+                this.createToken(new Vector(0, d1)),
+                this.createToken(new Vector(d2, -d1)),                
+                this.createToken(new Vector(d2, d1))                
+            ]
+        } else if (val === '7') {
+            const d1 = PetriPlace.tokenRadius * 1.3
+            const d2 = PetriPlace.tokenRadius * 2.3
+            tokens = [
+                this.createToken(new Vector(-d2, -d1)),
+                this.createToken(new Vector(-d2, d1)),
+                this.createToken(new Vector(0, -d2)),
+                this.createToken(new Vector(0, 0)),
+                this.createToken(new Vector(0, d2)),
+                this.createToken(new Vector(d2, -d1)),                
+                this.createToken(new Vector(d2, d1))                
+            ]
+        } else {
+            const r = 0.68*PetriPlace.placeRadius
+            tokens = [
+                createCircle(new Vector(0, 0), r)               
+            ]
+
+            const textElement = document.createElementNS(
+                'http://www.w3.org/2000/svg', 'text'
+            )
+            textElement.setAttribute('fill', 'white')
+            textElement.setAttribute('text-anchor', 'middle')
+            textElement.setAttribute('dominant-baseline', 'middle')
+            textElement.setAttribute('transform', 'translate(0 0.5)')
+
+            if (parseInt(val) > 99) {
+                textElement.innerHTML = '99+'
+            } else {
+                textElement.innerHTML = val
+            }
+
+            this.svgElement.children[1].appendChild(textElement)
+        }
+
+        
+        for (const token of tokens) {
+            this.svgElement.children[1].prepend(token)
+        }
+    }
 
     get initialMark() { return this.svgElement.getAttribute('initialMark') }
     set initialMark(val: string) {
         this.svgElement.setAttribute('initialMark', val)
         this.mark = val
+    }
+
+    createToken(pos: Vector) {
+        return createCircle(pos, PetriPlace.tokenRadius)
     }
 
     static getConnectionPoint(placePos: Vector, u: Vector) {
@@ -201,7 +295,6 @@ class PetriArc extends AGenericPetriElement {
             this.getPETextElement('weight')
                 .setAttribute('visibility', 'visible')
         }
-
     }
     get arcType() { return this._arcType }
     set arcType(val: ArcType) {
