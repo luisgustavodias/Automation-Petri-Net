@@ -6,8 +6,11 @@ import {
     PetriArc,
     ArcType
 } from "./PNElements.js"
+import { createCircle, setCircleCenter } from "./utils/Circle.js"
+import Vector from "./utils/Vector.js"
 
-const FIRE_TRANS_ANIMATION_TIME = 1000
+const FIRE_TRANS_ANIMATION_TIME = 1500
+const STEP_INTERVAL_TIME = 250
 const TRANS_ENABLE_COLOR = '#04c200'
 const TRANS_FIRE_COLOR = 'red'
 
@@ -21,21 +24,52 @@ interface LogicalPetriArc {
 
 type ArcsByTrans = {[transId: string]: LogicalPetriArc[]}
 
-interface IStepResult {
-    enabledTransitions: string[]
-    transToFire: string
-    marksToUpdate: PlaceMarks
+function filterNetElementsByType(net: PetriNet, PEType: string) {
+    return Object.values(net.elements).filter(
+        (ele) => ele.PEType === PEType
+    )
 }
 
-class LogicalSimulator {
-    private placeMarks: PlaceMarks
-    private arcsByTrans: ArcsByTrans
+class LogicalNet {
+    readonly placeMarks: PlaceMarks
+    readonly arcsByTrans: ArcsByTrans
+    readonly transOrder: string[]
+    readonly transState: {[transId: string]: boolean}
 
-    constructor(placeMarks: PlaceMarks, arcsBytrans: ArcsByTrans) {
-        this.placeMarks = placeMarks
-        this.arcsByTrans = arcsBytrans
-        console.log(placeMarks)
-        console.log(arcsBytrans)
+    constructor(net: PetriNet) {
+        const places = <PetriPlace[]>filterNetElementsByType(
+            net, 'place'
+        )
+
+        this.placeMarks = {}
+        places.forEach((place) => { 
+            this.placeMarks[place.id] = parseInt(place.initialMark) 
+        })
+
+        const trasitions = <PetriTrans[]>filterNetElementsByType(
+            net, 'trans'
+        )
+        
+        // trasitions.sort((a, b) => a.priority - b.priority)
+        this.transOrder = []
+        this.arcsByTrans = {}
+        trasitions.forEach((trans) => { 
+            this.arcsByTrans[trans.id] = trans.connectedArcs.map(
+                (arcId) => {
+                    const arc = <PetriArc>net.elements[arcId]
+                    return {
+                        placeId: arc.placeId,
+                        arcType: arc.arcType,
+                        weight: parseInt(arc.weight)
+                    }
+                }
+            )
+            this.transOrder.push(trans.id)
+        })
+
+        this.transState = Object.fromEntries(trasitions.map(
+            trans => [trans.id, false]
+        ))
     }
 
     checkTrans(transId: string) {
@@ -55,6 +89,10 @@ class LogicalSimulator {
         return true
     }
 
+    getEnabledTransitions() {
+        return this.transOrder.filter(transId => this.transState[transId])
+    }
+
     fireTransResult(transId: string) {
         const result: PlaceMarks = {}
         for (const arc of this.arcsByTrans[transId]) {
@@ -71,77 +109,34 @@ class LogicalSimulator {
         return result
     }
 
-    upadatePlaceMarks(marksToUpdate: PlaceMarks) {
+    updateTransState() {
+        for (const transId in this.transState) {
+            this.transState[transId] = this.checkTrans(transId)
+        }
+    }
+
+    updatePlaceMarks(marksToUpdate: PlaceMarks) {
         Object.assign(this.placeMarks, marksToUpdate)
     }
+}
 
-    step(): IStepResult {
-        const enabledTransitions = Object.keys(this.arcsByTrans)
-            .filter(transId => this.checkTrans(transId) )
-        if (!enabledTransitions.length) {
-            return {
-                enabledTransitions: [],
-                transToFire: null,
-                marksToUpdate: null
-            }
-        }
 
-        const marksToUpdate = this.fireTransResult(
-            enabledTransitions[0]
-        )
-
-        this.upadatePlaceMarks(marksToUpdate)
-
-        return {
-            enabledTransitions: enabledTransitions,
-            transToFire: enabledTransitions[0],
-            marksToUpdate: marksToUpdate
-        }
-    }
+interface IStepResult {
+    enabledTransitions: string[]
+    transToFire: string
+    marksToUpdate: PlaceMarks
 }
 
 
 class Simulator {
     private net: PetriNet
     private playing: boolean
-    simulator: LogicalSimulator
+    private logicalNet: LogicalNet
 
     constructor(net: PetriNet) {
         this.net = net
         this.playing = false
-        this.simulator = null
-    }
-
-    private init() {
-        const placeMarks: PlaceMarks = {}
-        const places = <PetriPlace[]>this.filterNetElementsByType('place')
-        places.forEach((place) => { 
-            placeMarks[place.id] = parseInt(place.initialMark) 
-        })
-
-        const arcsByTrans: ArcsByTrans = {}
-        const trasitions = <PetriTrans[]>this.filterNetElementsByType('trans')
-        trasitions.forEach((trans) => { 
-            arcsByTrans[trans.id] = trans.connectedArcs.map(
-                (arcId) => {
-                    const arc = <PetriArc>this.net.elements[arcId]
-                    return {
-                        placeId: arc.placeId,
-                        arcType: arc.arcType,
-                        weight: parseInt(arc.weight)
-                    }
-                }
-            )
-        })
-
-        this.simulator = new LogicalSimulator(placeMarks, arcsByTrans)
-        this.updatePlaceMarks(placeMarks)
-    }
-
-    filterNetElementsByType(PEType: string) {
-        return Object.values(this.net.elements).filter(
-            (ele) => ele.PEType === PEType
-        )
+        this.logicalNet = null
     }
 
     updatePlaceMarks(marksToUpdate: PlaceMarks) {
@@ -171,22 +166,94 @@ class Simulator {
         this.setTransColor(trans, 'black')
     }
 
+    updateTransitions() {
+        for (const transId in this.logicalNet.transState) {
+            if (this.logicalNet.transState[transId]) {
+                this.enableTrans(transId)
+            } else {
+                this.disableTrans(transId)
+            }
+        }
+    }
+
+    newTokenAnimation(arc: PetriArc) {
+        const place = <PetriPlace>this.net.elements[arc.placeId]
+        const trans = <PetriTrans>this.net.elements[arc.transId]
+        const placePos = place.position
+        const transPos = trans.position
+
+        let startPoint: Vector, v: Vector
+        if (arc.arcType === 'Input') {
+            startPoint = placePos
+            v = transPos.sub(placePos)
+        } else if (arc.arcType === 'Output') {
+            startPoint = transPos
+            v = placePos.sub(transPos)
+        } else {
+            throw `Can't create a animation to a ${arc.arcType} arc.`
+        }
+
+        const animDuration = FIRE_TRANS_ANIMATION_TIME/2
+        const vel = v.mul(1/animDuration)
+
+        const token = createCircle(startPoint, 2)
+        document.getElementById('IEs').appendChild(token)
+
+        let startTime = null;
+
+        function animFunc(timestamp: number) {
+            if (!startTime) { startTime = timestamp }
+
+            const t = (timestamp - startTime)
+            if (t > animDuration) {
+                token.remove()
+                return
+            }
+
+            setCircleCenter(
+                token,
+                startPoint.add(vel.mul(t))
+            )
+            requestAnimationFrame(animFunc) 
+        }
+
+        requestAnimationFrame(animFunc)
+    }
+
     fireTrans(transId: string, marksToUpdate: PlaceMarks) {
         const trans = <PetriTrans>this.net.elements[transId]
         this.setTransColor(trans, TRANS_FIRE_COLOR)
+        for (const arcId of trans.connectedArcs) {
+            const arc = <PetriArc>this.net.elements[arcId]
+            if (arc.arcType === 'Input') {
+                this.newTokenAnimation(arc)
+                const place = <PetriPlace>this.net.elements[arc.placeId]
+                place.mark = String(marksToUpdate[arc.placeId])
+            }
+        }
         setTimeout(() => {
-            this.disableTrans(transId)
+            for (const arcId of trans.connectedArcs) {
+                const arc = <PetriArc>this.net.elements[arcId]
+                if (arc.arcType === 'Output') {
+                    this.newTokenAnimation(arc)
+                }
+            }
+        }, FIRE_TRANS_ANIMATION_TIME/2)
+        setTimeout(() => {
+            this.logicalNet.updatePlaceMarks(marksToUpdate)
+            this.logicalNet.updateTransState()
             this.updatePlaceMarks(marksToUpdate)
+            this.updateTransitions()
 
             if (this.playing) {
-                this._step()
+                setTimeout(() => {this._step()}, STEP_INTERVAL_TIME)
             }
         }, FIRE_TRANS_ANIMATION_TIME)
     }
 
     start() {
-        if (!this.simulator) {
-            this.init()
+        if (!this.logicalNet) {
+            this.restart()
         } 
         this.playing = true
         this._step()
@@ -197,27 +264,33 @@ class Simulator {
     }
 
     restart() {
-        this.init()
+        this.logicalNet = new LogicalNet(this.net)
+        this.logicalNet.updateTransState()
     }
 
     private _step() {
-        const stepResult = this.simulator.step()
-        console.log(stepResult)
-        stepResult.enabledTransitions.forEach(transId => {
-            this.enableTrans(transId)
-        })
+        const enabledTransitions = this.logicalNet.getEnabledTransitions()
 
-        if (stepResult.transToFire) {
+        if (enabledTransitions.length) {
             this.fireTrans(
-                stepResult.transToFire,
-                stepResult.marksToUpdate
+                enabledTransitions[0],
+                this.logicalNet.fireTransResult(
+                    enabledTransitions[0]
+                )
             )
+        } else {
+            this.logicalNet.updateTransState()
+            setTimeout(() => { 
+                if (this.playing) {
+                    this._step()
+                } 
+            }, STEP_INTERVAL_TIME)
         }
     }
 
     step() {
-        if (!this.simulator) {
-            this.init()
+        if (!this.logicalNet) {
+            this.restart()
         } 
         this._step()
     }

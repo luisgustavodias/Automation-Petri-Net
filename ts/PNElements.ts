@@ -188,6 +188,7 @@ class PetriPlace extends APetriElement {
             tokens = [
                 createCircle(new Vector(0, 0), r)               
             ]
+            tokens[0].setAttribute('pe-parent', this.id)
 
             const textElement = document.createElementNS(
                 'http://www.w3.org/2000/svg', 'text'
@@ -196,6 +197,7 @@ class PetriPlace extends APetriElement {
             textElement.setAttribute('text-anchor', 'middle')
             textElement.setAttribute('dominant-baseline', 'middle')
             textElement.setAttribute('transform', 'translate(0 0.5)')
+            textElement.setAttribute('pe-parent', this.id)
 
             if (parseInt(val) > 99) {
                 textElement.innerHTML = '99+'
@@ -219,7 +221,10 @@ class PetriPlace extends APetriElement {
     }
 
     createToken(pos: Vector) {
-        return createCircle(pos, PetriPlace.tokenRadius)
+        const token = createCircle(pos, PetriPlace.tokenRadius)
+        token.setAttribute('pe-parent', this.id)
+
+        return token
     }
 
     static getConnectionPoint(placePos: Vector, u: Vector) {
@@ -436,7 +441,6 @@ class PetriArc extends AGenericPetriElement {
                 )
             }
         }
-        
     }
 
     select() {

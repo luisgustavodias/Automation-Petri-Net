@@ -1,12 +1,34 @@
-const FIRE_TRANS_ANIMATION_TIME = 1000;
+import { createCircle, setCircleCenter } from "./utils/Circle.js";
+const FIRE_TRANS_ANIMATION_TIME = 1500;
+const STEP_INTERVAL_TIME = 250;
 const TRANS_ENABLE_COLOR = '#04c200';
 const TRANS_FIRE_COLOR = 'red';
-class LogicalSimulator {
-    constructor(placeMarks, arcsBytrans) {
-        this.placeMarks = placeMarks;
-        this.arcsByTrans = arcsBytrans;
-        console.log(placeMarks);
-        console.log(arcsBytrans);
+function filterNetElementsByType(net, PEType) {
+    return Object.values(net.elements).filter((ele) => ele.PEType === PEType);
+}
+class LogicalNet {
+    constructor(net) {
+        const places = filterNetElementsByType(net, 'place');
+        this.placeMarks = {};
+        places.forEach((place) => {
+            this.placeMarks[place.id] = parseInt(place.initialMark);
+        });
+        const trasitions = filterNetElementsByType(net, 'trans');
+        // trasitions.sort((a, b) => a.priority - b.priority)
+        this.transOrder = [];
+        this.arcsByTrans = {};
+        trasitions.forEach((trans) => {
+            this.arcsByTrans[trans.id] = trans.connectedArcs.map((arcId) => {
+                const arc = net.elements[arcId];
+                return {
+                    placeId: arc.placeId,
+                    arcType: arc.arcType,
+                    weight: parseInt(arc.weight)
+                };
+            });
+            this.transOrder.push(trans.id);
+        });
+        this.transState = Object.fromEntries(trasitions.map(trans => [trans.id, false]));
     }
     checkTrans(transId) {
         for (const arc of this.arcsByTrans[transId]) {
@@ -23,6 +45,9 @@ class LogicalSimulator {
         }
         return true;
     }
+    getEnabledTransitions() {
+        return this.transOrder.filter(transId => this.transState[transId]);
+    }
     fireTransResult(transId) {
         const result = {};
         for (const arc of this.arcsByTrans[transId]) {
@@ -37,57 +62,20 @@ class LogicalSimulator {
         }
         return result;
     }
-    upadatePlaceMarks(marksToUpdate) {
-        Object.assign(this.placeMarks, marksToUpdate);
-    }
-    step() {
-        const enabledTransitions = Object.keys(this.arcsByTrans)
-            .filter(transId => this.checkTrans(transId));
-        if (!enabledTransitions.length) {
-            return {
-                enabledTransitions: [],
-                transToFire: null,
-                marksToUpdate: null
-            };
+    updateTransState() {
+        for (const transId in this.transState) {
+            this.transState[transId] = this.checkTrans(transId);
         }
-        const marksToUpdate = this.fireTransResult(enabledTransitions[0]);
-        this.upadatePlaceMarks(marksToUpdate);
-        return {
-            enabledTransitions: enabledTransitions,
-            transToFire: enabledTransitions[0],
-            marksToUpdate: marksToUpdate
-        };
+    }
+    updatePlaceMarks(marksToUpdate) {
+        Object.assign(this.placeMarks, marksToUpdate);
     }
 }
 class Simulator {
     constructor(net) {
         this.net = net;
         this.playing = false;
-        this.simulator = null;
-    }
-    init() {
-        const placeMarks = {};
-        const places = this.filterNetElementsByType('place');
-        places.forEach((place) => {
-            placeMarks[place.id] = parseInt(place.initialMark);
-        });
-        const arcsByTrans = {};
-        const trasitions = this.filterNetElementsByType('trans');
-        trasitions.forEach((trans) => {
-            arcsByTrans[trans.id] = trans.connectedArcs.map((arcId) => {
-                const arc = this.net.elements[arcId];
-                return {
-                    placeId: arc.placeId,
-                    arcType: arc.arcType,
-                    weight: parseInt(arc.weight)
-                };
-            });
-        });
-        this.simulator = new LogicalSimulator(placeMarks, arcsByTrans);
-        this.updatePlaceMarks(placeMarks);
-    }
-    filterNetElementsByType(PEType) {
-        return Object.values(this.net.elements).filter((ele) => ele.PEType === PEType);
+        this.logicalNet = null;
     }
     updatePlaceMarks(marksToUpdate) {
         for (const placeId in marksToUpdate) {
@@ -111,20 +99,84 @@ class Simulator {
         const trans = this.net.elements[id];
         this.setTransColor(trans, 'black');
     }
+    updateTransitions() {
+        for (const transId in this.logicalNet.transState) {
+            if (this.logicalNet.transState[transId]) {
+                this.enableTrans(transId);
+            }
+            else {
+                this.disableTrans(transId);
+            }
+        }
+    }
+    newTokenAnimation(arc) {
+        const place = this.net.elements[arc.placeId];
+        const trans = this.net.elements[arc.transId];
+        const placePos = place.position;
+        const transPos = trans.position;
+        let startPoint, v;
+        if (arc.arcType === 'Input') {
+            startPoint = placePos;
+            v = transPos.sub(placePos);
+        }
+        else if (arc.arcType === 'Output') {
+            startPoint = transPos;
+            v = placePos.sub(transPos);
+        }
+        else {
+            throw `Can't create a animation to a ${arc.arcType} arc.`;
+        }
+        const animDuration = FIRE_TRANS_ANIMATION_TIME / 2;
+        const vel = v.mul(1 / animDuration);
+        const token = createCircle(startPoint, 2);
+        document.getElementById('IEs').appendChild(token);
+        let startTime = null;
+        function animFunc(timestamp) {
+            if (!startTime) {
+                startTime = timestamp;
+            }
+            const t = (timestamp - startTime);
+            if (t > animDuration) {
+                token.remove();
+                return;
+            }
+            setCircleCenter(token, startPoint.add(vel.mul(t)));
+            requestAnimationFrame(animFunc);
+        }
+        requestAnimationFrame(animFunc);
+    }
     fireTrans(transId, marksToUpdate) {
         const trans = this.net.elements[transId];
         this.setTransColor(trans, TRANS_FIRE_COLOR);
+        for (const arcId of trans.connectedArcs) {
+            const arc = this.net.elements[arcId];
+            if (arc.arcType === 'Input') {
+                this.newTokenAnimation(arc);
+                const place = this.net.elements[arc.placeId];
+                place.mark = String(marksToUpdate[arc.placeId]);
+            }
+        }
         setTimeout(() => {
-            this.disableTrans(transId);
+            for (const arcId of trans.connectedArcs) {
+                const arc = this.net.elements[arcId];
+                if (arc.arcType === 'Output') {
+                    this.newTokenAnimation(arc);
+                }
+            }
+        }, FIRE_TRANS_ANIMATION_TIME / 2);
+        setTimeout(() => {
+            this.logicalNet.updatePlaceMarks(marksToUpdate);
+            this.logicalNet.updateTransState();
             this.updatePlaceMarks(marksToUpdate);
+            this.updateTransitions();
             if (this.playing) {
-                this._step();
+                setTimeout(() => { this._step(); }, STEP_INTERVAL_TIME);
             }
         }, FIRE_TRANS_ANIMATION_TIME);
     }
     start() {
-        if (!this.simulator) {
-            this.init();
+        if (!this.logicalNet) {
+            this.restart();
         }
         this.playing = true;
         this._step();
@@ -133,21 +185,26 @@ class Simulator {
         this.playing = false;
     }
     restart() {
-        this.init();
+        this.logicalNet = new LogicalNet(this.net);
+        this.logicalNet.updateTransState();
     }
     _step() {
-        const stepResult = this.simulator.step();
-        console.log(stepResult);
-        stepResult.enabledTransitions.forEach(transId => {
-            this.enableTrans(transId);
-        });
-        if (stepResult.transToFire) {
-            this.fireTrans(stepResult.transToFire, stepResult.marksToUpdate);
+        const enabledTransitions = this.logicalNet.getEnabledTransitions();
+        if (enabledTransitions.length) {
+            this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));
+        }
+        else {
+            this.logicalNet.updateTransState();
+            setTimeout(() => {
+                if (this.playing) {
+                    this._step();
+                }
+            }, STEP_INTERVAL_TIME);
         }
     }
     step() {
-        if (!this.simulator) {
-            this.init();
+        if (!this.logicalNet) {
+            this.restart();
         }
         this._step();
     }
