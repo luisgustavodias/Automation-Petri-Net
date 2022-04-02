@@ -135,9 +135,6 @@ class MouseTool extends GenericTool {
             this.netManager.deselectPE();
             this.netManager.removeElement(PEId);
         }
-        // else if (evt.key === 'z' && evt.ctrlKey) {
-        //     undoRedoManager.undo()
-        // }
     }
     onChangeTool() {
         this.netManager.deselectPE();
@@ -190,11 +187,16 @@ export default class ToolBar {
         this.netManager.zoom(this.netManager.getMousePosition(evt), scale);
     }
     keydown(evt) {
-        console.log('keydown');
         let ele = evt.target;
         if (ele.tagName === "BODY") {
             if (evt.key === 'Shift') {
                 this.netManager.toggleGrid();
+            }
+            else if (evt.key === 'z' && evt.ctrlKey) {
+                this.netManager.undo();
+            }
+            else if (evt.key === 'y' && evt.ctrlKey) {
+                this.netManager.redo();
             }
             this.currentTool.onKeyDown(evt);
         }

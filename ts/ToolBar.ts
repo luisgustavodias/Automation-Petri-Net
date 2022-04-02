@@ -38,7 +38,7 @@ class PetriElementTool extends GenericTool {
         this.createMethod = createMethod;
     }
 
-    onMouseDown(evt: Event) {
+    onMouseDown(evt: MouseEvent) {
         const ele = <SVGAElement>evt.target
         if (ele.id === SVG_BG_ID) {
             const coord = this.netManager.getMousePosition(evt)
@@ -69,7 +69,7 @@ class ArcTool extends GenericTool {
         this.line.remove()
     }
 
-    onMouseDown(evt: Event) {
+    onMouseDown(evt: MouseEvent) {
         const target = <SVGAElement>evt.target
 
         if (target.id === SVG_BG_ID) {
@@ -90,7 +90,7 @@ class ArcTool extends GenericTool {
         }
     }
 
-    onMouseMove(evt: Event) {
+    onMouseMove(evt: MouseEvent) {
         if (!this.mouseDownPos) { return }
 
         const u = this.netManager.getMousePosition(evt)
@@ -196,9 +196,6 @@ class MouseTool extends GenericTool {
             this.netManager.deselectPE()
             this.netManager.removeElement(PEId)
         }
-        // else if (evt.key === 'z' && evt.ctrlKey) {
-        //     undoRedoManager.undo()
-        // }
     }
 
     onChangeTool() {
@@ -242,7 +239,7 @@ export default class ToolBar {
         this.currentTool.onMouseUp(evt);
     }
     
-    mousemove(evt: Event) {
+    mousemove(evt: MouseEvent) {
         if (this.movingScreenOffset) {
             this.netManager.moveScreen(
                 this.netManager.getMousePosition(evt)
@@ -268,12 +265,17 @@ export default class ToolBar {
         )
     }
 
-    keydown(evt) {
-        console.log('keydown')
+    keydown(evt: KeyboardEvent) {
         let ele = <HTMLElement>evt.target
         if(ele.tagName === "BODY") {
             if (evt.key === 'Shift') {
                 this.netManager.toggleGrid()
+            }
+            else if (evt.key === 'z' && evt.ctrlKey) {
+                this.netManager.undo()
+            }
+            else if (evt.key === 'y' && evt.ctrlKey) {
+                this.netManager.redo()
             }
             this.currentTool.onKeyDown(evt)
         }

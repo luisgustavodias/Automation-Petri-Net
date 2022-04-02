@@ -3,9 +3,7 @@ import Vector from "./utils/Vector.js"
 // import { v4 as uuidv4 } from '../node_modules/uuid/wrapper.mjs';
 import { AGenericPetriElement, APetriElement, PetriPlace, 
     PetriTrans, PetriArc, ArcType } from "./PNElements.js";
-// import { Change, undoRedoManager, UndoRedoManager } from "./UndoRedoHandler.js";
-
-export var svg: SVGElement = <SVGElement><unknown>document.getElementById('my-svg');
+import { Change, UndoRedoManager } from "./UndoRedoManager.js";
 
 export class PetriNet {
     readonly svgElement: SVGSVGElement
@@ -97,65 +95,106 @@ export class PetriNet {
         return element
     }
 
-    setGenericPEAttr(PEId: string, attr: string, val: string) {
+    getGenericPEAttr(PEId: string, attrName: string) {
+        return this.elements[PEId][attrName]
+    }
+
+    setGenericPEAttr(PEId: string, attrName: string, val: string) {
         const ele = this.elements[PEId]
-        ele[attr] = val
+        ele[attrName] = val
     }
 }
 
-const PLACE_GROUP_INDEX = 2, TRANS_GROUP_INDEX = 2, ARC_GROUP_INDEX = 2;
-const PETRI_ELEMENT_ID_PREFIX = "PE", PLACE_DEFAULT_NAME_PREFIX = "p", TRANS_DEFAULT_NAME_PREFIX = "t";
+const PLACE_DEFAULT_NAME_PREFIX = "p", TRANS_DEFAULT_NAME_PREFIX = "t";
 
-// class CreateElementChange implements Change {
-//     net: PetriNet
-//     genericPE: AGenericPetriElement
+class CreateElementChange implements Change {
+    net: PetriNet
+    genericPE: AGenericPetriElement
 
-//     constructor(net: PetriNet, genericPE: AGenericPetriElement) {
-//         this.net = net
-//         this.genericPE = genericPE
-//     }
+    constructor(net: PetriNet, genericPE: AGenericPetriElement) {
+        this.net = net
+        this.genericPE = genericPE
+    }
 
-//     undo() {
-//         this.net.removeGenericPE(this.genericPE.id)
-//     }
+    undo() {
+        this.net.removeGenericPE(this.genericPE.id)
+    }
 
-//     redo() {
-//         this.net.addGenericPE(this.genericPE)
-//     }
-// }
+    redo() {
+        this.net.addGenericPE(this.genericPE)
+    }
+}
 
-// class RemoveElementChange implements Change {
-//     net: PetriNet
-//     genericPE: AGenericPetriElement
+class RemoveElementChange implements Change {
+    net: PetriNet
+    genericPE: AGenericPetriElement
 
-//     constructor(net: PetriNet, genericPE: AGenericPetriElement) {
-//         this.net = net
-//         this.genericPE = genericPE
-//     }
+    constructor(net: PetriNet, genericPE: AGenericPetriElement) {
+        this.net = net
+        this.genericPE = genericPE
+    }
 
-//     undo() {
-//         this.net.addGenericPE(this.genericPE)
-//     }
+    undo() {
+        this.net.addGenericPE(this.genericPE)
+    }
 
-//     redo() {
-//         this.net.removeGenericPE(this.genericPE.id)
-//     }
-// }
+    redo() {
+        this.net.removeGenericPE(this.genericPE.id)
+    }
+}
+
+class SetGenericPEAttrChange implements Change {
+    net: PetriNet
+    PEId: string
+    attrName: string
+    previousValue: string
+    newValue: string
+
+    constructor(
+        net: PetriNet, 
+        PEId: string,
+        attrName: string, 
+        previousValue: string,
+        newValue: string
+    ) {
+        this.net = net
+        this.PEId = PEId
+        this.attrName = attrName
+        this.previousValue = previousValue
+        this.newValue = newValue
+    }
+
+    undo() {
+        this.net.setGenericPEAttr(
+            this.PEId, this.attrName, this.previousValue
+        )
+    }
+
+    redo() {
+        this.net.setGenericPEAttr(
+            this.PEId, this.attrName, this.previousValue
+        )
+    }
+}
 
 const GRID_SIZE = 10;
 
 export class PetriNetManager {
+    // serve como uma iterface para a classe PetriNet
+    // tratando as funcionalidades de desfazer e refazer
+
     readonly net: PetriNet
     private _selectedPE: AGenericPetriElement
     selectObserver: (PEId: string) => void
     deselectObserver: () => void
-    // private undoRedoManager: UndoRedoManager
+    private undoRedoManager: UndoRedoManager
 
     constructor() {
         this.net = new PetriNet(
             <SVGSVGElement><unknown>document.getElementById('my-svg')
         )
         this._selectedPE = null
+        this.undoRedoManager = new UndoRedoManager()
     }
 
     get selectedPE() { return this._selectedPE }
@@ -176,12 +215,12 @@ export class PetriNetManager {
 
     private addGenericPE(genericPE: AGenericPetriElement) {
         this.net.addGenericPE(genericPE)
-        // this.undoRedoManager.registryChange(
-        //     new CreateElementChange(
-        //         this.net,
-        //         genericPE
-        //     )
-        // )
+        this.undoRedoManager.registryChange(
+            new CreateElementChange(
+                this.net,
+                genericPE
+            )
+        )
 
         return genericPE.id
     }
@@ -202,7 +241,7 @@ export class PetriNetManager {
         return petriElement
     }
 
-    getMousePosition(evt) {
+    getMousePosition(evt: MouseEvent) {
         const CTM = this.net.svgElement.getScreenCTM();
         const pos = new Vector(
             (evt.clientX - CTM.e) / CTM.a,
@@ -280,8 +319,15 @@ export class PetriNetManager {
         }
     }
 
-    setGenericPEAttr(PEId: string, attr: string, val: string) {
-        this.net.setGenericPEAttr(PEId, attr, val)
+    setGenericPEAttr(PEId: string, attrName: string, val: string) {
+        const previousValue = this.net.getGenericPEAttr(PEId, attrName)
+        this.net.setGenericPEAttr(PEId, attrName, val)
+
+        this.undoRedoManager.registryChange(
+            new SetGenericPEAttrChange(
+                this.net, PEId, attrName, previousValue, val
+            )
+        )
     }
 
     removeElement(elementId: string) {
@@ -291,15 +337,21 @@ export class PetriNetManager {
                 this.removeElement(ele.connectedArcs[0])
             }
         }
-
-        this.net.removeGenericPE(elementId)
         
-        // undoRedoManager.registryChange(
-        //     new RemoveElementChange(
-        //         this.net,
-        //         this.net.removeGenericPE(elementId)
-        //     )
-        // )
+        this.undoRedoManager.registryChange(
+            new RemoveElementChange(
+                this.net,
+                this.net.removeGenericPE(elementId)
+            )
+        )
+    }
+
+    undo() {
+        return this.undoRedoManager.undo()
+    }
+
+    redo() {
+        return this.undoRedoManager.redo()
     }
 
     toggleGrid() { this.net.grid = !this.net.grid }
