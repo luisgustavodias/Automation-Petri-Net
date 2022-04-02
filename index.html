@@ -136,6 +136,10 @@
             <rect x=25 y=25 width=20 height="50" />
             <rect x=55 y=25 width=20 height="50" />
         </svg>
+
+        <svg id="stop-button" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <rect x=25 y=25 width=50 height="50" />
+        </svg>
     </div>
 
     <div id="inputs-modal" class="modal">
@@ -148,6 +152,7 @@
                         <option value="INT">INT</option>
                     </select>
                 </td>
+                <td><input type="text" style="width: 40px;"></td>
                 <td><input type="text"></td>
             </tr>
         </template>
@@ -164,6 +169,7 @@
                         <tr>
                             <th>Name</th>
                             <th>Type</th>
+                            <th style="width: 40px;">Initial Value</th>
                             <th>Description</th>
                         </tr>
                     </thead>
@@ -252,7 +258,7 @@
             </div>
 
 
-            <div id="inputs-window" class="tabcontent" style="display: none;">
+            <div id="inputs-window" class="tabcontent" style="display: block;">
 
             </div>
         </div>
