@@ -38,5 +38,9 @@ export default class Vector {
 
     str() {
         return this.x + ',' + this.y;
-    }  
+    } 
+    
+    toJSON() {
+        return {x: this.x, y: this.y}
+    }
 }

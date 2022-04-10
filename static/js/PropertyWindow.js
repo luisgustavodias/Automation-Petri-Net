@@ -1,8 +1,6 @@
 class ElementPropertyWindow {
     constructor(PEType, attrNames) {
         this.propertyWindow = document.getElementById('pw-' + PEType);
-        console.log(this.propertyWindow);
-        this._PEType = PEType;
         this.idPrefix = "pw-" + PEType;
         this._attrNames = attrNames;
         this.changeObserver = null;
@@ -33,27 +31,29 @@ const attrNames = {
 };
 class PropertyWindow {
     constructor() {
-        this.currentWindow = null;
+        this.currentEPW = null;
         this.elePropWindows = {};
         for (const PEType in attrNames) {
             const ePW = new ElementPropertyWindow(PEType, attrNames[PEType]);
             for (const attrName of attrNames[PEType]) {
                 let inputElement = ePW.getInputElement(attrName);
-                inputElement.addEventListener('change', evt => { ePW.change(attrName); });
+                inputElement.addEventListener('change', evt => {
+                    ePW.change(attrName);
+                });
             }
             this.elePropWindows[PEType] = ePW;
         }
     }
     open(PEType, changeObserver, data) {
-        this.currentWindow = this.elePropWindows[PEType];
-        this.currentWindow.open(changeObserver, data);
-        console.log(this.currentWindow);
+        this.currentEPW = this.elePropWindows[PEType];
+        this.currentEPW.open(changeObserver, data);
+        console.log(this.currentEPW);
     }
     close() {
-        console.log(this.currentWindow);
-        if (this.currentWindow) {
-            this.currentWindow.close();
-            this.currentWindow = null;
+        console.log(this.currentEPW);
+        if (this.currentEPW) {
+            this.currentEPW.close();
+            this.currentEPW = null;
         }
     }
 }

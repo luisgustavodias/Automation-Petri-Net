@@ -6,6 +6,7 @@ import {
     PetriArc,
     ArcType
 } from "./PNElements.js"
+import { InputValues, InputWindow } from "./InputWindow.js"
 import { createCircle, setCircleCenter } from "./utils/Circle.js"
 import Vector from "./utils/Vector.js"
 
@@ -23,6 +24,7 @@ interface LogicalPetriArc {
 }
 
 type ArcsByTrans = {[transId: string]: LogicalPetriArc[]}
+type GuardFunc = (...args: number[]) => boolean
 
 function filterNetElementsByType(net: PetriNet, PEType: string) {
     return Object.values(net.elements).filter(
@@ -35,8 +37,11 @@ class LogicalNet {
     readonly arcsByTrans: ArcsByTrans
     readonly transOrder: string[]
     readonly transState: {[transId: string]: boolean}
+    readonly transGuards: {[transId: string]: string}
+    readonly transGuardFuncs: {[transId: string]: GuardFunc}
+    private readonly inputValues: Map<string, number> //InputValues
 
-    constructor(net: PetriNet) {
+    constructor(net: PetriNet, inputValues: InputValues) {
         const places = <PetriPlace[]>filterNetElementsByType(
             net, 'place'
         )
@@ -50,8 +55,14 @@ class LogicalNet {
             net, 'trans'
         )
         
+        this.inputValues = new Map()
+        for (const inputName in inputValues) {
+            this.inputValues.set(inputName, inputValues[inputName])
+        }
+
         // trasitions.sort((a, b) => a.priority - b.priority)
         this.transOrder = []
+        this.transGuardFuncs = {}
         this.arcsByTrans = {}
         trasitions.forEach((trans) => { 
             this.arcsByTrans[trans.id] = trans.connectedArcs.map(
@@ -65,11 +76,35 @@ class LogicalNet {
                 }
             )
             this.transOrder.push(trans.id)
+            
+            if (trans.guard) {
+                this.transGuardFuncs[trans.id] = this.createGuardFunc(
+                    trans.guard, [...this.inputValues.keys()]
+                )
+            } else {
+                this.transGuardFuncs[trans.id] = (...args) => true
+            }
         })
 
         this.transState = Object.fromEntries(trasitions.map(
             trans => [trans.id, false]
         ))
+
+
+    }
+
+    createGuardFunc(guard: string, inputNames: string[]): GuardFunc {
+        const decodedGuard = guard
+            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
+            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
+            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
+        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`)
+    }
+
+    updateInputValues(inputValues: InputValues) {
+        for (const inputName in inputValues) {
+            this.inputValues.set(inputName, inputValues[inputName])
+        }
     }
 
     checkTrans(transId: string) {
@@ -86,6 +121,9 @@ class LogicalNet {
             }
         }
         
+        if (!this.transGuardFuncs[transId](...this.inputValues.values()))
+            return false
+
         return true
     }
 
@@ -120,53 +158,47 @@ class LogicalNet {
     }
 }
 
-
-interface IStepResult {
-    enabledTransitions: string[]
-    transToFire: string
-    marksToUpdate: PlaceMarks
-}
-
-
 class Simulator {
     private net: PetriNet
     private playing: boolean
     private logicalNet: LogicalNet
+    private inputWindow: InputWindow
 
     constructor(net: PetriNet) {
         this.net = net
         this.playing = false
         this.logicalNet = null
+        this.inputWindow = null
     }
 
-    updatePlaceMarks(marksToUpdate: PlaceMarks) {
+    private updatePlaceMarks(marksToUpdate: PlaceMarks) {
         for (const placeId in marksToUpdate) {
             const place = <PetriPlace>this.net.elements[placeId]
             place.mark = String(marksToUpdate[placeId])
         }
     }
 
-    setTransColor(trans: PetriTrans, color: string) {
+    private setTransColor(trans: PetriTrans, color: string) {
         trans.svgElement.children[0].setAttribute('stroke', color)
     }
 
-    setArcColor(arc: PetriArc, color: string) {
+    private setArcColor(arc: PetriArc, color: string) {
         arc.svgElement.children[0].setAttribute('stroke', color)
         arc.svgElement.children[1].setAttribute('fill', color)
         arc.svgElement.children[2].setAttribute('stroke', color)
     }
 
-    enableTrans(id: string) {
+    private enableTrans(id: string) {
         const trans = <PetriTrans>this.net.elements[id]
         this.setTransColor(trans, TRANS_ENABLE_COLOR)
     }
 
-    disableTrans(id: string) {
+    private disableTrans(id: string) {
         const trans = <PetriTrans>this.net.elements[id]
         this.setTransColor(trans, 'black')
     }
 
-    updateTransitions() {
+    private updateTransitions() {
         for (const transId in this.logicalNet.transState) {
             if (this.logicalNet.transState[transId]) {
                 this.enableTrans(transId)
@@ -176,7 +208,7 @@ class Simulator {
         }
     }
 
-    newTokenAnimation(arc: PetriArc) {
+    private newTokenAnimation(arc: PetriArc) {
         const place = <PetriPlace>this.net.elements[arc.placeId]
         const trans = <PetriTrans>this.net.elements[arc.transId]
         const placePos = place.position
@@ -220,7 +252,7 @@ class Simulator {
         requestAnimationFrame(animFunc)
     }
 
-    fireTrans(transId: string, marksToUpdate: PlaceMarks) {
+    private fireTrans(transId: string, marksToUpdate: PlaceMarks) {
         const trans = <PetriTrans>this.net.elements[transId]
         this.setTransColor(trans, TRANS_FIRE_COLOR)
         for (const arcId of trans.connectedArcs) {
@@ -264,11 +296,15 @@ class Simulator {
     }
 
     restart() {
-        this.logicalNet = new LogicalNet(this.net)
+        this.inputWindow = new InputWindow(this.net.inputs)
+        this.logicalNet = new LogicalNet(
+            this.net, this.inputWindow.readInputs()
+        )
         this.logicalNet.updateTransState()
     }
 
     private _step() {
+        this.logicalNet.updateInputValues(this.inputWindow.readInputs())
         const enabledTransitions = this.logicalNet.getEnabledTransitions()
 
         if (enabledTransitions.length) {

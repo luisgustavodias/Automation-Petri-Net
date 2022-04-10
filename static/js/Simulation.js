@@ -1,3 +1,4 @@
+import { InputWindow } from "./InputWindow.js";
 import { createCircle, setCircleCenter } from "./utils/Circle.js";
 const FIRE_TRANS_ANIMATION_TIME = 1500;
 const STEP_INTERVAL_TIME = 250;
@@ -7,15 +8,20 @@ function filterNetElementsByType(net, PEType) {
     return Object.values(net.elements).filter((ele) => ele.PEType === PEType);
 }
 class LogicalNet {
-    constructor(net) {
+    constructor(net, inputValues) {
         const places = filterNetElementsByType(net, 'place');
         this.placeMarks = {};
         places.forEach((place) => {
             this.placeMarks[place.id] = parseInt(place.initialMark);
         });
         const trasitions = filterNetElementsByType(net, 'trans');
+        this.inputValues = new Map();
+        for (const inputName in inputValues) {
+            this.inputValues.set(inputName, inputValues[inputName]);
+        }
         // trasitions.sort((a, b) => a.priority - b.priority)
         this.transOrder = [];
+        this.transGuardFuncs = {};
         this.arcsByTrans = {};
         trasitions.forEach((trans) => {
             this.arcsByTrans[trans.id] = trans.connectedArcs.map((arcId) => {
@@ -27,8 +33,26 @@ class LogicalNet {
                 };
             });
             this.transOrder.push(trans.id);
+            if (trans.guard) {
+                this.transGuardFuncs[trans.id] = this.createGuardFunc(trans.guard, [...this.inputValues.keys()]);
+            }
+            else {
+                this.transGuardFuncs[trans.id] = (...args) => true;
+            }
         });
         this.transState = Object.fromEntries(trasitions.map(trans => [trans.id, false]));
+    }
+    createGuardFunc(guard, inputNames) {
+        const decodedGuard = guard
+            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
+            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
+            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!');
+        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`);
+    }
+    updateInputValues(inputValues) {
+        for (const inputName in inputValues) {
+            this.inputValues.set(inputName, inputValues[inputName]);
+        }
     }
     checkTrans(transId) {
         for (const arc of this.arcsByTrans[transId]) {
@@ -43,6 +67,8 @@ class LogicalNet {
                 }
             }
         }
+        if (!this.transGuardFuncs[transId](...this.inputValues.values()))
+            return false;
         return true;
     }
     getEnabledTransitions() {
@@ -76,6 +102,7 @@ class Simulator {
         this.net = net;
         this.playing = false;
         this.logicalNet = null;
+        this.inputWindow = null;
     }
     updatePlaceMarks(marksToUpdate) {
         for (const placeId in marksToUpdate) {
@@ -185,10 +212,12 @@ class Simulator {
         this.playing = false;
     }
     restart() {
-        this.logicalNet = new LogicalNet(this.net);
+        this.inputWindow = new InputWindow(this.net.inputs);
+        this.logicalNet = new LogicalNet(this.net, this.inputWindow.readInputs());
         this.logicalNet.updateTransState();
     }
     _step() {
+        this.logicalNet.updateInputValues(this.inputWindow.readInputs());
         const enabledTransitions = this.logicalNet.getEnabledTransitions();
         if (enabledTransitions.length) {
             this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));

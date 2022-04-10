@@ -65,7 +65,7 @@ export class Arrow {
     }
 }
 
-type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
+// type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
 
 // export class CurvedArrow {
 //     svgGElement: SVGGElement

@@ -1,8 +1,8 @@
 
 type ChangeObserver = (attr: string, val: string) => void
+type PEData = any// {[attrName: string]: string}
 
 class ElementPropertyWindow {
-    private _PEType: string
     private idPrefix: string
     private _attrNames: string[]
     private propertyWindow: HTMLElement
@@ -10,8 +10,6 @@ class ElementPropertyWindow {
 
     constructor(PEType: string, attrNames: string[]) {
         this.propertyWindow = document.getElementById('pw-' + PEType)
-        console.log(this.propertyWindow)
-        this._PEType = PEType
         this.idPrefix = "pw-" + PEType
         this._attrNames = attrNames
         this.changeObserver = null
@@ -30,7 +28,7 @@ class ElementPropertyWindow {
         )
     }
 
-    open(changeObserver: ChangeObserver, data: any) {
+    open(changeObserver: ChangeObserver, data: PEData) {
         this.changeObserver = changeObserver
         this.propertyWindow.style.display = "block";
         for(const attrName of this._attrNames) {
@@ -52,11 +50,11 @@ const attrNames = {
 }
 
 class PropertyWindow {
-    private currentWindow: ElementPropertyWindow
+    private currentEPW: ElementPropertyWindow
     private elePropWindows: {[PEType: string]: ElementPropertyWindow}
 
     constructor() {
-        this.currentWindow = null
+        this.currentEPW = null
         this.elePropWindows = {}
         for(const PEType in attrNames) {
             const ePW = new ElementPropertyWindow(
@@ -65,23 +63,25 @@ class PropertyWindow {
             )
             for(const attrName of attrNames[PEType]) {
                 let inputElement = ePW.getInputElement(attrName)
-                inputElement.addEventListener('change', evt => { ePW.change(attrName) })
+                inputElement.addEventListener('change', evt => { 
+                    ePW.change(attrName) 
+                })
             }
             this.elePropWindows[PEType] = ePW
         }
     }
 
-    open(PEType: string, changeObserver: ChangeObserver, data: any) {
-        this.currentWindow = this.elePropWindows[PEType]
-        this.currentWindow.open(changeObserver, data)
-        console.log(this.currentWindow)
+    open(PEType: string, changeObserver: ChangeObserver, data: PEData) {
+        this.currentEPW = this.elePropWindows[PEType]
+        this.currentEPW.open(changeObserver, data)
+        console.log(this.currentEPW)
     }
 
     close() {
-        console.log(this.currentWindow)
-        if (this.currentWindow) {
-            this.currentWindow.close()
-            this.currentWindow = null
+        console.log(this.currentEPW)
+        if (this.currentEPW) {
+            this.currentEPW.close()
+            this.currentEPW = null
         }
     }
 }

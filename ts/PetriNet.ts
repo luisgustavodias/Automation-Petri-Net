@@ -4,16 +4,17 @@ import Vector from "./utils/Vector.js"
 import { AGenericPetriElement, APetriElement, PetriPlace, 
     PetriTrans, PetriArc, ArcType } from "./PNElements.js";
 import { Change, UndoRedoManager } from "./UndoRedoManager.js";
+import { Input } from "./InputsConfig.js";
 
 export class PetriNet {
     readonly svgElement: SVGSVGElement
     elements: { [id: string]: AGenericPetriElement }
-    inputs: Array<any>
+    inputs: Array<Input>
     simMode: number
     preScript: string
     placeNumber: number
     transNumber: number
-    _grid: boolean
+    private _grid: boolean
     metadata: { fileName: string, filePath: string }
 
     constructor(svgElement: SVGSVGElement) {
@@ -199,20 +200,6 @@ export class PetriNetManager {
 
     get selectedPE() { return this._selectedPE }
 
-    private createSVGElement(modelId: string) {
-        const model = <SVGAElement><unknown>document.getElementById(modelId)
-        const clone = <SVGAElement>model.cloneNode(true)
-        const PEId = String(Math.random())
-        
-        clone.id = PEId
-
-        for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
-            ele.setAttribute('pe-parent', PEId)
-        }
-        
-        return clone
-    }
-
     private addGenericPE(genericPE: AGenericPetriElement) {
         this.net.addGenericPE(genericPE)
         this.undoRedoManager.registryChange(
@@ -223,22 +210,6 @@ export class PetriNetManager {
         )
 
         return genericPE.id
-    }
-
-    private createPetriElement(PEType: 'place' | 'trans', coord: Vector) {
-        const ele = this.createSVGElement(PEType + '-model')
-
-        let petriElement: APetriElement;
-        if (PEType == 'place') {
-            petriElement = new PetriPlace(ele)
-            petriElement.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++
-        } else {
-            petriElement = new PetriTrans(ele)
-            petriElement.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++
-        }
-        petriElement.position = coord
-
-        return petriElement
     }
 
     getMousePosition(evt: MouseEvent) {
@@ -259,21 +230,24 @@ export class PetriNetManager {
     }
 
     createPlace(coord: Vector) {
-        return this.addGenericPE(this.createPetriElement('place', coord))
+        const place = new PetriPlace()
+        place.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++
+        place.position
+
+        return this.addGenericPE(place)
     }
 
     createTrans(coord: Vector) {
-        return this.addGenericPE(this.createPetriElement('trans', coord))
+        const trans = new PetriTrans()
+        trans.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++
+        trans.position
+
+        return this.addGenericPE(trans)
     }
 
     createArc(placeId: string, transId: string, arcType: ArcType) {
         return this.addGenericPE(
-            new PetriArc(
-                    this.createSVGElement('arc-model'), 
-                    placeId, 
-                    transId, 
-                    arcType
-                )
+            new PetriArc(placeId, transId, arcType)
         )
     }
 
@@ -373,52 +347,4 @@ export class PetriNetManager {
         viewBox.width = viewBox.width*scale
         viewBox.height = viewBox.height*scale
     }
-
-    // loadNet(netData) {
-    //     console.log("Loading Data")
-    //     svg.innerHTML = netData.svg.innerHTML;
-    //     svg.viewBox.baseVal.x = netData.svg.viewBox.x;
-    //     svg.viewBox.baseVal.y = netData.svg.viewBox.y;
-    //     svg.viewBox.baseVal.width = netData.svg.viewBox.width;
-    //     svg.viewBox.baseVal.height = netData.svg.viewBox.height;
-    //     this.net.inputs = netData.net.inputs;
-    //     this.net.simMode = netData.net.simMode;
-    //     this.net.preScript = netData.net.preScript;
-    //     this.net.placeNumber = netData.net.placeNumber;
-    //     this.net.transNumber = netData.net.transNumber;
-    //     this.net._nextId = netData.net._nextId;
-    //     this.net.metadata = netData.net.metadata;
-    //     this.net.elements = {};
-    //     for (let elementId in netData.net.elements) {
-    //         let savedElement = netData.net.elements[elementId];
-    //         console.log(savedElement)
-    //         if (savedElement.PNElementType === "place") {
-    //             let place = new PetriPlace(
-    //                 <SVGAElement><unknown>document.getElementById(elementId)
-    //             )
-    //             place.name = savedElement.name;
-    //             place.arcs = savedElement.arcs;
-    //             place.initialMark = savedElement.initialMark;
-    //             this.net.elements[elementId] = place;
-    //             console.log(place)
-    //         } else if (savedElement.PNElementType === "trans") {
-    //             let trans = new PetriTrans(
-    //                 <SVGAElement><unknown>document.getElementById(elementId)
-    //             )
-    //             trans.name = savedElement.name;
-    //             trans.arcs = savedElement.arcs;
-    //             this.net.elements[elementId] = trans;
-    //         } else if (savedElement.PNElementType === "arc") {
-    //             let arc = new PetriArc(
-    //                 <SVGAElement><unknown>document.getElementById(elementId),
-    //                 <PetriPlace>this.net.elements[savedElement.placeId],
-    //                 <PetriTrans>this.net.elements[savedElement.transId],
-    //                 savedElement.type
-    //             );
-    //             arc.weight = savedElement.weight;
-    //             this.net.elements[elementId] = arc;
-    //         }
-    //     }
-    //     console.log(this.net.elements);
-    // }
 }

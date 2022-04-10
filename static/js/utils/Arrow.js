@@ -44,6 +44,7 @@ export class Arrow {
         this._update();
     }
 }
+// type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
 // export class CurvedArrow {
 //     svgGElement: SVGGElement
 //     startPos: Vector

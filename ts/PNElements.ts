@@ -22,6 +22,20 @@ interface IPetriElement {
     setAttr(attrName: string): void
 }
 
+function createSVGElement(modelId: string) {
+    const model = <SVGAElement><unknown>document.getElementById(modelId)
+    const clone = <SVGAElement>model.cloneNode(true)
+    const PEId = String(Math.random())
+    
+    clone.id = PEId
+
+    for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
+        ele.setAttribute('pe-parent', PEId)
+    }
+    
+    return clone
+}
+
 abstract class AGenericPetriElement {
     readonly svgElement: SVGGElement
     readonly PEType: string
@@ -29,35 +43,35 @@ abstract class AGenericPetriElement {
     abstract select(): void
     abstract deselect(): void
 
-    constructor (ele: SVGGElement) {
-        this.svgElement = ele
+    constructor (modelId: string) {
+        this.svgElement = createSVGElement(modelId)
     }
 
     get id() {
         return this.svgElement.id
     }
 
-    protected getPETextElement(attrName: string) {
+    protected getPETextElement(attrName: string): SVGAElement {
         return this.svgElement.querySelector(`[pe-text="${attrName}"]`)
     }
 
-    getPEText(attrName: string) {
+    protected getPEText(attrName: string) {
         return this.getPETextElement(attrName).innerHTML
     }
 
-    setPEText(attrName: string, val: string) {
+    protected setPEText(attrName: string, val: string) {
         this.getPETextElement(attrName).innerHTML = val
     }
 }
 
-class APetriElement extends AGenericPetriElement {
+abstract class APetriElement extends AGenericPetriElement {
     private _connectedArcs: string[]
     private _position: Vector
 
-    constructor (ele: SVGGElement) {
-        super(ele)
+    constructor (modelId: string) {
+        super(modelId)
         this._connectedArcs = []
-        this._position = this.getPosition()
+        this._position = new Vector(0, 0)
     }
 
     get name() { return this.getPEText('name') }
@@ -78,13 +92,6 @@ class APetriElement extends AGenericPetriElement {
     move(displacement: Vector) {
         this.position = this._position.add(displacement)
     }
-
-    private getPosition() {
-        let matrix = this.svgElement.transform.baseVal.getItem(0).matrix;
-        return new Vector(matrix.e, matrix.f);
-    }
-
-    
 
     select() {
         this.svgElement.children[0].setAttribute('stroke', 'blue');
@@ -113,10 +120,11 @@ class PetriPlace extends APetriElement {
     static placeRadius = 8
     static tokenRadius = 1.5
     readonly PEType = 'place'
+    private _initialMark: string
 
-    constructor (ele: SVGGElement) {
-        super(ele)
-        this.initialMark = '0'
+    constructor () {
+        super('place-model')
+        this._initialMark = '0'
     }
 
     get placeType() { return this.getPEText('placeType') }
@@ -214,13 +222,13 @@ class PetriPlace extends APetriElement {
         }
     }
 
-    get initialMark() { return this.svgElement.getAttribute('initialMark') }
+    get initialMark() { return this._initialMark }
     set initialMark(val: string) {
-        this.svgElement.setAttribute('initialMark', val)
+        this._initialMark = val
         this.mark = val
     }
 
-    createToken(pos: Vector) {
+    private createToken(pos: Vector) {
         const token = createCircle(pos, PetriPlace.tokenRadius)
         token.setAttribute('pe-parent', this.id)
 
@@ -237,8 +245,8 @@ class PetriTrans extends APetriElement {
     static transHeight = 3
     readonly PEType = 'trans'
 
-    constructor (ele: SVGGElement) {
-        super(ele)
+    constructor () {
+        super('trans-model')
     }
 
     get delay() { return this.getPEText('delay') }
@@ -271,12 +279,11 @@ class PetriArc extends AGenericPetriElement {
     private arrow: Arrow
 
     constructor (
-        ele: SVGGElement, 
         placeId: string, 
         transId: string, 
         arctype: ArcType
     ) {
-        super(ele)
+        super('arc-model')
         this.svgElement.setAttribute('place-id', placeId)
         this.svgElement.setAttribute('trans-id', transId)
         this._placePos = new Vector(0, 0)

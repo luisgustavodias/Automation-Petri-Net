@@ -222,7 +222,7 @@
 
     <div class="test">
         <div id="side-bar">
-            <div id="property-window" class="tabcontent" style="display: block;">
+            <div id="property-window" class="tabcontent" style="display: none;">
                 <div id="pw-div">
                     <div id="pw-place" style="display: none;">
                         <label>Name</label>
@@ -266,37 +266,37 @@
         <svg xmlns="http://www.w3.org/2000/svg">
             <defs>
                 <g class="place draggable" id=place-model transform="translate(0 0)" arcsId="[]" initialMark="0">
-                    <circle r="8" fill="white" stroke="black" PE-parent="place-model" />
+                    <circle r="8" fill="white" stroke="black" drag="pe" pe-parent="place-model" />
                     <g class="place-mark">
 
                     </g>
                     <text class="draggable place-name" transform="translate(6.5 -8)"
-                        pe-text="name" pe-parent="place-model">p1</text>
+                        pe-text="name" drag="self" pe-parent="place-model">p1</text>
                     <text class="draggable place-type" transform="translate(7 8.5)"
-                        pe-text="placeType" pe-parent="place-model">INT</text>
+                        pe-text="placeType" drag="self" pe-parent="place-model">INT</text>
                 </g>
                 <g class="trans draggable" id="trans-model" transform="translate(0 0)" arcsId="">
                     <rect x="-5.5" y="-3" width="11" height="6" fill="black" stroke="black"
-                        PE-parent="trans-model" />
+                        drag="pe" PE-parent="trans-model" />
                     <text class="draggable trans-name" transform="translate(6 -5.5)"
-                        pe-text="name" PE-parent="trans-model">t1</text>
+                        pe-text="name" drag="self" PE-parent="trans-model">t1</text>
                     <text class="draggable trans-time" transform="translate(6 5.5)" 
-                        pe-text="time" pe-parent="trans-model"></text>
+                        pe-text="time" drag="self" pe-parent="trans-model"></text>
                     <text class="draggable trans-guard" transform="translate(-6 -5.5)" text-anchor="end"
-                        style="font-family: courier" pe-text="guard" pe-parent="trans-model"></text>
+                        style="font-family: courier" pe-text="guard" drag="self" pe-parent="trans-model"></text>
                 </g>
                 <g class="arc" id="arc-model" placeId="place-model" transId="trans-model" arcType="input">
                     <g stroke="black" stroke-linecap="round">
-                        <line x1="10" y1="20" x2="30" y2="20" PE-parent="arc-model" />
+                        <line x1="10" y1="20" x2="30" y2="20" pe-parent="arc-model" />
                     </g>
-                    <polygon points="36,20 30,22 30,18" PE-parent="arc-model" />
+                    <polygon points="36,20 30,22 30,18" pe-parent="arc-model" />
                     <circle r='2' fill='white' stroke='black' stroke-width='0.7' visibility="hidden"
                         PE-parent="arc-model" />
                     <text class="draggable arc-weight" transform="translate(0 0)" visibility="hidden"
-                        text-anchor="middle" dominant-baseline="middle" pe-text="weight" pe-parent="arc-model">1</text>
+                        text-anchor="middle" dominant-baseline="middle" pe-text="weight" drag="self" pe-parent="arc-model">1</text>
                 </g>
                 <rect id="arc-node-model" x="-1.5" y="-1.5" width="3" height="3" fill="blue" stroke="black"
-                    stroke-width="0.5" transform="translate(0 0)" PE-parent="arc-model" />
+                    stroke-width="0.5" transform="translate(0 0)" pe-parent="arc-model" />
                 <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
                     <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.7"/>
                 </pattern>
