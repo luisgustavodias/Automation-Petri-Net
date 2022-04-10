@@ -232,7 +232,7 @@ export class PetriNetManager {
     createPlace(coord: Vector) {
         const place = new PetriPlace()
         place.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++
-        place.position
+        place.position = coord
 
         return this.addGenericPE(place)
     }
@@ -240,7 +240,7 @@ export class PetriNetManager {
     createTrans(coord: Vector) {
         const trans = new PetriTrans()
         trans.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++
-        trans.position
+        trans.position = coord
 
         return this.addGenericPE(trans)
     }

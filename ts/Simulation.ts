@@ -168,7 +168,7 @@ class Simulator {
         this.net = net
         this.playing = false
         this.logicalNet = null
-        this.inputWindow = null
+        this.inputWindow = new InputWindow()
     }
 
     private updatePlaceMarks(marksToUpdate: PlaceMarks) {
@@ -231,7 +231,7 @@ class Simulator {
         const token = createCircle(startPoint, 2)
         document.getElementById('IEs').appendChild(token)
 
-        let startTime = null;
+        let startTime = null
 
         function animFunc(timestamp: number) {
             if (!startTime) { startTime = timestamp }
@@ -283,9 +283,18 @@ class Simulator {
         }, FIRE_TRANS_ANIMATION_TIME)
     }
 
+    private init() {
+        this.inputWindow.open(this.net.inputs)
+        this.logicalNet = new LogicalNet(
+            this.net, this.inputWindow.readInputs()
+        )
+        this.logicalNet.updateTransState()
+        document.getElementById('simulating-text').style.display = 'block'
+    }
+
     start() {
         if (!this.logicalNet) {
-            this.restart()
+            this.init()
         } 
         this.playing = true
         this._step()
@@ -296,11 +305,14 @@ class Simulator {
     }
 
     restart() {
-        this.inputWindow = new InputWindow(this.net.inputs)
-        this.logicalNet = new LogicalNet(
-            this.net, this.inputWindow.readInputs()
-        )
-        this.logicalNet.updateTransState()
+        this.init()
+    }
+
+    stop() {
+        this.logicalNet = null
+        this.playing = false
+        this.inputWindow.close()
+        document.getElementById('simulating-text').style.display = 'none'
     }
 
     private _step() {
@@ -326,26 +338,45 @@ class Simulator {
 
     step() {
         if (!this.logicalNet) {
-            this.restart()
+            this.init()
         } 
         this._step()
     }
 }
 
-function createSimulator(net: PetriNet) {
+function createSimulator(
+    net: PetriNet, 
+    enableToolBar: VoidFunction,
+    disableToolBar: VoidFunction 
+) {
     const simulator = new Simulator(net)
 
     document.getElementById('step-button').onclick = 
-        _ => { simulator.step() }
+        () => { 
+            simulator.step()
+            disableToolBar()
+        }
     
-    document.getElementById('play-button').onclick = 
-        _ => { simulator.start() }
+    document.getElementById('start-button').onclick = 
+        () => { 
+            simulator.start()
+            disableToolBar()
+        }
 
     document.getElementById('pause-button').onclick = 
-        _ => { simulator.pause() }
+        () => { simulator.pause() }
 
     document.getElementById('restart-button').onclick = 
-        _ => { simulator.restart() }
+        () => { 
+            simulator.restart()
+            disableToolBar()
+        }
+
+    document.getElementById('stop-button').onclick = 
+        () => { 
+            simulator.stop()
+            enableToolBar()
+        }
 
     return simulator
 }

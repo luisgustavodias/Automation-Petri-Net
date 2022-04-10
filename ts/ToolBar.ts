@@ -87,6 +87,12 @@ class ArcTool extends GenericTool {
             this.mouseDownPos = this.netManager.getMousePosition(evt)
             this.netManager.addIE(<SVGAElement><unknown>this.line)
             setLineStartPoint(this.line, this.mouseDownPos)
+            const u = this.netManager.getMousePosition(evt)
+                .sub(this.mouseDownPos).norm()
+            setLineEndPoint(
+                this.line, 
+                this.netManager.getMousePosition(evt).sub(u.mul(0.02))
+            )
         }
     }
 
@@ -96,7 +102,7 @@ class ArcTool extends GenericTool {
         const u = this.netManager.getMousePosition(evt)
             .sub(this.mouseDownPos).norm()
         setLineEndPoint(
-            <SVGLineElement><unknown>this.line, 
+            this.line, 
             this.netManager.getMousePosition(evt).sub(u.mul(0.02))
         )
     }
@@ -205,12 +211,14 @@ class MouseTool extends GenericTool {
 }
 
 export default class ToolBar {
+    private _active: boolean
     tools: { [name: string]: GenericTool }
     currentTool: GenericTool
     movingScreenOffset: Vector
     netManager: PetriNetManager
 
     constructor(netManager: PetriNetManager) {
+        this._active = true
         this.netManager = netManager
         this.tools = {
             'mouse-tool': new MouseTool(netManager),
@@ -221,22 +229,20 @@ export default class ToolBar {
         this.currentTool = this.tools['mouse-tool']
         this.movingScreenOffset = null
     }
-    
-    restartArcTool() {
-        this.tools['arc-tool'] = new ArcTool(this.netManager)
-    }
 
     mousedown(evt) {
         if (evt.ctrlKey) {
             this.movingScreenOffset = this.netManager.getMousePosition(evt);
-        } else {
+        } else if(this._active) {
             this.currentTool.onMouseDown(evt);
         }
     }
     
     mouseup(evt) {
         this.movingScreenOffset = null
-        this.currentTool.onMouseUp(evt);
+        if(this._active) {
+            this.currentTool.onMouseUp(evt);
+        }
     }
     
     mousemove(evt: MouseEvent) {
@@ -245,14 +251,16 @@ export default class ToolBar {
                 this.netManager.getMousePosition(evt)
                     .sub(this.movingScreenOffset)
             )
-        } else {
+        } else if(this._active) {
             this.currentTool.onMouseMove(evt);
         }
     }
     
     mouseleave(evt) {
         this.movingScreenOffset = null
-        this.currentTool.onMouseLeave(evt);
+        if(this._active) {
+            this.currentTool.onMouseLeave(evt);
+        }
     }
 
     wheel(evt) {
@@ -276,8 +284,9 @@ export default class ToolBar {
             }
             else if (evt.key === 'y' && evt.ctrlKey) {
                 this.netManager.redo()
+            } else if(this._active) {
+                this.currentTool.onKeyDown(evt)
             }
-            this.currentTool.onKeyDown(evt)
         }
     }
     
@@ -288,7 +297,15 @@ export default class ToolBar {
         document.getElementById(tool).classList.add("selected-tool-bar-item");
     }
 
-    activeGrid() {
+    enable() {
+        this._active = true
+        document.getElementById(this.currentTool.buttonId)
+            .classList.add("selected-tool-bar-item")
+    }
 
+    disable() {
+        this._active = false
+        document.getElementById(this.currentTool.buttonId)
+            .classList.remove("selected-tool-bar-item")
     }
 }

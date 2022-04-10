@@ -51,7 +51,7 @@ function testNetManager(netManager) {
     netManager.redo();
     netManager.undo();
 }
-function testSimulator(netManager, simulator) {
+function testSimulator(netManager) {
     const placeId1 = netManager.createPlace(new Vector(150, 50));
     const placeId2 = netManager.createPlace(new Vector(100, 150));
     const placeId3 = netManager.createPlace(new Vector(200, 150));
@@ -93,7 +93,6 @@ function testSimulator(netManager, simulator) {
     netManager.setGenericPEAttr(transId1, 'guard', 's1 and s2');
     netManager.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)');
     netManager.moveScreen(new Vector(50, 0));
-    simulator.start();
 }
 function main() {
     console.log('Creating net');
@@ -113,8 +112,8 @@ function main() {
     };
     netManager.deselectObserver = () => { propertyWindow.close(); };
     addListeners(toolBar);
-    const simulator = createSimulator(netManager.net);
+    const simulator = createSimulator(netManager.net, () => { toolBar.enable(); }, () => { toolBar.disable(); });
     // testNetManager(netManager)
-    testSimulator(netManager, simulator);
+    testSimulator(netManager);
 }
 window.onload = main;

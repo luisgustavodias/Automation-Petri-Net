@@ -128,34 +128,10 @@ export class PetriNetManager {
         this.undoRedoManager = new UndoRedoManager();
     }
     get selectedPE() { return this._selectedPE; }
-    createSVGElement(modelId) {
-        const model = document.getElementById(modelId);
-        const clone = model.cloneNode(true);
-        const PEId = String(Math.random());
-        clone.id = PEId;
-        for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
-            ele.setAttribute('pe-parent', PEId);
-        }
-        return clone;
-    }
     addGenericPE(genericPE) {
         this.net.addGenericPE(genericPE);
         this.undoRedoManager.registryChange(new CreateElementChange(this.net, genericPE));
         return genericPE.id;
-    }
-    createPetriElement(PEType, coord) {
-        const ele = this.createSVGElement(PEType + '-model');
-        let petriElement;
-        if (PEType == 'place') {
-            petriElement = new PetriPlace(ele);
-            petriElement.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++;
-        }
-        else {
-            petriElement = new PetriTrans(ele);
-            petriElement.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++;
-        }
-        petriElement.position = coord;
-        return petriElement;
     }
     getMousePosition(evt) {
         const CTM = this.net.svgElement.getScreenCTM();
@@ -166,13 +142,19 @@ export class PetriNetManager {
         return pos;
     }
     createPlace(coord) {
-        return this.addGenericPE(this.createPetriElement('place', coord));
+        const place = new PetriPlace();
+        place.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++;
+        place.position = coord;
+        return this.addGenericPE(place);
     }
     createTrans(coord) {
-        return this.addGenericPE(this.createPetriElement('trans', coord));
+        const trans = new PetriTrans();
+        trans.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++;
+        trans.position = coord;
+        return this.addGenericPE(trans);
     }
     createArc(placeId, transId, arcType) {
-        return this.addGenericPE(new PetriArc(this.createSVGElement('arc-model'), placeId, transId, arcType));
+        return this.addGenericPE(new PetriArc(placeId, transId, arcType));
     }
     getPE(elementId) {
         return this.net.elements[elementId];

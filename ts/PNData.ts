@@ -14,7 +14,7 @@ interface Input {
 
 interface GenericPEBasicData {
     id: string
-    elementType: string
+    elementType: PetriElementType
 }
 
 interface PlaceBasicData extends GenericPEBasicData {

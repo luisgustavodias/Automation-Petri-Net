@@ -36,12 +36,19 @@ const InputsConstructorsByType = {
     'BOOL': BoolInput
 };
 class InputWindow {
-    constructor(inputs) {
+    constructor() {
+        this.inputs = [];
+    }
+    open(inputs) {
+        document.getElementById('inputs-window').style.display = 'block';
         inputWindowDiv.innerHTML = '';
         this.inputs = [];
         for (const input of inputs) {
             this.inputs.push(new InputsConstructorsByType[input.type](input));
         }
+    }
+    close() {
+        document.getElementById('inputs-window').style.display = 'none';
     }
     readInputs() {
         return Object.fromEntries(this.inputs.map(input => [input.name, input.read()]));

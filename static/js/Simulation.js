@@ -102,7 +102,7 @@ class Simulator {
         this.net = net;
         this.playing = false;
         this.logicalNet = null;
-        this.inputWindow = null;
+        this.inputWindow = new InputWindow();
     }
     updatePlaceMarks(marksToUpdate) {
         for (const placeId in marksToUpdate) {
@@ -201,9 +201,15 @@ class Simulator {
             }
         }, FIRE_TRANS_ANIMATION_TIME);
     }
+    init() {
+        this.inputWindow.open(this.net.inputs);
+        this.logicalNet = new LogicalNet(this.net, this.inputWindow.readInputs());
+        this.logicalNet.updateTransState();
+        document.getElementById('simulating-text').style.display = 'block';
+    }
     start() {
         if (!this.logicalNet) {
-            this.restart();
+            this.init();
         }
         this.playing = true;
         this._step();
@@ -212,9 +218,13 @@ class Simulator {
         this.playing = false;
     }
     restart() {
-        this.inputWindow = new InputWindow(this.net.inputs);
-        this.logicalNet = new LogicalNet(this.net, this.inputWindow.readInputs());
-        this.logicalNet.updateTransState();
+        this.init();
+    }
+    stop() {
+        this.logicalNet = null;
+        this.playing = false;
+        this.inputWindow.close();
+        document.getElementById('simulating-text').style.display = 'none';
     }
     _step() {
         this.logicalNet.updateInputValues(this.inputWindow.readInputs());
@@ -233,21 +243,35 @@ class Simulator {
     }
     step() {
         if (!this.logicalNet) {
-            this.restart();
+            this.init();
         }
         this._step();
     }
 }
-function createSimulator(net) {
+function createSimulator(net, enableToolBar, disableToolBar) {
     const simulator = new Simulator(net);
     document.getElementById('step-button').onclick =
-        _ => { simulator.step(); };
-    document.getElementById('play-button').onclick =
-        _ => { simulator.start(); };
+        () => {
+            simulator.step();
+            disableToolBar();
+        };
+    document.getElementById('start-button').onclick =
+        () => {
+            simulator.start();
+            disableToolBar();
+        };
     document.getElementById('pause-button').onclick =
-        _ => { simulator.pause(); };
+        () => { simulator.pause(); };
     document.getElementById('restart-button').onclick =
-        _ => { simulator.restart(); };
+        () => {
+            simulator.restart();
+            disableToolBar();
+        };
+    document.getElementById('stop-button').onclick =
+        () => {
+            simulator.stop();
+            enableToolBar();
+        };
     return simulator;
 }
 export { Simulator, createSimulator };

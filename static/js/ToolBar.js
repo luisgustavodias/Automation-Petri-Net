@@ -58,6 +58,9 @@ class ArcTool extends GenericTool {
             this.mouseDownPos = this.netManager.getMousePosition(evt);
             this.netManager.addIE(this.line);
             setLineStartPoint(this.line, this.mouseDownPos);
+            const u = this.netManager.getMousePosition(evt)
+                .sub(this.mouseDownPos).norm();
+            setLineEndPoint(this.line, this.netManager.getMousePosition(evt).sub(u.mul(0.02)));
         }
     }
     onMouseMove(evt) {
@@ -143,6 +146,7 @@ class MouseTool extends GenericTool {
 }
 export default class ToolBar {
     constructor(netManager) {
+        this._active = true;
         this.netManager = netManager;
         this.tools = {
             'mouse-tool': new MouseTool(netManager),
@@ -153,33 +157,34 @@ export default class ToolBar {
         this.currentTool = this.tools['mouse-tool'];
         this.movingScreenOffset = null;
     }
-    restartArcTool() {
-        this.tools['arc-tool'] = new ArcTool(this.netManager);
-    }
     mousedown(evt) {
         if (evt.ctrlKey) {
             this.movingScreenOffset = this.netManager.getMousePosition(evt);
         }
-        else {
+        else if (this._active) {
             this.currentTool.onMouseDown(evt);
         }
     }
     mouseup(evt) {
         this.movingScreenOffset = null;
-        this.currentTool.onMouseUp(evt);
+        if (this._active) {
+            this.currentTool.onMouseUp(evt);
+        }
     }
     mousemove(evt) {
         if (this.movingScreenOffset) {
             this.netManager.moveScreen(this.netManager.getMousePosition(evt)
                 .sub(this.movingScreenOffset));
         }
-        else {
+        else if (this._active) {
             this.currentTool.onMouseMove(evt);
         }
     }
     mouseleave(evt) {
         this.movingScreenOffset = null;
-        this.currentTool.onMouseLeave(evt);
+        if (this._active) {
+            this.currentTool.onMouseLeave(evt);
+        }
     }
     wheel(evt) {
         evt.preventDefault();
@@ -198,7 +203,9 @@ export default class ToolBar {
             else if (evt.key === 'y' && evt.ctrlKey) {
                 this.netManager.redo();
             }
-            this.currentTool.onKeyDown(evt);
+            else if (this._active) {
+                this.currentTool.onKeyDown(evt);
+            }
         }
     }
     changeTool(tool) {
@@ -206,6 +213,14 @@ export default class ToolBar {
         this.currentTool = this.tools[tool];
         document.getElementById(tool).classList.add("selected-tool-bar-item");
     }
-    activeGrid() {
+    enable() {
+        this._active = true;
+        document.getElementById(this.currentTool.buttonId)
+            .classList.add("selected-tool-bar-item");
+    }
+    disable() {
+        this._active = false;
+        document.getElementById(this.currentTool.buttonId)
+            .classList.remove("selected-tool-bar-item");
     }
 }

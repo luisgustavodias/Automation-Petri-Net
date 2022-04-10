@@ -63,7 +63,7 @@ function testNetManager(netManager: PetriNetManager) {
     netManager.undo()
 }
 
-function testSimulator(netManager: PetriNetManager, simulator: Simulator) {
+function testSimulator(netManager: PetriNetManager) {
     const placeId1 = netManager.createPlace(new Vector(150, 50))
     const placeId2 = netManager.createPlace(new Vector(100, 150))
     const placeId3 = netManager.createPlace(new Vector(200, 150))
@@ -110,8 +110,6 @@ function testSimulator(netManager: PetriNetManager, simulator: Simulator) {
     netManager.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)')
 
     netManager.moveScreen(new Vector(50, 0))
-
-    simulator.start()
 }
 
 function main() {
@@ -139,10 +137,14 @@ function main() {
     }
     netManager.deselectObserver = () => { propertyWindow.close() }
     addListeners(toolBar)
-    const simulator = createSimulator(netManager.net)
+    const simulator = createSimulator(
+        netManager.net,
+        () => { toolBar.enable() },
+        () => { toolBar.disable() },
+    )
 
     // testNetManager(netManager)
-    testSimulator(netManager, simulator)
+    testSimulator(netManager)
 }
 
 window.onload = main

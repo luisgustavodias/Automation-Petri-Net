@@ -56,7 +56,13 @@ const InputsConstructorsByType = {
 class InputWindow {
     inputs: AGenericInput[]
 
-    constructor(inputs: Input[]) {
+    constructor() {
+        this.inputs = []
+    }
+
+    open(inputs: Input[]) {
+        document.getElementById('inputs-window').style.display = 'block'
+
         inputWindowDiv.innerHTML = ''
         
         this.inputs = []
@@ -65,6 +71,10 @@ class InputWindow {
                 new InputsConstructorsByType[input.type](input)
             )
         }
+    }
+
+    close() {
+        document.getElementById('inputs-window').style.display = 'none'
     }
 
     readInputs() {

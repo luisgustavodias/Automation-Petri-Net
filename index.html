@@ -60,6 +60,12 @@
             padding-top: 10px;
         }
 
+        #simulating-text {
+            color: rgb(50, 50, 50);
+            align-self: center;
+            padding-left: 1rem;
+        }
+
     </style>
 </head>
 
@@ -121,7 +127,7 @@
 
         </svg>
 
-        <svg id="play-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 26 26">
+        <svg id="start-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 26 26">
             <path d="M -6 -6 L 5 0 L -6 6, L -6 6" transform="translate(13 13)" />
         </svg>
 
@@ -140,6 +146,8 @@
         <svg id="stop-button" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
             <rect x=25 y=25 width=50 height="50" />
         </svg>
+
+        <span id="simulating-text" style="display: none;">Simulating...</span>
     </div>
 
     <div id="inputs-modal" class="modal">
@@ -222,7 +230,7 @@
 
     <div class="test">
         <div id="side-bar">
-            <div id="property-window" class="tabcontent" style="display: none;">
+            <div id="property-window">
                 <div id="pw-div">
                     <div id="pw-place" style="display: none;">
                         <label>Name</label>
@@ -258,7 +266,7 @@
             </div>
 
 
-            <div id="inputs-window" class="tabcontent" style="display: block;">
+            <div id="inputs-window" style="display: none;">
 
             </div>
         </div>

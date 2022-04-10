@@ -3,9 +3,19 @@ import { getLineEndPoint, getLineStartPoint, getLineMidPoint, setLineEndPoint, s
 import { Arrow } from "./utils/Arrow.js";
 import { createCircle } from "./utils/Circle.js";
 const arcNodeModel = document.getElementById('arc-node-model');
+function createSVGElement(modelId) {
+    const model = document.getElementById(modelId);
+    const clone = model.cloneNode(true);
+    const PEId = String(Math.random());
+    clone.id = PEId;
+    for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
+        ele.setAttribute('pe-parent', PEId);
+    }
+    return clone;
+}
 class AGenericPetriElement {
-    constructor(ele) {
-        this.svgElement = ele;
+    constructor(modelId) {
+        this.svgElement = createSVGElement(modelId);
     }
     get id() {
         return this.svgElement.id;
@@ -21,10 +31,10 @@ class AGenericPetriElement {
     }
 }
 class APetriElement extends AGenericPetriElement {
-    constructor(ele) {
-        super(ele);
+    constructor(modelId) {
+        super(modelId);
         this._connectedArcs = [];
-        this._position = this.getPosition();
+        this._position = new Vector(0, 0);
     }
     get name() { return this.getPEText('name'); }
     set name(val) { this.setPEText('name', val); }
@@ -39,10 +49,6 @@ class APetriElement extends AGenericPetriElement {
     }
     move(displacement) {
         this.position = this._position.add(displacement);
-    }
-    getPosition() {
-        let matrix = this.svgElement.transform.baseVal.getItem(0).matrix;
-        return new Vector(matrix.e, matrix.f);
     }
     select() {
         this.svgElement.children[0].setAttribute('stroke', 'blue');
@@ -64,10 +70,10 @@ class APetriElement extends AGenericPetriElement {
     }
 }
 class PetriPlace extends APetriElement {
-    constructor(ele) {
-        super(ele);
+    constructor() {
+        super('place-model');
         this.PEType = 'place';
-        this.initialMark = '0';
+        this._initialMark = '0';
     }
     get placeType() { return this.getPEText('placeType'); }
     set placeType(val) { this.setPEText('placeType', val); }
@@ -163,9 +169,9 @@ class PetriPlace extends APetriElement {
             this.svgElement.children[1].prepend(token);
         }
     }
-    get initialMark() { return this.svgElement.getAttribute('initialMark'); }
+    get initialMark() { return this._initialMark; }
     set initialMark(val) {
-        this.svgElement.setAttribute('initialMark', val);
+        this._initialMark = val;
         this.mark = val;
     }
     createToken(pos) {
@@ -180,8 +186,8 @@ class PetriPlace extends APetriElement {
 PetriPlace.placeRadius = 8;
 PetriPlace.tokenRadius = 1.5;
 class PetriTrans extends APetriElement {
-    constructor(ele) {
-        super(ele);
+    constructor() {
+        super('trans-model');
         this.PEType = 'trans';
     }
     get delay() { return this.getPEText('delay'); }
@@ -205,8 +211,8 @@ class PetriTrans extends APetriElement {
 PetriTrans.transWidth = 5.5;
 PetriTrans.transHeight = 3;
 class PetriArc extends AGenericPetriElement {
-    constructor(ele, placeId, transId, arctype) {
-        super(ele);
+    constructor(placeId, transId, arctype) {
+        super('arc-model');
         this.PEType = 'arc';
         this.svgElement.setAttribute('place-id', placeId);
         this.svgElement.setAttribute('trans-id', transId);
