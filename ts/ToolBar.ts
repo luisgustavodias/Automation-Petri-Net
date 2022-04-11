@@ -85,14 +85,9 @@ class ArcTool extends GenericTool {
                 || genericPE.PEType === 'trans') {
             this.firstPE = genericPE
             this.mouseDownPos = this.netManager.getMousePosition(evt)
-            this.netManager.addIE(<SVGAElement><unknown>this.line)
             setLineStartPoint(this.line, this.mouseDownPos)
-            const u = this.netManager.getMousePosition(evt)
-                .sub(this.mouseDownPos).norm()
-            setLineEndPoint(
-                this.line, 
-                this.netManager.getMousePosition(evt).sub(u.mul(0.02))
-            )
+            setLineEndPoint(this.line, this.mouseDownPos)
+            this.netManager.addIE(<SVGAElement><unknown>this.line)
         }
     }
 
