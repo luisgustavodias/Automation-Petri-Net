@@ -101,6 +101,7 @@ class Simulator {
     constructor(net) {
         this.net = net;
         this.playing = false;
+        this.stoping = false;
         this.logicalNet = null;
         this.inputWindow = new InputWindow();
     }
@@ -201,14 +202,25 @@ class Simulator {
             }
         }, FIRE_TRANS_ANIMATION_TIME);
     }
+    restartNet() {
+        for (const placeId in this.logicalNet.placeMarks) {
+            const place = this.net.elements[placeId];
+            place.mark = place.initialMark;
+        }
+        for (const transId in this.logicalNet.arcsByTrans) {
+            this.disableTrans(transId);
+        }
+    }
     init() {
         this.inputWindow.open(this.net.inputs);
         this.logicalNet = new LogicalNet(this.net, this.inputWindow.readInputs());
         this.logicalNet.updateTransState();
+        this.restartNet();
         document.getElementById('simulating-text').style.display = 'block';
     }
     start() {
         if (!this.logicalNet) {
+            console.log('not locicalNet');
             this.init();
         }
         this.playing = true;
@@ -220,19 +232,28 @@ class Simulator {
     restart() {
         this.init();
     }
-    stop() {
+    _stop() {
+        this.restartNet();
         this.logicalNet = null;
         this.playing = false;
+        this.stoping = true;
         this.inputWindow.close();
         document.getElementById('simulating-text').style.display = 'none';
+        this.stoping = false;
+    }
+    stop() {
+        if (this.logicalNet && !this.stoping) {
+            this.stoping = true;
+        }
     }
     _step() {
         this.logicalNet.updateInputValues(this.inputWindow.readInputs());
         const enabledTransitions = this.logicalNet.getEnabledTransitions();
-        if (enabledTransitions.length) {
-            this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));
+        if (this.stoping) {
+            this._stop();
+            return;
         }
-        else {
+        if (!enabledTransitions.length) {
             this.logicalNet.updateTransState();
             setTimeout(() => {
                 if (this.playing) {
@@ -240,6 +261,7 @@ class Simulator {
                 }
             }, STEP_INTERVAL_TIME);
         }
+        this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));
     }
     step() {
         if (!this.logicalNet) {
@@ -248,29 +270,29 @@ class Simulator {
         this._step();
     }
 }
-function createSimulator(net, enableToolBar, disableToolBar) {
+function createSimulator(net, startSimObserver, stopSimObserver) {
     const simulator = new Simulator(net);
     document.getElementById('step-button').onclick =
         () => {
             simulator.step();
-            disableToolBar();
+            startSimObserver();
         };
     document.getElementById('start-button').onclick =
         () => {
             simulator.start();
-            disableToolBar();
+            startSimObserver();
         };
     document.getElementById('pause-button').onclick =
         () => { simulator.pause(); };
     document.getElementById('restart-button').onclick =
         () => {
             simulator.restart();
-            disableToolBar();
+            startSimObserver();
         };
     document.getElementById('stop-button').onclick =
         () => {
             simulator.stop();
-            enableToolBar();
+            stopSimObserver();
         };
     return simulator;
 }
