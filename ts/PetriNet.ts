@@ -5,6 +5,7 @@ import { AGenericPetriElement, APetriElement, PetriPlace,
     PetriTrans, PetriArc, ArcType } from "./PNElements.js";
 import { Change, UndoRedoManager } from "./UndoRedoManager.js";
 import { Input } from "./InputsConfig.js";
+import { PetriNetData } from "./PNData.js";
 
 export class PetriNet {
     readonly svgElement: SVGSVGElement
@@ -17,8 +18,21 @@ export class PetriNet {
     private _grid: boolean
     metadata: { fileName: string, filePath: string }
 
-    constructor(svgElement: SVGSVGElement) {
-        this.svgElement = svgElement
+    private constructor() {
+        this.svgElement = document.createElementNS(
+            'http://www.w3.org/2000/svg', 'svg'
+        )
+        this.svgElement.innerHTML = `<rect id="svg-background" 
+            x="-5000" y="-5000" 
+            width="10000" height="10000" fill="white"/>
+        <g id="elements">
+            <g id="arcs"></g>
+            <g id="pe"></g>
+        </g>
+        <g id="IEs"></g>`
+        this.svgElement.style.height = '100%'
+        this.svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+        this.svgElement.setAttribute('viewBox', '0 0 1500 300')
         this.elements = {}
         this.inputs = []
         this.simMode = 1
@@ -41,6 +55,49 @@ export class PetriNet {
                 .setAttribute('fill', 'white')
         }
         this._grid = val
+    }
+
+    private filterElementsByType(PEType: string) {
+        return Object.values(this.elements).filter(
+            (ele) => ele.PEType === PEType
+        )
+    }
+
+    getPlaces() {
+        return <PetriPlace[]>this.filterElementsByType('place')
+    }
+
+    getTransitions() {
+        return <PetriTrans[]>this.filterElementsByType('trans')
+    }
+
+    getArcs() {
+        return <PetriArc[]>this.filterElementsByType('arc')
+    }
+
+    getData(): PetriNetData {
+        const viewBox = this.svgElement.viewBox.baseVal
+        return {
+            name: 'no name',
+
+            places: this.getPlaces().map(place => place.getData()),
+            transitions: this.getTransitions().map(
+                trans => trans.getData()
+            ),
+            arcs: this.getArcs().map(arc => arc.getData()),
+            inputs: this.inputs,
+
+            grid: this.grid,
+            nextPlaceNumber: this.placeNumber,
+            nextTransNumber: this.transNumber,
+            viewBox: {
+                x: viewBox.x,
+                y: viewBox.y,
+                width: viewBox.width,
+                heigth: viewBox.height
+            },
+            preScript: ""
+        }
     }
 
     addGenericPE(genericPE: AGenericPetriElement) {
@@ -103,6 +160,29 @@ export class PetriNet {
     setGenericPEAttr(PEId: string, attrName: string, val: string) {
         const ele = this.elements[PEId]
         ele[attrName] = val
+    }
+
+    static newNet() {
+        return new PetriNet()
+    }
+
+    static loadNet(data: PetriNetData) {
+        const net = new PetriNet()
+
+        data.places.forEach(
+            placeData => { net.addGenericPE(PetriPlace.load(placeData)) }
+        )
+        data.transitions.forEach(
+            transData => { net.addGenericPE(PetriTrans.load(transData)) }
+        )
+        data.arcs.forEach(
+            arcData => { net.addGenericPE(PetriArc.load(arcData)) }
+        )
+
+        const viewBox = net.svgElement.viewBox.baseVal
+        Object.assign(viewBox, data.viewBox)
+
+        return net
     }
 }
 
@@ -184,18 +264,23 @@ export class PetriNetManager {
     // serve como uma iterface para a classe PetriNet
     // tratando as funcionalidades de desfazer e refazer
 
-    readonly net: PetriNet
+    net: PetriNet
     private _selectedPE: AGenericPetriElement
     selectObserver: (PEId: string) => void
     deselectObserver: () => void
     private undoRedoManager: UndoRedoManager
 
-    constructor() {
-        this.net = new PetriNet(
-            <SVGSVGElement><unknown>document.getElementById('my-svg')
-        )
+    constructor(net: PetriNet) {
+        this.net = net
+        document.getElementById('svg-div').appendChild(net.svgElement)
         this._selectedPE = null
         this.undoRedoManager = new UndoRedoManager()
+    }
+
+    open(net: PetriNet) {
+        this.net.svgElement.remove()
+        this.net = net
+        document.getElementById('svg-div').appendChild(net.svgElement)
     }
 
     get selectedPE() { return this._selectedPE }
@@ -229,8 +314,12 @@ export class PetriNetManager {
         return pos
     }
 
+    private generateId() {
+        return String(Math.random())
+    }
+
     createPlace(coord: Vector) {
-        const place = new PetriPlace()
+        const place = new PetriPlace(this.generateId())
         place.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++
         place.position = coord
 
@@ -238,7 +327,7 @@ export class PetriNetManager {
     }
 
     createTrans(coord: Vector) {
-        const trans = new PetriTrans()
+        const trans = new PetriTrans(this.generateId())
         trans.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++
         trans.position = coord
 
@@ -247,7 +336,7 @@ export class PetriNetManager {
 
     createArc(placeId: string, transId: string, arcType: ArcType) {
         return this.addGenericPE(
-            new PetriArc(placeId, transId, arcType)
+            new PetriArc(this.generateId(), placeId, transId, arcType)
         )
     }
 

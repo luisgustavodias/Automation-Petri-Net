@@ -1,22 +1,9 @@
-import { PetriNetManager } from './PetriNet.js';
+import { PetriNet, PetriNetManager } from './PetriNet.js';
 import Vector from './utils/Vector.js';
 import ToolBar from './ToolBar.js';
 import { PropertyWindow } from './PropertyWindow.js';
 import { createSimulator } from './Simulation.js';
 import { InputConfig } from './InputsConfig.js';
-function addListeners(toolBar) {
-    console.log('adding listeners');
-    const eventNames = ['mousedown', 'mouseup', 'mousemove', 'mouseleave', 'wheel'];
-    const svg = document.getElementById('my-svg');
-    for (let name of eventNames) {
-        svg.addEventListener(name, (evt) => { toolBar[name](evt); });
-    }
-    document.body.addEventListener('keydown', (evt) => { toolBar.keydown(evt); });
-    for (let tool in toolBar.tools) {
-        document.getElementById(tool)
-            .addEventListener('mousedown', (evt) => { toolBar.changeTool(tool); });
-    }
-}
 function testNetManager(netManager) {
     const placeId = netManager.createPlace(new Vector(100, 50));
     const placeId2 = netManager.createPlace(new Vector(50, 100));
@@ -51,7 +38,7 @@ function testNetManager(netManager) {
     netManager.redo();
     netManager.undo();
 }
-function testSimulator(netManager) {
+function exampleNet(netManager) {
     const placeId1 = netManager.createPlace(new Vector(150, 50));
     const placeId2 = netManager.createPlace(new Vector(100, 150));
     const placeId3 = netManager.createPlace(new Vector(200, 150));
@@ -96,7 +83,8 @@ function testSimulator(netManager) {
 }
 function main() {
     console.log('Creating net');
-    const netManager = new PetriNetManager();
+    const net = PetriNet.newNet();
+    const netManager = new PetriNetManager(net);
     const toolBar = new ToolBar(netManager);
     const inputConfig = new InputConfig();
     document.getElementById('inputs-button')
@@ -111,9 +99,50 @@ function main() {
         }, genericPE);
     };
     netManager.deselectObserver = () => { propertyWindow.close(); };
-    addListeners(toolBar);
-    const simulator = createSimulator(netManager.net, () => { toolBar.enable(); }, () => { toolBar.disable(); });
-    // testNetManager(netManager)
-    testSimulator(netManager);
+    const simulator = createSimulator(netManager.net, () => {
+        toolBar.disable();
+        netManager.deselectPE();
+    }, () => { toolBar.enable(); });
+    document.getElementById('load-button').onclick = async () => {
+        let fileHandle;
+        //@ts-ignore
+        [fileHandle] = await window.showOpenFilePicker({
+            types: [
+                {
+                    description: 'Automation Petri Net',
+                    accept: {
+                        'text/plain': ['.txt']
+                    }
+                },
+            ],
+            excludeAcceptAllOption: true,
+            multiple: false
+        });
+        const file = await fileHandle.getFile();
+        const fileText = await file.text();
+        console.log(fileText);
+        const netData = JSON.parse(fileText);
+        netManager.open(PetriNet.loadNet(netData));
+    };
+    document.getElementById('save-button').onclick = async () => {
+        //@ts-ignore
+        let [fileHandle] = await window.showOpenFilePicker({
+            types: [
+                {
+                    description: 'Automation Petri Net',
+                    accept: {
+                        'text/plain': ['.txt']
+                    }
+                },
+            ],
+            excludeAcceptAllOption: true,
+            multiple: false
+        });
+        const file = await fileHandle.createWritable();
+        const netData = netManager.net.getData();
+        const fileText = await file.write(JSON.stringify(netData));
+        await file.close();
+    };
+    exampleNet(netManager);
 }
 window.onload = main;

@@ -3,19 +3,18 @@ import { getLineEndPoint, getLineStartPoint, getLineMidPoint, setLineEndPoint, s
 import { Arrow } from "./utils/Arrow.js";
 import { createCircle } from "./utils/Circle.js";
 const arcNodeModel = document.getElementById('arc-node-model');
-function createSVGElement(modelId) {
+function createSVGElement(id, modelId) {
     const model = document.getElementById(modelId);
     const clone = model.cloneNode(true);
-    const PEId = String(Math.random());
-    clone.id = PEId;
+    clone.id = id;
     for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
-        ele.setAttribute('pe-parent', PEId);
+        ele.setAttribute('pe-parent', id);
     }
     return clone;
 }
 class AGenericPetriElement {
-    constructor(modelId) {
-        this.svgElement = createSVGElement(modelId);
+    constructor(id, modelId) {
+        this.svgElement = createSVGElement(id, modelId);
     }
     get id() {
         return this.svgElement.id;
@@ -29,10 +28,20 @@ class AGenericPetriElement {
     setPEText(attrName, val) {
         this.getPETextElement(attrName).innerHTML = val;
     }
+    getPETextPosition(attrName) {
+        const matrix = this.getPETextElement(attrName).transform
+            .baseVal.getItem(0).matrix;
+        return new Vector(matrix.e, matrix.f);
+    }
+    setPETextPosition(attrName, pos) {
+        const transform = this.getPETextElement(attrName).transform
+            .baseVal.getItem(0);
+        transform.setTranslate(pos.x, pos.y);
+    }
 }
 class APetriElement extends AGenericPetriElement {
-    constructor(modelId) {
-        super(modelId);
+    constructor(id, modelId) {
+        super(id, modelId);
         this._connectedArcs = [];
         this._position = new Vector(0, 0);
     }
@@ -44,7 +53,7 @@ class APetriElement extends AGenericPetriElement {
     }
     set position(coord) {
         this._position = coord;
-        let transform = this.svgElement.transform.baseVal.getItem(0);
+        const transform = this.svgElement.transform.baseVal.getItem(0);
         transform.setTranslate(coord.x, coord.y);
     }
     move(displacement) {
@@ -70,8 +79,8 @@ class APetriElement extends AGenericPetriElement {
     }
 }
 class PetriPlace extends APetriElement {
-    constructor() {
-        super('place-model');
+    constructor(id) {
+        super(id, 'place-model');
         this.PEType = 'place';
         this._initialMark = '0';
     }
@@ -182,12 +191,34 @@ class PetriPlace extends APetriElement {
     static getConnectionPoint(placePos, u) {
         return placePos.add(u.mul(-this.placeRadius));
     }
+    getData() {
+        return {
+            id: this.id,
+            elementType: this.PEType,
+            name: this.name,
+            placeType: this.placeType,
+            initialMark: this.initialMark,
+            position: this.position,
+            textsPosition: {
+                name: this.getPETextPosition('name'),
+                placeType: this.getPETextPosition('name')
+            }
+        };
+    }
+    static load(data) {
+        const place = new PetriPlace(data.id);
+        place.name = data.name;
+        place.placeType = data.placeType;
+        place.initialMark = data.initialMark;
+        place.position = new Vector(data.position.x, data.position.y);
+        return place;
+    }
 }
 PetriPlace.placeRadius = 8;
 PetriPlace.tokenRadius = 1.5;
 class PetriTrans extends APetriElement {
-    constructor() {
-        super('trans-model');
+    constructor(id) {
+        super(id, 'trans-model');
         this.PEType = 'trans';
     }
     get delay() { return this.getPEText('delay'); }
@@ -207,12 +238,35 @@ class PetriTrans extends APetriElement {
         }
         return transPos.add(u.mul(this.transWidth));
     }
+    getData() {
+        return {
+            id: this.id,
+            elementType: this.PEType,
+            name: this.name,
+            delay: this.delay,
+            guard: this.guard,
+            position: this.position,
+            textsPosition: {
+                name: this.getPETextPosition('name'),
+                delay: this.getPETextPosition('delay'),
+                guard: this.getPETextPosition('guard')
+            }
+        };
+    }
+    static load(data) {
+        const trans = new PetriTrans(data.id);
+        trans.name = data.name;
+        trans.delay = String(data.delay);
+        trans.guard = data.guard;
+        trans.position = new Vector(data.position.x, data.position.y);
+        return trans;
+    }
 }
 PetriTrans.transWidth = 5.5;
 PetriTrans.transHeight = 3;
 class PetriArc extends AGenericPetriElement {
-    constructor(placeId, transId, arctype) {
-        super('arc-model');
+    constructor(id, placeId, transId, arctype) {
+        super(id, 'arc-model');
         this.PEType = 'arc';
         this.svgElement.setAttribute('place-id', placeId);
         this.svgElement.setAttribute('trans-id', transId);
@@ -392,6 +446,24 @@ class PetriArc extends AGenericPetriElement {
     }
     cleanNodes() {
         document.getElementById('arc-nodes').innerHTML = '';
+    }
+    getData() {
+        return {
+            id: this.id,
+            elementType: this.PEType,
+            placeId: this.placeId,
+            transId: this.transId,
+            arcType: this.arcType,
+            weight: this.weight,
+            textsPosition: {
+                weight: this.getPETextPosition('weight')
+            }
+        };
+    }
+    static load(data) {
+        const arc = new PetriArc(data.id, data.placeId, data.transId, data.arcType);
+        arc.weight = data.weight;
+        return arc;
     }
 }
 PetriArc.negBallRadius = 2;

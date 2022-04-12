@@ -144,6 +144,57 @@ class MouseTool extends GenericTool {
 }
 export default class ToolBar {
     constructor(netManager) {
+        this.mousedown = evt => {
+            if (evt.ctrlKey) {
+                this.movingScreenOffset = this.netManager.getMousePosition(evt);
+            }
+            else if (this._active) {
+                this.currentTool.onMouseDown(evt);
+            }
+        };
+        this.mouseup = evt => {
+            this.movingScreenOffset = null;
+            if (this._active) {
+                this.currentTool.onMouseUp(evt);
+            }
+        };
+        this.mousemove = evt => {
+            if (this.movingScreenOffset) {
+                this.netManager.moveScreen(this.netManager.getMousePosition(evt)
+                    .sub(this.movingScreenOffset));
+            }
+            else if (this._active) {
+                this.currentTool.onMouseMove(evt);
+            }
+        };
+        this.mouseleave = evt => {
+            this.movingScreenOffset = null;
+            if (this._active) {
+                this.currentTool.onMouseLeave(evt);
+            }
+        };
+        this.wheel = evt => {
+            evt.preventDefault();
+            const scale = Math.min(Math.max(.9, 1 + .01 * evt.deltaY), 1.1);
+            this.netManager.zoom(this.netManager.getMousePosition(evt), scale);
+        };
+        this.keydown = evt => {
+            let ele = evt.target;
+            if (ele.tagName === "BODY") {
+                if (evt.key === 'Shift') {
+                    this.netManager.toggleGrid();
+                }
+                else if (evt.key === 'z' && evt.ctrlKey) {
+                    this.netManager.undo();
+                }
+                else if (evt.key === 'y' && evt.ctrlKey) {
+                    this.netManager.redo();
+                }
+                else if (this._active) {
+                    this.currentTool.onKeyDown(evt);
+                }
+            }
+        };
         this._active = true;
         this.netManager = netManager;
         this.tools = {
@@ -154,56 +205,26 @@ export default class ToolBar {
         };
         this.currentTool = this.tools['mouse-tool'];
         this.movingScreenOffset = null;
+        this.addListeners();
     }
-    mousedown(evt) {
-        if (evt.ctrlKey) {
-            this.movingScreenOffset = this.netManager.getMousePosition(evt);
+    addListeners() {
+        console.log('adding listeners');
+        const eventNames = [
+            'mousedown',
+            'mouseup',
+            'mousemove',
+            'mouseleave',
+            'wheel'
+        ];
+        const ele = document.getElementById('svg-div');
+        for (let name of eventNames) {
+            ele.addEventListener(name, this[name]);
         }
-        else if (this._active) {
-            this.currentTool.onMouseDown(evt);
-        }
-    }
-    mouseup(evt) {
-        this.movingScreenOffset = null;
-        if (this._active) {
-            this.currentTool.onMouseUp(evt);
-        }
-    }
-    mousemove(evt) {
-        if (this.movingScreenOffset) {
-            this.netManager.moveScreen(this.netManager.getMousePosition(evt)
-                .sub(this.movingScreenOffset));
-        }
-        else if (this._active) {
-            this.currentTool.onMouseMove(evt);
-        }
-    }
-    mouseleave(evt) {
-        this.movingScreenOffset = null;
-        if (this._active) {
-            this.currentTool.onMouseLeave(evt);
-        }
-    }
-    wheel(evt) {
-        evt.preventDefault();
-        const scale = Math.min(Math.max(.9, 1 + .01 * evt.deltaY), 1.1);
-        this.netManager.zoom(this.netManager.getMousePosition(evt), scale);
-    }
-    keydown(evt) {
-        let ele = evt.target;
-        if (ele.tagName === "BODY") {
-            if (evt.key === 'Shift') {
-                this.netManager.toggleGrid();
-            }
-            else if (evt.key === 'z' && evt.ctrlKey) {
-                this.netManager.undo();
-            }
-            else if (evt.key === 'y' && evt.ctrlKey) {
-                this.netManager.redo();
-            }
-            else if (this._active) {
-                this.currentTool.onKeyDown(evt);
-            }
+        document.body.addEventListener('keydown', evt => {
+            this.keydown(evt);
+        });
+        for (let tool in this.tools) {
+            document.getElementById(tool).addEventListener('mousedown', evt => { this.changeTool(tool); });
         }
     }
     changeTool(tool) {

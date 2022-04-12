@@ -5,6 +5,7 @@ import {
 } from './utils/Line.js';
 import { Arrow } from "./utils/Arrow.js";
 import { createCircle } from "./utils/Circle.js";
+import { ArcData, PEId, PlaceData, PlaceType, TransData } from "./PNData.js";
 
 const arcNodeModel = <SVGAElement><unknown>document.getElementById('arc-node-model')
 
@@ -22,15 +23,14 @@ interface IPetriElement {
     setAttr(attrName: string): void
 }
 
-function createSVGElement(modelId: string) {
+function createSVGElement(id: PEId, modelId: string) {
     const model = <SVGAElement><unknown>document.getElementById(modelId)
     const clone = <SVGAElement>model.cloneNode(true)
-    const PEId = String(Math.random())
-    
-    clone.id = PEId
+
+    clone.id = id
 
     for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
-        ele.setAttribute('pe-parent', PEId)
+        ele.setAttribute('pe-parent', id)
     }
     
     return clone
@@ -43,8 +43,8 @@ abstract class AGenericPetriElement {
     abstract select(): void
     abstract deselect(): void
 
-    constructor (modelId: string) {
-        this.svgElement = createSVGElement(modelId)
+    constructor (id: PEId, modelId: string) {
+        this.svgElement = createSVGElement(id, modelId)
     }
 
     get id() {
@@ -62,14 +62,28 @@ abstract class AGenericPetriElement {
     protected setPEText(attrName: string, val: string) {
         this.getPETextElement(attrName).innerHTML = val
     }
+
+    protected getPETextPosition(attrName: string) {
+        const matrix = this.getPETextElement(attrName).transform
+            .baseVal.getItem(0).matrix
+        return new Vector(matrix.e, matrix.f)
+    }
+
+    protected setPETextPosition(attrName: string, pos: Vector) {
+        const transform = this.getPETextElement(attrName).transform
+            .baseVal.getItem(0)
+        transform.setTranslate(pos.x, pos.y)
+    }
+
+    abstract getData()
 }
 
 abstract class APetriElement extends AGenericPetriElement {
     private _connectedArcs: string[]
     private _position: Vector
 
-    constructor (modelId: string) {
-        super(modelId)
+    constructor (id: PEId, modelId: string) {
+        super(id, modelId)
         this._connectedArcs = []
         this._position = new Vector(0, 0)
     }
@@ -85,7 +99,7 @@ abstract class APetriElement extends AGenericPetriElement {
 
     set position(coord: Vector) {
         this._position = coord
-        let transform = this.svgElement.transform.baseVal.getItem(0);
+        const transform = this.svgElement.transform.baseVal.getItem(0);
         transform.setTranslate(coord.x, coord.y);
     }
 
@@ -122,13 +136,13 @@ class PetriPlace extends APetriElement {
     readonly PEType = 'place'
     private _initialMark: string
 
-    constructor () {
-        super('place-model')
+    constructor (id: PEId) {
+        super(id, 'place-model')
         this._initialMark = '0'
     }
 
-    get placeType() { return this.getPEText('placeType') }
-    set placeType(val: string) { this.setPEText('placeType', val) }
+    get placeType() { return <PlaceType>this.getPEText('placeType') }
+    set placeType(val: PlaceType) { this.setPEText('placeType', val) }
 
     set mark(val: string) { 
         this.svgElement.children[1].innerHTML = ''
@@ -238,6 +252,35 @@ class PetriPlace extends APetriElement {
     static getConnectionPoint(placePos: Vector, u: Vector) {
         return placePos.add(u.mul(-this.placeRadius))
     }
+
+    getData(): PlaceData {
+        return {
+            id: this.id,
+            elementType: this.PEType,
+            name: this.name,
+            placeType: this.placeType,
+            initialMark: this.initialMark,
+            position: this.position,
+            textsPosition: {
+                name: this.getPETextPosition('name'),
+                placeType: this.getPETextPosition('name')
+            }
+        }
+    }
+
+    static load(data: PlaceData) {
+        const place = new PetriPlace(data.id)
+        place.name = data.name
+        place.placeType = data.placeType
+        place.initialMark = data.initialMark
+
+        place.position = new Vector(
+            data.position.x,
+            data.position.y
+        )
+    
+        return place
+    }
 }
 
 class PetriTrans extends APetriElement {
@@ -245,8 +288,8 @@ class PetriTrans extends APetriElement {
     static transHeight = 3
     readonly PEType = 'trans'
 
-    constructor () {
-        super('trans-model')
+    constructor (id: PEId) {
+        super(id, 'trans-model')
     }
 
     get delay() { return this.getPEText('delay') }
@@ -267,6 +310,36 @@ class PetriTrans extends APetriElement {
         }
         return transPos.add(u.mul(this.transWidth));
     }
+
+    getData(): TransData {
+        return {
+            id: this.id,
+            elementType: this.PEType,
+            name: this.name,
+            delay: this.delay,
+            guard: this.guard,
+            position: this.position,
+            textsPosition: {
+                name: this.getPETextPosition('name'),
+                delay: this.getPETextPosition('delay'),
+                guard: this.getPETextPosition('guard')
+            }
+        }
+    }
+
+    static load(data: TransData) {
+        const trans = new PetriTrans(data.id)
+        trans.name = data.name
+        trans.delay = String(data.delay)
+        trans.guard = data.guard
+
+        trans.position = new Vector(
+            data.position.x,
+            data.position.y
+        )
+    
+        return trans
+    }
 }
 
 class PetriArc extends AGenericPetriElement {
@@ -279,11 +352,12 @@ class PetriArc extends AGenericPetriElement {
     private arrow: Arrow
 
     constructor (
+        id: PEId,
         placeId: string, 
         transId: string, 
         arctype: ArcType
     ) {
-        super('arc-model')
+        super(id, 'arc-model')
         this.svgElement.setAttribute('place-id', placeId)
         this.svgElement.setAttribute('trans-id', transId)
         this._placePos = new Vector(0, 0)
@@ -510,6 +584,32 @@ class PetriArc extends AGenericPetriElement {
 
     cleanNodes() {
         document.getElementById('arc-nodes').innerHTML = ''
+    }
+
+    getData(): ArcData {
+        return {
+            id: this.id,
+            elementType: this.PEType,
+            placeId: this.placeId,
+            transId: this.transId,
+            arcType: this.arcType,
+            weight: this.weight,
+            textsPosition: {
+                weight: this.getPETextPosition('weight')
+            }
+        }
+    }
+
+    static load(data: ArcData) {
+        const arc = new PetriArc(
+            data.id,
+            data.placeId, 
+            data.transId, 
+            data.arcType
+        )
+        arc.weight = data.weight
+
+        return arc
     }
 }
 
