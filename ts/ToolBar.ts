@@ -223,9 +223,34 @@ export default class ToolBar {
         }
         this.currentTool = this.tools['mouse-tool']
         this.movingScreenOffset = null
+        this.addListeners()
     }
 
-    mousedown(evt) {
+    private addListeners() {
+        console.log('adding listeners');
+        const eventNames = [
+            'mousedown', 
+            'mouseup', 
+            'mousemove', 
+            'mouseleave', 
+            'wheel'
+        ]
+        const ele = document.getElementById('svg-div')
+        for (let name of eventNames) {
+            ele.addEventListener(name, this[name])
+        }
+        document.body.addEventListener('keydown', evt => { 
+            this.keydown(evt) 
+        })
+        for (let tool in this.tools) {
+            document.getElementById(tool).addEventListener(
+                'mousedown', 
+                evt => { this.changeTool(tool) }
+                )
+        }
+    }
+
+    private mousedown = evt => {
         if (evt.ctrlKey) {
             this.movingScreenOffset = this.netManager.getMousePosition(evt);
         } else if(this._active) {
@@ -233,14 +258,14 @@ export default class ToolBar {
         }
     }
     
-    mouseup(evt) {
+    private mouseup = evt => {
         this.movingScreenOffset = null
         if(this._active) {
             this.currentTool.onMouseUp(evt);
         }
     }
     
-    mousemove(evt: MouseEvent) {
+    private mousemove = evt => {
         if (this.movingScreenOffset) {
             this.netManager.moveScreen(
                 this.netManager.getMousePosition(evt)
@@ -251,14 +276,14 @@ export default class ToolBar {
         }
     }
     
-    mouseleave(evt) {
+    private mouseleave = evt => {
         this.movingScreenOffset = null
         if(this._active) {
             this.currentTool.onMouseLeave(evt);
         }
     }
 
-    wheel(evt) {
+    private wheel = evt => {
         evt.preventDefault();
     
         const scale = Math.min(Math.max(.9, 1 + .01*evt.deltaY), 1.1)
@@ -268,7 +293,7 @@ export default class ToolBar {
         )
     }
 
-    keydown(evt: KeyboardEvent) {
+    private keydown = evt => {
         let ele = <HTMLElement>evt.target
         if(ele.tagName === "BODY") {
             if (evt.key === 'Shift') {
@@ -285,8 +310,7 @@ export default class ToolBar {
         }
     }
     
-    
-    changeTool (tool) {
+    private changeTool (tool) {
         this.currentTool.onChangeTool();
         this.currentTool = this.tools[tool];
         document.getElementById(tool).classList.add("selected-tool-bar-item");

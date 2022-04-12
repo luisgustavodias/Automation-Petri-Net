@@ -4,8 +4,19 @@ import Vector from "./utils/Vector.js";
 import { PetriPlace, PetriTrans, PetriArc } from "./PNElements.js";
 import { UndoRedoManager } from "./UndoRedoManager.js";
 export class PetriNet {
-    constructor(svgElement) {
-        this.svgElement = svgElement;
+    constructor() {
+        this.svgElement = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+        this.svgElement.innerHTML = `<rect id="svg-background" 
+            x="-5000" y="-5000" 
+            width="10000" height="10000" fill="white"/>
+        <g id="elements">
+            <g id="arcs"></g>
+            <g id="pe"></g>
+        </g>
+        <g id="IEs"></g>`;
+        this.svgElement.style.height = '100%';
+        this.svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+        this.svgElement.setAttribute('viewBox', '0 0 1500 300');
         this.elements = {};
         this.inputs = [];
         this.simMode = 1;
@@ -27,6 +38,38 @@ export class PetriNet {
                 .setAttribute('fill', 'white');
         }
         this._grid = val;
+    }
+    filterElementsByType(PEType) {
+        return Object.values(this.elements).filter((ele) => ele.PEType === PEType);
+    }
+    getPlaces() {
+        return this.filterElementsByType('place');
+    }
+    getTransitions() {
+        return this.filterElementsByType('trans');
+    }
+    getArcs() {
+        return this.filterElementsByType('arc');
+    }
+    getData() {
+        const viewBox = this.svgElement.viewBox.baseVal;
+        return {
+            name: 'no name',
+            places: this.getPlaces().map(place => place.getData()),
+            transitions: this.getTransitions().map(trans => trans.getData()),
+            arcs: this.getArcs().map(arc => arc.getData()),
+            inputs: this.inputs,
+            grid: this.grid,
+            nextPlaceNumber: this.placeNumber,
+            nextTransNumber: this.transNumber,
+            viewBox: {
+                x: viewBox.x,
+                y: viewBox.y,
+                width: viewBox.width,
+                heigth: viewBox.height
+            },
+            preScript: ""
+        };
     }
     addGenericPE(genericPE) {
         if (genericPE.PEType === 'arc') {
@@ -79,6 +122,18 @@ export class PetriNet {
         const ele = this.elements[PEId];
         ele[attrName] = val;
     }
+    static newNet() {
+        return new PetriNet();
+    }
+    static loadNet(data) {
+        const net = new PetriNet();
+        data.places.forEach(placeData => { net.addGenericPE(PetriPlace.load(placeData)); });
+        data.transitions.forEach(transData => { net.addGenericPE(PetriTrans.load(transData)); });
+        data.arcs.forEach(arcData => { net.addGenericPE(PetriArc.load(arcData)); });
+        const viewBox = net.svgElement.viewBox.baseVal;
+        Object.assign(viewBox, data.viewBox);
+        return net;
+    }
 }
 const PLACE_DEFAULT_NAME_PREFIX = "p", TRANS_DEFAULT_NAME_PREFIX = "t";
 class CreateElementChange {
@@ -122,10 +177,16 @@ class SetGenericPEAttrChange {
 }
 const GRID_SIZE = 10;
 export class PetriNetManager {
-    constructor() {
-        this.net = new PetriNet(document.getElementById('my-svg'));
+    constructor(net) {
+        this.net = net;
+        document.getElementById('svg-div').appendChild(net.svgElement);
         this._selectedPE = null;
         this.undoRedoManager = new UndoRedoManager();
+    }
+    open(net) {
+        this.net.svgElement.remove();
+        this.net = net;
+        document.getElementById('svg-div').appendChild(net.svgElement);
     }
     get selectedPE() { return this._selectedPE; }
     addGenericPE(genericPE) {
@@ -141,20 +202,23 @@ export class PetriNetManager {
         }
         return pos;
     }
+    generateId() {
+        return String(Math.random());
+    }
     createPlace(coord) {
-        const place = new PetriPlace();
+        const place = new PetriPlace(this.generateId());
         place.name = PLACE_DEFAULT_NAME_PREFIX + this.net.placeNumber++;
         place.position = coord;
         return this.addGenericPE(place);
     }
     createTrans(coord) {
-        const trans = new PetriTrans();
+        const trans = new PetriTrans(this.generateId());
         trans.name = TRANS_DEFAULT_NAME_PREFIX + this.net.transNumber++;
         trans.position = coord;
         return this.addGenericPE(trans);
     }
     createArc(placeId, transId, arcType) {
-        return this.addGenericPE(new PetriArc(placeId, transId, arcType));
+        return this.addGenericPE(new PetriArc(this.generateId(), placeId, transId, arcType));
     }
     getPE(elementId) {
         return this.net.elements[elementId];

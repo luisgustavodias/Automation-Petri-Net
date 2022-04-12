@@ -30,11 +30,6 @@
             border-bottom: 2px solid black;
         }
 
-        #my-svg {
-            height: 100%;
-            border-bottom: 2px solid black;
-        }
-
         .draggable {
             cursor: pointer;
         }
@@ -79,10 +74,10 @@
                 <a id="new-button">New</a>
                 <a id="load-button">Load</a>
                 <a id="save-button">Save</a>
-                <a id="save-as-button">Save as</a>
+                <!-- <a id="save-as-button">Save as</a> -->
             </div>
         </div>
-        <a href="#news">View</a>
+        <!-- <a href="#news">View</a>
         <div class="dropdown">
             <button class="dropbtn">Simulation
                 <i class="fa fa-caret-down"></i>
@@ -93,7 +88,7 @@
                 <a href="#">Restart</a>
                 <a id="sim-config-button">Configuration</a>
             </div>
-        </div>
+        </div> -->
         <a id="inputs-button">Inputs</a>
     </div>
 
@@ -288,8 +283,8 @@
                         drag="pe" PE-parent="trans-model" />
                     <text class="draggable trans-name" transform="translate(6 -5.5)"
                         pe-text="name" drag="self" PE-parent="trans-model">t1</text>
-                    <text class="draggable trans-time" transform="translate(6 5.5)" 
-                        pe-text="time" drag="self" pe-parent="trans-model"></text>
+                    <text class="draggable trans-delay" transform="translate(6 5.5)" 
+                        pe-text="delay" drag="self" pe-parent="trans-model"></text>
                     <text class="draggable trans-guard" transform="translate(-6 -5.5)" text-anchor="end"
                         style="font-family: courier" pe-text="guard" drag="self" pe-parent="trans-model"></text>
                 </g>
@@ -312,19 +307,7 @@
         </svg>
 
         <div id="svg-div">
-            <svg id="my-svg" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1500 300">
-                <defs>
 
-                </defs>
-                <rect id="svg-background" x="-5000" y="-5000" width="10000" height="10000" fill="white"/>
-                <g id="elements">
-                    <g id="arcs"></g>
-                    <g id="pe"></g>
-                </g>
-                <g id="IEs">
-                    
-                </g>
-            </svg>
         </div>
 
     </div>
