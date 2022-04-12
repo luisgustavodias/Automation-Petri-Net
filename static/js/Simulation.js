@@ -260,6 +260,7 @@ class Simulator {
                     this._step();
                 }
             }, STEP_INTERVAL_TIME);
+            return;
         }
         this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));
     }

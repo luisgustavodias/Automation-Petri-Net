@@ -356,6 +356,8 @@ class Simulator {
                     this._step()
                 } 
             }, STEP_INTERVAL_TIME)
+
+            return
         } 
 
         this.fireTrans(
