@@ -81,6 +81,27 @@ function exampleNet(netManager) {
     netManager.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)');
     netManager.moveScreen(new Vector(50, 0));
 }
+function testArc(netManager) {
+    const p1 = netManager.createPlace(new Vector(20, 50));
+    const p2 = netManager.createPlace(new Vector(20, 150));
+    const p3 = netManager.createPlace(new Vector(100, 150));
+    const t1 = netManager.createTrans(new Vector(50, 100));
+    const t2 = netManager.createTrans(new Vector(100, 50));
+    const a1 = netManager.createArc(p1, t1, 'Input');
+    const a2 = netManager.createArc(p2, t1, 'Input');
+    const a3 = netManager.createArc(p3, t1, 'Input');
+    const a4 = netManager.createArc(p3, t2, 'Input');
+    const a5 = netManager.createArc(p1, t2, 'Input');
+    const arc = netManager.getPE(a4);
+    arc.addCorner(0);
+    netManager.movePE(t2, new Vector(20, 0));
+    arc.addCorner(1);
+    arc.addCorner(0);
+    //netManager.selectPE(a4)
+    netManager.moveArcCorner(a4, 0, new Vector(10, -10));
+    netManager.zoom(new Vector(10, 100), 0.6);
+    console.log(arc);
+}
 function main() {
     console.log('Creating net');
     const net = PetriNet.newNet();
@@ -143,6 +164,7 @@ function main() {
         const fileText = await file.write(JSON.stringify(netData));
         await file.close();
     };
-    exampleNet(netManager);
+    // exampleNet(netManager)
+    testArc(netManager);
 }
 window.onload = main;

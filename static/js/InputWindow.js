@@ -1,5 +1,7 @@
 const inputWindowDiv = document.getElementById("inputs-window");
 class AGenericInput {
+    element;
+    name;
     constructor(inputType, inputName) {
         this.element = document.createElement('input');
         const label = document.createElement('label');
@@ -36,6 +38,7 @@ const InputsConstructorsByType = {
     'BOOL': BoolInput
 };
 class InputWindow {
+    inputs;
     constructor() {
         this.inputs = [];
     }

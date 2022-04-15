@@ -1,20 +1,20 @@
-import { updateLine } from './Line.js';
+import { createLine, updateLine } from './Line.js';
 import Vector from './Vector.js';
 export class Arrow {
-    constructor(line, head) {
-        this.headWidth = 6;
-        this.headHeight = 2;
-        this.line = line;
-        this.head = head;
+    headWidth = 6;
+    headHeight = 2;
+    line;
+    head;
+    headPos;
+    tailPos;
+    constructor() {
         this.headPos = new Vector(20, 20);
         this.tailPos = new Vector(50, 20);
+        this.line = createLine(this.headPos, this.tailPos);
+        this.line.setAttribute('stroke', 'black');
+        this.head = document
+            .createElementNS('http://www.w3.org/2000/svg', 'polygon');
         this._update();
-    }
-    updateLine(startPoint, endPoint) {
-        this.line.setAttribute('x1', String(startPoint.x));
-        this.line.setAttribute('y1', String(startPoint.y));
-        this.line.setAttribute('x2', String(endPoint.x));
-        this.line.setAttribute('y2', String(endPoint.y));
     }
     updateHead(u, v1) {
         let w = u.ortogonal();
@@ -29,7 +29,7 @@ export class Arrow {
     }
     _update() {
         let u = this.getDirection();
-        updateLine(this.line, this.tailPos, this.headPos.add(u.mul(this.headWidth)));
+        updateLine(this.line, this.tailPos, this.headPos.add(u.mul(-this.headWidth)));
         this.updateHead(u.mul(-1), this.headPos);
     }
     update(tailPos, headPos) {
@@ -39,9 +39,8 @@ export class Arrow {
     }
     updateHeadPos(pos) { this.update(this.tailPos, pos); }
     updateTailPos(pos) { this.update(pos, this.headPos); }
-    changeLine(line) {
-        this.line = line;
-        this._update();
+    getMidPoint() {
+        return this.tailPos.add(this.headPos.sub(this.tailPos).mul(0.5));
     }
 }
 // type ArcType = "Input" | "Output" | "Test" | "Inhibitor"

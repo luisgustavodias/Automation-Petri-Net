@@ -8,6 +8,13 @@ function filterNetElementsByType(net, PEType) {
     return Object.values(net.elements).filter((ele) => ele.PEType === PEType);
 }
 class LogicalNet {
+    placeMarks;
+    arcsByTrans;
+    transOrder;
+    transState;
+    transGuards;
+    transGuardFuncs;
+    inputValues; //InputValues
     constructor(net, inputValues) {
         const places = filterNetElementsByType(net, 'place');
         this.placeMarks = {};
@@ -98,6 +105,11 @@ class LogicalNet {
     }
 }
 class Simulator {
+    net;
+    playing;
+    stoping;
+    logicalNet;
+    inputWindow;
     constructor(net) {
         this.net = net;
         this.playing = false;

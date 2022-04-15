@@ -112,8 +112,8 @@ export class PetriNet {
 
             place.connectArc(arc.id)
             trans.connectArc(arc.id)
-            arc.updatePlacePos(place.position)
-            arc.updateTransPos(trans.position)
+            arc.updatePlacePos()
+            arc.updateTransPos()
 
             this.svgElement.querySelector('#arcs')
                 .appendChild(genericPE.svgElement)
@@ -297,14 +297,14 @@ export class PetriNetManager {
         return genericPE.id
     }
 
-    getMousePosition(evt: MouseEvent) {
+    getMousePosition(evt: MouseEvent, ignoreGrid: boolean = false) {
         const CTM = this.net.svgElement.getScreenCTM();
         const pos = new Vector(
             (evt.clientX - CTM.e) / CTM.a,
             (evt.clientY - CTM.f) / CTM.d
         )
 
-        if (this.net.grid) {
+        if (!ignoreGrid && this.net.grid) {
             return new Vector(
                 Math.round(pos.x/GRID_SIZE)*GRID_SIZE, 
                 Math.round(pos.y/GRID_SIZE)*GRID_SIZE
@@ -336,7 +336,11 @@ export class PetriNetManager {
 
     createArc(placeId: string, transId: string, arcType: ArcType) {
         return this.addGenericPE(
-            new PetriArc(this.generateId(), placeId, transId, arcType)
+                new PetriArc(this.generateId(), 
+                <PetriPlace>this.getPE(placeId), 
+                <PetriTrans>this.getPE(transId), 
+                arcType
+            )
         )
     }
 
@@ -360,6 +364,33 @@ export class PetriNetManager {
         // propertyWindow.show(selectedPE)
     }
 
+    addArcCorner(arcId: string, idx) {
+        const arc = <PetriArc>this.net.elements[arcId]
+        arc.addCorner(idx)
+
+        if (!this._selectedPE) return
+
+
+        if (arcId !== this._selectedPE.id) return
+
+        arc.cleanNodes()
+        arc.showNodes()
+    }
+
+    moveArcCorner(arcId: string, idx: number, displacement: Vector) {
+        const arc = <PetriArc>this.net.elements[arcId]
+
+        arc.moveCorner(idx, displacement)
+
+        if (!this._selectedPE) return
+
+
+        if (arcId !== this._selectedPE.id) return
+
+        arc.cleanNodes()
+        arc.showNodes()
+    }
+
     movePE(id: string, displacement: Vector) {
         const genericPE = this.net.elements[id]
 
@@ -374,10 +405,10 @@ export class PetriNetManager {
         for (const arcId of petriElement.connectedArcs) {
             if (genericPE.PEType === 'place') {
                 //@ts-ignore
-                this.net.elements[arcId].updatePlacePos(petriElement.position);
+                this.net.elements[arcId].updatePlacePos();
             } else {
                 //@ts-ignore
-                this.net.elements[arcId].updateTransPos(petriElement.position);
+                this.net.elements[arcId].updateTransPos();
             }
         }
     }

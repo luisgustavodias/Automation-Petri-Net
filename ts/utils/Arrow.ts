@@ -1,28 +1,23 @@
-import { updateLine } from './Line.js'
+import { createLine, updateLine } from './Line.js'
 import Vector from './Vector.js'
 
 export class Arrow {
     headWidth = 6
     headHeight = 2
 
-    private line: SVGLineElement
-    private head: SVGPolygonElement
+    readonly line: SVGLineElement
+    readonly head: SVGPolygonElement
     private headPos: Vector
     private tailPos: Vector
 
-    constructor (line: SVGLineElement, head: SVGPolygonElement) {
-        this.line = line
-        this.head = head
+    constructor () { // line: SVGLineElement, head: SVGPolygonElement
         this.headPos = new Vector(20, 20)
         this.tailPos = new Vector(50, 20)
+        this.line = createLine(this.headPos, this.tailPos)
+        this.line.setAttribute('stroke', 'black')
+        this.head = <SVGPolygonElement><unknown>document
+            .createElementNS('http://www.w3.org/2000/svg', 'polygon')
         this._update()
-    }
-
-    private updateLine(startPoint: Vector, endPoint: Vector) {
-        this.line.setAttribute('x1', String(startPoint.x))
-        this.line.setAttribute('y1', String(startPoint.y))
-        this.line.setAttribute('x2', String(endPoint.x))
-        this.line.setAttribute('y2', String(endPoint.y))
     }
     
     private updateHead(u: Vector, v1: Vector) {
@@ -44,7 +39,7 @@ export class Arrow {
         updateLine(
             this.line,
             this.tailPos, 
-            this.headPos.add(u.mul(this.headWidth))
+            this.headPos.add(u.mul(-this.headWidth))
         )
         this.updateHead(u.mul(-1), this.headPos)
     }
@@ -59,10 +54,14 @@ export class Arrow {
     
     updateTailPos(pos: Vector) { this.update(pos, this.headPos) }
 
-    changeLine(line: SVGLineElement) {
-        this.line = line
-        this._update()
+    getMidPoint() {
+        return this.tailPos.add(this.headPos.sub(this.tailPos).mul(0.5))
     }
+
+    // changeLine(line: SVGLineElement) {
+    //     this.line = line
+    //     this._update()
+    // }
 }
 
 // type ArcType = "Input" | "Output" | "Test" | "Inhibitor"

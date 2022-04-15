@@ -1,6 +1,7 @@
 {
     "compilerOptions": {
-        "target": "ES2021",
+        "module": "es2022",
+        "target": "esnext",
         "noImplicitUseStrict": true,
         "watch": true,
         "outDir": "static/js"

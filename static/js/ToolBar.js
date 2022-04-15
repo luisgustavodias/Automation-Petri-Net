@@ -2,6 +2,8 @@ import Vector from "./utils/Vector.js";
 import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/Line.js";
 const SVG_BG_ID = 'svg-background';
 class GenericTool {
+    netManager;
+    buttonId;
     constructor(netManager, buttonId) {
         this.netManager = netManager;
         this.buttonId = buttonId;
@@ -17,6 +19,7 @@ class GenericTool {
     }
 }
 class PetriElementTool extends GenericTool {
+    createMethod;
     constructor(createMethod, netManager, buttonId) {
         super(netManager, buttonId);
         this.createMethod = createMethod;
@@ -30,6 +33,9 @@ class PetriElementTool extends GenericTool {
     }
 }
 class ArcTool extends GenericTool {
+    line;
+    firstPE;
+    mouseDownPos;
     constructor(netManager) {
         super(netManager, "arc-tool");
         this.line = createLine(new Vector(20, 20), new Vector(20, 80));
@@ -94,10 +100,14 @@ class ArcTool extends GenericTool {
     }
 }
 class MouseTool extends GenericTool {
+    dragging;
+    lastMousePos;
+    cornerIdx;
     // dragManager: DragManager
     constructor(netManager) {
         super(netManager, "mouse-tool");
         this.dragging = false;
+        this.cornerIdx = null;
         // this.dragManager = dragManager
     }
     onMouseDown(evt) {
@@ -113,22 +123,41 @@ class MouseTool extends GenericTool {
             this.netManager.deselectPE();
             this.netManager.selectPE(PEId);
         }
+        if (this.netManager.selectedPE.PEType === 'arc') {
+            if (evt.target.getAttribute('drag') === 'corner') {
+                this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'));
+            }
+            else if (evt.target.getAttribute('drag') === 'arcMidNode') {
+                this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'));
+                this.netManager.addArcCorner(this.netManager.selectedPE.id, this.cornerIdx);
+            }
+            else {
+                this.cornerIdx = null;
+            }
+        }
         this.dragging = true;
-        this.lastMousePos = this.netManager.getMousePosition(evt);
-        // this.dragManager.startDrag(evt)
+        this.lastMousePos = this.netManager.getMousePosition(evt, true);
     }
     onMouseMove(evt) {
         if (this.dragging) {
             const mousePos = this.netManager.getMousePosition(evt);
-            this.netManager.movePE(this.netManager.selectedPE.id, mousePos.sub(this.lastMousePos));
+            const displacement = mousePos.sub(this.lastMousePos);
             this.lastMousePos = mousePos;
+            if (this.cornerIdx !== null) {
+                this.netManager.moveArcCorner(this.netManager.selectedPE.id, this.cornerIdx, displacement);
+            }
+            else {
+                this.netManager.movePE(this.netManager.selectedPE.id, displacement);
+            }
         }
     }
     onMouseUp(evt) {
         this.dragging = false;
+        this.cornerIdx = null;
     }
     onMouseLeave(evt) {
         this.dragging = false;
+        this.cornerIdx = null;
     }
     onKeyDown(evt) {
         if (evt.key === "Delete" && this.netManager.selectedPE) {
@@ -143,58 +172,12 @@ class MouseTool extends GenericTool {
     }
 }
 export default class ToolBar {
+    _active;
+    tools;
+    currentTool;
+    movingScreenOffset;
+    netManager;
     constructor(netManager) {
-        this.mousedown = evt => {
-            if (evt.ctrlKey) {
-                this.movingScreenOffset = this.netManager.getMousePosition(evt);
-            }
-            else if (this._active) {
-                this.currentTool.onMouseDown(evt);
-            }
-        };
-        this.mouseup = evt => {
-            this.movingScreenOffset = null;
-            if (this._active) {
-                this.currentTool.onMouseUp(evt);
-            }
-        };
-        this.mousemove = evt => {
-            if (this.movingScreenOffset) {
-                this.netManager.moveScreen(this.netManager.getMousePosition(evt)
-                    .sub(this.movingScreenOffset));
-            }
-            else if (this._active) {
-                this.currentTool.onMouseMove(evt);
-            }
-        };
-        this.mouseleave = evt => {
-            this.movingScreenOffset = null;
-            if (this._active) {
-                this.currentTool.onMouseLeave(evt);
-            }
-        };
-        this.wheel = evt => {
-            evt.preventDefault();
-            const scale = Math.min(Math.max(.9, 1 + .01 * evt.deltaY), 1.1);
-            this.netManager.zoom(this.netManager.getMousePosition(evt), scale);
-        };
-        this.keydown = evt => {
-            let ele = evt.target;
-            if (ele.tagName === "BODY") {
-                if (evt.key === 'Shift') {
-                    this.netManager.toggleGrid();
-                }
-                else if (evt.key === 'z' && evt.ctrlKey) {
-                    this.netManager.undo();
-                }
-                else if (evt.key === 'y' && evt.ctrlKey) {
-                    this.netManager.redo();
-                }
-                else if (this._active) {
-                    this.currentTool.onKeyDown(evt);
-                }
-            }
-        };
         this._active = true;
         this.netManager = netManager;
         this.tools = {
@@ -227,6 +210,57 @@ export default class ToolBar {
             document.getElementById(tool).addEventListener('mousedown', evt => { this.changeTool(tool); });
         }
     }
+    mousedown = evt => {
+        if (evt.ctrlKey) {
+            this.movingScreenOffset = this.netManager.getMousePosition(evt);
+        }
+        else if (this._active) {
+            this.currentTool.onMouseDown(evt);
+        }
+    };
+    mouseup = evt => {
+        this.movingScreenOffset = null;
+        if (this._active) {
+            this.currentTool.onMouseUp(evt);
+        }
+    };
+    mousemove = evt => {
+        if (this.movingScreenOffset) {
+            this.netManager.moveScreen(this.netManager.getMousePosition(evt)
+                .sub(this.movingScreenOffset));
+        }
+        else if (this._active) {
+            this.currentTool.onMouseMove(evt);
+        }
+    };
+    mouseleave = evt => {
+        this.movingScreenOffset = null;
+        if (this._active) {
+            this.currentTool.onMouseLeave(evt);
+        }
+    };
+    wheel = evt => {
+        evt.preventDefault();
+        const scale = Math.min(Math.max(.9, 1 + .01 * evt.deltaY), 1.1);
+        this.netManager.zoom(this.netManager.getMousePosition(evt), scale);
+    };
+    keydown = evt => {
+        let ele = evt.target;
+        if (ele.tagName === "BODY") {
+            if (evt.key === 'Shift') {
+                this.netManager.toggleGrid();
+            }
+            else if (evt.key === 'z' && evt.ctrlKey) {
+                this.netManager.undo();
+            }
+            else if (evt.key === 'y' && evt.ctrlKey) {
+                this.netManager.redo();
+            }
+            else if (this._active) {
+                this.currentTool.onKeyDown(evt);
+            }
+        }
+    };
     changeTool(tool) {
         this.currentTool.onChangeTool();
         this.currentTool = this.tools[tool];

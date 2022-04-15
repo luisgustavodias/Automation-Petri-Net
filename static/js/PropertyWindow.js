@@ -1,4 +1,8 @@
 class ElementPropertyWindow {
+    idPrefix;
+    _attrNames;
+    propertyWindow;
+    changeObserver;
     constructor(PEType, attrNames) {
         this.propertyWindow = document.getElementById('pw-' + PEType);
         this.idPrefix = "pw-" + PEType;
@@ -30,6 +34,8 @@ const attrNames = {
     arc: ["arcType", "weight"]
 };
 class PropertyWindow {
+    currentEPW;
+    elePropWindows;
     constructor() {
         this.currentEPW = null;
         this.elePropWindows = {};

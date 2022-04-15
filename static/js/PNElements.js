@@ -1,7 +1,8 @@
 import Vector from "./utils/Vector.js";
-import { getLineEndPoint, getLineStartPoint, getLineMidPoint, setLineEndPoint, setLineStartPoint, getLineDirection } from './utils/Line.js';
+import { getLineEndPoint, getLineStartPoint, getLineMidPoint, setLineStartPoint, getLineDirection, createLine } from './utils/Line.js';
 import { Arrow } from "./utils/Arrow.js";
 import { createCircle } from "./utils/Circle.js";
+import { createRect } from "./utils/Rectangle.js";
 const arcNodeModel = document.getElementById('arc-node-model');
 function createSVGElement(id, modelId) {
     const model = document.getElementById(modelId);
@@ -13,6 +14,8 @@ function createSVGElement(id, modelId) {
     return clone;
 }
 class AGenericPetriElement {
+    svgElement;
+    PEType;
     constructor(id, modelId) {
         this.svgElement = createSVGElement(id, modelId);
     }
@@ -40,6 +43,8 @@ class AGenericPetriElement {
     }
 }
 class APetriElement extends AGenericPetriElement {
+    _connectedArcs;
+    _position;
     constructor(id, modelId) {
         super(id, modelId);
         this._connectedArcs = [];
@@ -79,9 +84,12 @@ class APetriElement extends AGenericPetriElement {
     }
 }
 class PetriPlace extends APetriElement {
+    static placeRadius = 8;
+    static tokenRadius = 1.5;
+    PEType = 'place';
+    _initialMark;
     constructor(id) {
         super(id, 'place-model');
-        this.PEType = 'place';
         this._initialMark = '0';
     }
     get placeType() { return this.getPEText('placeType'); }
@@ -188,8 +196,8 @@ class PetriPlace extends APetriElement {
         token.setAttribute('pe-parent', this.id);
         return token;
     }
-    static getConnectionPoint(placePos, u) {
-        return placePos.add(u.mul(-this.placeRadius));
+    getConnectionPoint(u) {
+        return this.position.add(u.mul(-PetriPlace.placeRadius));
     }
     getData() {
         return {
@@ -214,29 +222,29 @@ class PetriPlace extends APetriElement {
         return place;
     }
 }
-PetriPlace.placeRadius = 8;
-PetriPlace.tokenRadius = 1.5;
 class PetriTrans extends APetriElement {
+    static transWidth = 5.5;
+    static transHeight = 3;
+    PEType = 'trans';
     constructor(id) {
         super(id, 'trans-model');
-        this.PEType = 'trans';
     }
     get delay() { return this.getPEText('delay'); }
     set delay(val) { this.setPEText('delay', val); }
     get guard() { return this.getPEText('guard'); }
     set guard(val) { this.setPEText('guard', val); }
-    static getConnectionPoint(transPos, u) {
+    getConnectionPoint(u) {
         if (u.y !== 0) {
             let k;
-            if (Math.abs(u.x * this.transHeight / u.y) > this.transWidth) {
-                k = this.transWidth / Math.abs(u.x);
+            if (Math.abs(u.x * PetriTrans.transHeight / u.y) > PetriTrans.transWidth) {
+                k = PetriTrans.transWidth / Math.abs(u.x);
             }
             else {
-                k = this.transHeight / Math.abs(u.y);
+                k = PetriTrans.transHeight / Math.abs(u.y);
             }
-            return transPos.add(u.mul(k));
+            return this.position.add(u.mul(k));
         }
-        return transPos.add(u.mul(this.transWidth));
+        return this.position.add(u.mul(PetriTrans.transWidth));
     }
     getData() {
         return {
@@ -262,21 +270,41 @@ class PetriTrans extends APetriElement {
         return trans;
     }
 }
-PetriTrans.transWidth = 5.5;
-PetriTrans.transHeight = 3;
 class PetriArc extends AGenericPetriElement {
-    constructor(id, placeId, transId, arctype) {
+    static negBallRadius = 2;
+    PEType = 'arc';
+    _arcType;
+    place;
+    trans;
+    arrow;
+    corners;
+    constructor(id, place, trans, arctype) {
         super(id, 'arc-model');
-        this.PEType = 'arc';
-        this.svgElement.setAttribute('place-id', placeId);
-        this.svgElement.setAttribute('trans-id', transId);
-        this._placePos = new Vector(0, 0);
-        this._transPos = new Vector(1, 0);
-        this.arrow = new Arrow(this.svgElement.children[0].children[0], this.svgElement.children[1]);
+        this.place = place;
+        this.trans = trans;
+        this.arrow = new Arrow(
+        // <SVGLineElement>this.svgElement.children[0].children[0],
+        // <SVGPolygonElement>this.svgElement.children[1]
+        );
+        this.arrow.line.setAttribute('pe-parent', this.id);
+        this.arrow.head.setAttribute('pe-parent', this.id);
+        this.svgElement.children[0].appendChild(this.arrow.line);
+        this.svgElement.children[0].appendChild(this.arrow.head);
+        this.corners = [];
         this.arcType = arctype;
+        console.log(this.svgElement.children[2]);
     }
-    get placeId() { return this.svgElement.getAttribute('place-id'); }
-    get transId() { return this.svgElement.getAttribute('trans-id'); }
+    get lastCorner() {
+        return this.corners[this.corners.length - 1];
+    }
+    get linesGroup() {
+        return this.svgElement.children[1];
+    }
+    get negBall() { return this.svgElement.children[3]; }
+    get weightElement() { return this.svgElement.children[4]; }
+    get cornersGroup() { return this.svgElement.children[2]; }
+    get placeId() { return this.place.id; }
+    get transId() { return this.trans.id; }
     get weight() { return this.getPEText('weight'); }
     set weight(val) {
         this.setPEText('weight', val);
@@ -292,160 +320,241 @@ class PetriArc extends AGenericPetriElement {
     get arcType() { return this._arcType; }
     set arcType(val) {
         if (val === "Test") {
-            this.svgElement.children[0].setAttribute('stroke-dasharray', '2 2');
+            this.linesGroup.setAttribute('stroke-dasharray', '2 2');
+            this.arrow.line.setAttribute('stroke-dasharray', '2 2');
         }
         else {
-            this.svgElement.children[0].setAttribute('stroke-dasharray', '');
+            this.linesGroup.setAttribute('stroke-dasharray', '');
+            this.arrow.line.setAttribute('stroke-dasharray', '');
         }
         if (val === "Inhibitor") {
-            this.svgElement.children[2].setAttribute('visibility', 'visible');
+            this.negBall.setAttribute('visibility', 'visible');
         }
         else {
-            this.svgElement.children[2].setAttribute('visibility', 'hidden');
+            this.negBall.setAttribute('visibility', 'hidden');
+        }
+        if (this.arcType !== val &&
+            (val === 'Output' || this._arcType === 'Output')) {
+            this.corners.reverse();
         }
         this._arcType = val;
         this.svgElement.setAttribute('arc-type', val);
-        let lines = this.getLines();
-        if (lines.length === 1) {
-            this.singleLineUpdate();
-        }
-        else {
-            setLineEndPoint(lines[0], getLineStartPoint(lines[1]));
-            setLineStartPoint(lines[lines.length - 1], getLineEndPoint(lines[lines.length - 2]));
-            this.updatePlacePos(this._placePos);
-            this.updateTransPos(this._transPos);
-        }
-    }
-    getLines() {
-        return this.svgElement.children[0].children;
+        this.updateLines();
+        this.updatePlacePos();
+        this.updateTransPos();
     }
     updateWeightPos() {
-        let lines = this.getLines();
-        let n = lines.length;
-        let line;
+        let n = this.corners.length;
+        let direction;
         let anchorPoint;
-        if (n % 2 === 1) {
-            line = lines[(n - 1) / 2];
-            anchorPoint = getLineMidPoint(line);
+        if (n === 0) {
+            anchorPoint = this.arrow.getMidPoint();
+            direction = this.arrow.getDirection();
         }
         else {
-            line = lines[n / 2];
-            anchorPoint = getLineStartPoint(line);
+            if (n % 2 === 1) {
+                anchorPoint = getLineMidPoint(this.linesGroup.children[(n - 1) / 2]);
+                direction = getLineDirection(this.linesGroup.children[(n - 1) / 2]);
+            }
+            else {
+                anchorPoint = getLineStartPoint(this.linesGroup.children[n / 2]);
+                direction = getLineDirection(this.linesGroup.children[n / 2]);
+            }
         }
-        let pos = anchorPoint.add(getLineDirection(line).norm().ortogonal().mul(4.5));
-        this.svgElement.children[3].setAttribute('x', String(pos.x));
-        this.svgElement.children[3].setAttribute('y', String(pos.y));
+        let pos = anchorPoint.add(direction.norm().ortogonal().mul(4.5));
+        this.weightElement.setAttribute('x', String(pos.x));
+        this.weightElement.setAttribute('y', String(pos.y));
     }
     updateNegBall(pos) {
-        this.svgElement.children[2].setAttribute('cx', String(pos.x));
-        this.svgElement.children[2].setAttribute('cy', String(pos.y));
+        this.negBall.setAttribute('cx', String(pos.x));
+        this.negBall.setAttribute('cy', String(pos.y));
     }
-    updateInhibitorArrow(tailPos, connectionPoint, u) {
+    updateInhibitorArrow(connectionPoint, u) {
         this.updateNegBall(connectionPoint.add(u.mul(PetriArc.negBallRadius)));
-        this.arrow.update(tailPos, connectionPoint.add(u.mul(2 * PetriArc.negBallRadius)));
+        this.arrow.updateHeadPos(connectionPoint.add(u.mul(2 * PetriArc.negBallRadius)));
     }
-    singleLineUpdate() {
-        let u = (this._placePos.sub(this._transPos)).norm();
-        let placePoint = PetriPlace.getConnectionPoint(this._placePos, u);
-        let transPoint = PetriTrans.getConnectionPoint(this._transPos, u);
+    noCornerUpdate() {
+        let u = (this.place.position.sub(this.trans.position)).norm();
+        let placePoint = this.place.getConnectionPoint(u);
+        let transPoint = this.trans.getConnectionPoint(u);
+        // setCircleCenter(<any>this.svgElement.children[3], placePoint)
+        // setCircleCenter(<any>this.svgElement.children[4], transPoint)
         if (this._arcType === 'Output') {
             this.arrow.update(transPoint, placePoint);
         }
         else {
             if (this._arcType === 'Inhibitor') {
-                this.updateInhibitorArrow(placePoint, transPoint, u);
+                this.arrow.updateTailPos(placePoint);
+                this.updateInhibitorArrow(transPoint, u);
             }
             else {
                 this.arrow.update(placePoint, transPoint);
             }
         }
-        this.updateWeightPos();
+        //this.updateWeightPos()
     }
-    updatePlacePos(pos) {
-        this._placePos = pos;
-        let lines = this.getLines();
-        if (lines.length === 1) {
-            this.singleLineUpdate();
-        }
-        else if (this._arcType === "Output") {
-            this.arrow.updateHeadPos(PetriPlace.getConnectionPoint(pos, this.arrow.getDirection()));
+    newLine(startPoint, endPoint) {
+        const line = createLine(startPoint, endPoint);
+        line.setAttribute('pe-parent', this.id);
+        this.linesGroup.appendChild(line);
+    }
+    updateLines() {
+        this.linesGroup.innerHTML = '';
+        if (!this.corners.length)
+            return;
+        let startPoint;
+        if (this._arcType === "Output") {
+            const u = this.trans.position.sub(this.corners[0]).norm();
+            startPoint = this.trans.getConnectionPoint(u);
         }
         else {
-            setLineStartPoint(lines[0], PetriPlace.getConnectionPoint(pos, this.arrow.getDirection()));
+            const u = this.place.position.sub(this.corners[0]).norm();
+            startPoint = this.place.getConnectionPoint(u);
         }
-    }
-    updateTransPos(pos) {
-        this._transPos = pos;
-        let lines = this.getLines();
-        if (lines.length === 1) {
-            this.singleLineUpdate();
-        }
-        else {
-            let u = this.arrow.getDirection();
-            let connectionPoint = PetriTrans.getConnectionPoint(pos, u);
-            if (this._arcType === "Output") {
-                setLineStartPoint(lines[0], connectionPoint);
+        for (let i = 0; i < this.corners.length; i++) {
+            if (i == 0) {
+                this.newLine(startPoint, this.corners[0]);
             }
             else {
-                if (this._arcType === "Inhibitor") {
-                    this.updateInhibitorArrow(getLineEndPoint(lines[lines.length - 2]), connectionPoint, u);
-                }
+                this.newLine(this.corners[i - 1], this.corners[i]);
+            }
+        }
+    }
+    updateArc() {
+        this.updateLines();
+        this.updatePlacePos();
+        this.updateTransPos();
+    }
+    createMidNode(idx, pos) {
+        const node = createRect(pos, 3, 3);
+        node.setAttribute('pe-parent', this.id);
+        node.setAttribute('drag', 'arcMidNode');
+        node.setAttribute('cornerIdx', String(idx));
+        node.setAttribute('fill', 'blue');
+        node.setAttribute('stroke', 'black');
+        node.setAttribute('stroke-width', '0.5');
+        this.cornersGroup.appendChild(node);
+    }
+    createNode(idx, pos, type) {
+        const node = createRect(pos, 3, 3);
+        node.setAttribute('pe-parent', this.id);
+        node.setAttribute('cornerIdx', String(idx));
+        node.setAttribute('stroke', 'black');
+        node.setAttribute('stroke-width', '0.6');
+        node.setAttribute('drag', type);
+        if (type === 'arcMidNode') {
+            node.setAttribute('fill', 'blue');
+        }
+        else {
+            node.setAttribute('fill', 'yellow');
+        }
+        this.cornersGroup.appendChild(node);
+    }
+    updatePlacePos() {
+        this.place.position;
+        if (this.corners.length === 0) {
+            this.noCornerUpdate();
+        }
+        else if (this._arcType === "Output") {
+            this.arrow.update(this.lastCorner, this.place.getConnectionPoint(this.place.position.sub(this.lastCorner).norm()));
+        }
+        else {
+            setLineStartPoint(this.linesGroup.children[0], this.place.getConnectionPoint(this.place.position.sub(this.corners[0]).norm()));
+        }
+    }
+    updateTransPos() {
+        if (this.corners.length === 0) {
+            this.noCornerUpdate();
+        }
+        else if (this._arcType === "Output") {
+            const u = this.corners[0].sub(this.trans.position).norm();
+            const connectionPoint = this.trans.getConnectionPoint(u);
+            setLineStartPoint(this.linesGroup.children[0], connectionPoint);
+        }
+        else {
+            const u = this.lastCorner.sub(this.trans.position).norm();
+            const connectionPoint = this.trans.getConnectionPoint(u);
+            this.arrow.updateTailPos(this.lastCorner);
+            if (this._arcType === "Inhibitor") {
+                this.updateInhibitorArrow(connectionPoint, u);
+            }
+            else {
                 this.arrow.updateHeadPos(connectionPoint);
             }
         }
     }
-    select() {
-        this.svgElement.children[0].setAttribute('stroke', 'blue');
-        this.svgElement.children[1].setAttribute('fill', 'blue');
-        this.svgElement.children[2].setAttribute('stroke', 'blue');
-        // this.showNodes()
-    }
-    deselect() {
-        this.svgElement.children[0].setAttribute('stroke', 'black');
-        this.svgElement.children[1].setAttribute('fill', 'black');
-        this.svgElement.children[2].setAttribute('stroke', 'black');
-        // this.cleanNodes()
-    }
-    splitLine(i) {
-        let lines = this.getLines();
-        let ele = lines[i].cloneNode(true);
-        this.svgElement.children[0].insertBefore(ele, lines[i]);
-        let midPoint = getLineMidPoint(lines[i]);
-        setLineEndPoint(lines[i], midPoint);
-        setLineStartPoint(lines[i + 1], midPoint);
-    }
-    setNodePos(node, coord) {
-        let transform = node.transform.baseVal.getItem(0);
-        transform.setTranslate(coord.x, coord.y);
-    }
-    createNode(nodeType, i, line) {
-        let group = document.getElementById('arc-nodes');
-        let node = arcNodeModel.cloneNode(true);
-        node.id = 'arc-' + nodeType + '-node-' + i;
-        node.setAttribute('pe-parent', this.id);
-        node.setAttribute('arc-node-type', nodeType);
-        node.setAttribute('arc-node-line', String(i));
-        if (nodeType === 'mid') {
-            node.setAttribute('fill', 'blue');
-            this.setNodePos(node, getLineMidPoint(line));
+    addCorner(idx) {
+        if (idx < this.corners.length) {
+            const pos = getLineMidPoint(this.linesGroup.children[idx]);
+            this.corners.splice(idx, 0, pos);
+        }
+        else if (idx === this.corners.length) {
+            const pos = this.arrow.getMidPoint();
+            this.corners.push(pos);
+            this.arrow.updateTailPos(pos);
         }
         else {
-            node.setAttribute('fill', 'yellow');
-            this.setNodePos(node, getLineStartPoint(line));
+            throw "Invalid corner index";
         }
-        group.appendChild(node);
+        this.updateArc();
+    }
+    removeCorner(idx) {
+        if (idx < this.corners.length) {
+            const pos = getLineMidPoint(this.linesGroup.children[idx]);
+            this.corners.splice(idx, 0, pos);
+            this.linesGroup.appendChild(createLine(pos, pos));
+        }
+        else if (idx === this.corners.length) {
+            const pos = this.arrow.getMidPoint();
+            this.corners.push(pos);
+            this.linesGroup.appendChild(createLine(pos, pos));
+            this.arrow.updateTailPos(pos);
+        }
+        else {
+            throw "Invalid corner index";
+        }
+        this.updateLines();
+    }
+    moveCorner(idx, displacement) {
+        console.log(idx, displacement, this.corners[idx]);
+        this.corners[idx] = this.corners[idx].add(displacement);
+        this.updateLines();
+        console.log(this.corners[idx]);
+        if (idx === this.corners.length - 1) {
+            this.arrow.updateTailPos(this.corners[this.corners.length - 1]);
+            if (this._arcType === 'Output')
+                this.updatePlacePos();
+            else
+                this.updateTransPos();
+        }
     }
     showNodes() {
-        let lines = this.getLines();
+        console.log(this.cornersGroup);
+        const lines = this.
+            linesGroup.children;
         for (let i = 0; i < lines.length; i++) {
-            this.createNode('mid', i, lines[i]);
-            if (i > 0) {
-                this.createNode('corner', i, lines[i]);
-            }
+            this.createNode(i, getLineMidPoint(lines[i]), 'arcMidNode');
+            this.createNode(i, getLineEndPoint(lines[i]), 'corner');
         }
+        this.createMidNode(lines.length, this.arrow.getMidPoint());
     }
     cleanNodes() {
-        document.getElementById('arc-nodes').innerHTML = '';
+        this.cornersGroup.innerHTML = '';
+    }
+    setArcColor(color) {
+        this.linesGroup.setAttribute('stroke', color);
+        this.negBall.setAttribute('stroke', color);
+        this.arrow.line.setAttribute('stroke', color);
+        this.arrow.head.setAttribute('fill', color);
+        this.arrow.head.setAttribute('stroke', color);
+    }
+    select() {
+        this.setArcColor('blue');
+        this.showNodes();
+    }
+    deselect() {
+        this.setArcColor('black');
+        this.cleanNodes();
     }
     getData() {
         return {
@@ -461,10 +570,9 @@ class PetriArc extends AGenericPetriElement {
         };
     }
     static load(data) {
-        const arc = new PetriArc(data.id, data.placeId, data.transId, data.arcType);
+        const arc = new PetriArc(data.id, null, null, data.arcType);
         arc.weight = data.weight;
         return arc;
     }
 }
-PetriArc.negBallRadius = 2;
 export { AGenericPetriElement, APetriElement, PetriPlace, PetriTrans, PetriArc };

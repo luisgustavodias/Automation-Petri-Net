@@ -1,4 +1,6 @@
 class UndoRedoManager {
+    undoList;
+    redoList;
     constructor() {
         this.undoList = [];
         this.redoList = [];

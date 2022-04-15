@@ -31,6 +31,7 @@ function getInputs() {
     return [...tbody.children].map(getInput);
 }
 class InputConfig {
+    saveObserver;
     constructor() {
         this.saveObserver = null;
         document.getElementById('new-input-button')

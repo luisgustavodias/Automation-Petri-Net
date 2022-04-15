@@ -145,11 +145,13 @@ class ArcTool extends GenericTool {
 class MouseTool extends GenericTool {
     dragging: boolean
     lastMousePos: Vector
+    cornerIdx: number
     // dragManager: DragManager
 
     constructor(netManager: PetriNetManager) {
         super(netManager, "mouse-tool")
         this.dragging = false
+        this.cornerIdx = null
         // this.dragManager = dragManager
     }
 
@@ -167,28 +169,53 @@ class MouseTool extends GenericTool {
             this.netManager.deselectPE()
             this.netManager.selectPE(PEId)
         }
+        if (this.netManager.selectedPE.PEType === 'arc') {
+            if (evt.target.getAttribute('drag') === 'corner') {
+                this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'))
+            } else if (evt.target.getAttribute('drag') === 'arcMidNode') {
+                this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'))
+                this.netManager.addArcCorner(
+                    this.netManager.selectedPE.id,
+                    this.cornerIdx
+                )
+            } else {
+                this.cornerIdx = null
+            }
+        } 
+                
         this.dragging = true
-        this.lastMousePos = this.netManager.getMousePosition(evt)
-        // this.dragManager.startDrag(evt)
+        this.lastMousePos = this.netManager.getMousePosition(evt, true)
     }
 
     onMouseMove(evt) {
         if (this.dragging) {
             const mousePos = this.netManager.getMousePosition(evt)
-            this.netManager.movePE(
-                this.netManager.selectedPE.id,
-                mousePos.sub(this.lastMousePos)
-            )
+            const displacement = mousePos.sub(this.lastMousePos)
             this.lastMousePos = mousePos
+            
+            if (this.cornerIdx !== null) {
+                this.netManager.moveArcCorner(
+                    this.netManager.selectedPE.id,
+                    this.cornerIdx,
+                    displacement
+                )
+            } else {
+                this.netManager.movePE(
+                    this.netManager.selectedPE.id, 
+                    displacement
+                )
+            }
         }
     }
 
     onMouseUp(evt) {
         this.dragging = false
+        this.cornerIdx = null
     }
 
     onMouseLeave(evt) {
         this.dragging = false
+        this.cornerIdx = null
     }
 
     onKeyDown(evt: KeyboardEvent) {
