@@ -1,41 +1,13 @@
 import Vector from "./utils/Vector.js";
 import {
     getLineEndPoint, getLineStartPoint,
-    getLineMidPoint, setLineEndPoint, setLineStartPoint, getLineDirection, createLine
-} from './utils/Line.js';
+    getLineMidPoint, setLineStartPoint, getLineDirection, createLine
+} from './utils/SVGElement/Line.js';
 import { Arrow } from "./utils/Arrow.js";
-import { createCircle, setCircleCenter } from "./utils/Circle.js";
-import { ArcData, PEId, PlaceData, PlaceType, TransData } from "./PNData.js";
-import { createRect, setRectCenter } from "./utils/Rectangle.js";
-
-const arcNodeModel = <SVGAElement><unknown>document.getElementById('arc-node-model')
-
-type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
-type ArcNodeType = "mid" | "corner"
-type PetriELmentType = "place" | "trans" | "arc"
-
-interface IPetriElement {
-    readonly id: string
-    readonly PEType: PetriELmentType
-
-    select(): void
-    deselect(): void
-    getAttr(attrName: string): string
-    setAttr(attrName: string): void
-}
-
-function createSVGElement(id: PEId, modelId: string) {
-    const model = <SVGAElement><unknown>document.getElementById(modelId)
-    const clone = <SVGAElement>model.cloneNode(true)
-
-    clone.id = id
-
-    for (let ele of clone.querySelectorAll(`[pe-parent="${modelId}"]`)) {
-        ele.setAttribute('pe-parent', id)
-    }
-    
-    return clone
-}
+import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js";
+import { ArcData, PEId, PlaceData, PlaceType, TransData, ArcType } from "./PNData.js";
+import { createRect } from "./utils/SVGElement/Rectangle.js";
+import { createGroup, createText } from "./utils/SVGElement/others.js";
 
 abstract class AGenericPetriElement {
     readonly svgElement: SVGGElement
@@ -45,7 +17,7 @@ abstract class AGenericPetriElement {
     abstract deselect(): void
 
     constructor (id: PEId, modelId: string) {
-        this.svgElement = createSVGElement(id, modelId)
+        this.svgElement = createGroup({id: id})
     }
 
     get id() {
@@ -53,7 +25,7 @@ abstract class AGenericPetriElement {
     }
 
     protected getPETextElement(attrName: string): SVGAElement {
-        return this.svgElement.querySelector(`[pe-text="${attrName}"]`)
+        return this.svgElement.querySelector(`[PEText="${attrName}"]`)
     }
 
     protected getPEText(attrName: string) {
@@ -85,6 +57,7 @@ abstract class APetriElement extends AGenericPetriElement {
 
     constructor (id: PEId, modelId: string) {
         super(id, modelId)
+        this.svgElement.setAttribute('transform', 'translate(0 0)')
         this._connectedArcs = []
         this._position = new Vector(0, 0)
     }
@@ -103,6 +76,8 @@ abstract class APetriElement extends AGenericPetriElement {
         const transform = this.svgElement.transform.baseVal.getItem(0);
         transform.setTranslate(coord.x, coord.y);
     }
+
+    abstract getConnectionPoint(u: Vector)
 
     move(displacement: Vector) {
         this.position = this._position.add(displacement)
@@ -140,10 +115,44 @@ class PetriPlace extends APetriElement {
     constructor (id: PEId) {
         super(id, 'place-model')
         this._initialMark = '0'
+        this.svgElement.appendChild(createCircle(
+            new Vector(0,0), 
+            PetriPlace.placeRadius,
+            {
+                fill: 'white',
+                stroke: 'black',
+                drag: 'pe',
+                PEParent: id
+            }
+        ))
+        this.svgElement.appendChild(createGroup())
+        this.svgElement.appendChild(createText(
+            'p1',
+            new Vector(6.5, -8),
+            {
+                drag: 'self',
+                PEText: 'name',
+                PEParent: id
+            }
+        ))
+        this.svgElement.appendChild(createText(
+            'INT',
+            new Vector(7, 8.5),
+            {
+                drag: 'self',
+                PEText: 'placeType',
+                PEParent: id
+            }
+        ))
     }
 
-    get placeType() { return <PlaceType>this.getPEText('placeType') }
-    set placeType(val: PlaceType) { this.setPEText('placeType', val) }
+    get placeType() { 
+        return <PlaceType>this.getPEText('placeType') 
+    }
+
+    set placeType(val: PlaceType) { 
+        this.setPEText('placeType', val) 
+    }
 
     set mark(val: string) { 
         this.svgElement.children[1].innerHTML = ''
@@ -211,7 +220,7 @@ class PetriPlace extends APetriElement {
             tokens = [
                 createCircle(new Vector(0, 0), r)               
             ]
-            tokens[0].setAttribute('pe-parent', this.id)
+            tokens[0].setAttribute('PEParent', this.id)
 
             const textElement = document.createElementNS(
                 'http://www.w3.org/2000/svg', 'text'
@@ -220,7 +229,7 @@ class PetriPlace extends APetriElement {
             textElement.setAttribute('text-anchor', 'middle')
             textElement.setAttribute('dominant-baseline', 'middle')
             textElement.setAttribute('transform', 'translate(0 0.5)')
-            textElement.setAttribute('pe-parent', this.id)
+            textElement.setAttribute('PEParent', this.id)
 
             if (parseInt(val) > 99) {
                 textElement.innerHTML = '99+'
@@ -237,7 +246,10 @@ class PetriPlace extends APetriElement {
         }
     }
 
-    get initialMark() { return this._initialMark }
+    get initialMark() { 
+        return this._initialMark 
+    }
+
     set initialMark(val: string) {
         this._initialMark = val
         this.mark = val
@@ -245,7 +257,7 @@ class PetriPlace extends APetriElement {
 
     private createToken(pos: Vector) {
         const token = createCircle(pos, PetriPlace.tokenRadius)
-        token.setAttribute('pe-parent', this.id)
+        token.setAttribute('PEParent', this.id)
 
         return token
     }
@@ -268,20 +280,6 @@ class PetriPlace extends APetriElement {
             }
         }
     }
-
-    static load(data: PlaceData) {
-        const place = new PetriPlace(data.id)
-        place.name = data.name
-        place.placeType = data.placeType
-        place.initialMark = data.initialMark
-
-        place.position = new Vector(
-            data.position.x,
-            data.position.y
-        )
-    
-        return place
-    }
 }
 
 class PetriTrans extends APetriElement {
@@ -291,13 +289,63 @@ class PetriTrans extends APetriElement {
 
     constructor (id: PEId) {
         super(id, 'trans-model')
+        this.svgElement.appendChild(createRect(
+            new Vector(0, 0), 
+            PetriTrans.transWidth*2,
+            PetriTrans.transHeight*2,
+            {
+                fill: 'black',
+                stroke: 'black',
+                drag: 'pe',
+                PEParent: id
+            }
+        ))
+        this.svgElement.appendChild(createText(
+            'p1',
+            new Vector(6, -5.5),
+            {
+                drag: 'self',
+                PEText: 'name',
+                PEParent: id
+            }
+        ))
+        this.svgElement.appendChild(createText(
+            '',
+            new Vector(6, 5.5),
+            {
+                drag: 'self',
+                PEText: 'delay',
+                PEParent: id
+            }
+        ))
+        this.svgElement.appendChild(createText(
+            '',
+            new Vector(-6, -5.5),
+            {
+                drag: 'self',
+                PEText: 'guard',
+                'text-anchor': 'end',
+                style: 'font-family: courier',
+                PEParent: id
+            }
+        ))
     }
 
-    get delay() { return this.getPEText('delay') }
-    set delay(val: string) { this.setPEText('delay', val) }
+    get delay() { 
+        return this.getPEText('delay') 
+    }
 
-    get guard() { return this.getPEText('guard') }
-    set guard(val: string) { this.setPEText('guard', val) }
+    set delay(val: string) { 
+        this.setPEText('delay', val) 
+    }
+
+    get guard() { 
+        return this.getPEText('guard') 
+    }
+
+    set guard(val: string) { 
+        this.setPEText('guard', val) 
+    }
 
     getConnectionPoint(u: Vector) {
         if (u.y !== 0) {
@@ -327,20 +375,6 @@ class PetriTrans extends APetriElement {
             }
         }
     }
-
-    static load(data: TransData) {
-        const trans = new PetriTrans(data.id)
-        trans.name = data.name
-        trans.delay = String(data.delay)
-        trans.guard = data.guard
-
-        trans.position = new Vector(
-            data.position.x,
-            data.position.y
-        )
-    
-        return trans
-    }
 }
 
 class PetriArc extends AGenericPetriElement {
@@ -362,12 +396,42 @@ class PetriArc extends AGenericPetriElement {
         super(id, 'arc-model')
         this.place = place
         this.trans = trans
-        this.arrow = new Arrow(
-            // <SVGLineElement>this.svgElement.children[0].children[0],
-            // <SVGPolygonElement>this.svgElement.children[1]
-        )
-        this.arrow.line.setAttribute('pe-parent', this.id)
-        this.arrow.head.setAttribute('pe-parent', this.id)
+        this.arrow = new Arrow()
+        this.svgElement.appendChild(createGroup(
+            {
+                'stroke-linecap': 'round'
+            }
+        ))
+        this.svgElement.appendChild(createGroup(
+            {
+                'stroke-linecap': 'round',
+                'stroke': 'black'
+            }
+        ))
+        this.svgElement.appendChild(createGroup())
+        this.svgElement.appendChild(createCircle(
+            new Vector(0,0), 
+            PetriArc.negBallRadius,
+            {
+                fill: 'white',
+                stroke: 'black',
+                'stroke-width': '0.8',
+                visibility: 'hidden',
+                PEParent: id
+            }
+        ))
+        this.svgElement.appendChild(createText(
+            '1',
+            new Vector(7, 8.5),
+            {
+                drag: 'self',
+                PEText: 'weight',
+                visibility: 'hidden',
+                PEParent: id
+            }
+        ))
+        this.arrow.line.setAttribute('PEParent', this.id)
+        this.arrow.head.setAttribute('PEParent', this.id)
         this.svgElement.children[0].appendChild(this.arrow.line)
         this.svgElement.children[0].appendChild(this.arrow.head)
         this.corners = []
@@ -383,15 +447,30 @@ class PetriArc extends AGenericPetriElement {
         return this.svgElement.children[1]
     }
 
-    private get negBall() { return this.svgElement.children[3] }
+    private get negBall() { 
+        return <SVGCircleElement>this.svgElement.children[3] 
+    }
 
-    private get weightElement() { return this.svgElement.children[4] }
+    private get weightElement() { 
+        return this.svgElement.children[4] 
+    }
 
-    private get cornersGroup() { return this.svgElement.children[2] }
+    private get cornersGroup() { 
+        return this.svgElement.children[2] 
+    }
 
-    get placeId() { return this.place.id }
-    get transId() { return this.trans.id }
-    get weight() { return this.getPEText('weight') }
+    get placeId() { 
+        return this.place.id 
+    }
+
+    get transId() { 
+        return this.trans.id 
+    }
+
+    get weight() { 
+        return this.getPEText('weight') 
+    }
+
     set weight(val) { 
         this.setPEText('weight', val)
         if (val === '1') {
@@ -402,7 +481,11 @@ class PetriArc extends AGenericPetriElement {
                 .setAttribute('visibility', 'visible')
         }
     }
-    get arcType() { return this._arcType }
+
+    get arcType() { 
+        return this._arcType 
+    }
+
     set arcType(val: ArcType) {
         if (val === "Test") {
             this.linesGroup.setAttribute('stroke-dasharray', '2 2')
@@ -462,13 +545,9 @@ class PetriArc extends AGenericPetriElement {
         this.weightElement.setAttribute('y', String(pos.y))
     }
 
-    private updateNegBall(pos: Vector) {
-        this.negBall.setAttribute('cx', String(pos.x))
-        this.negBall.setAttribute('cy', String(pos.y))
-    }
-
     private updateInhibitorArrow(connectionPoint: Vector, u: Vector) {
-        this.updateNegBall(
+        setCircleCenter(
+            this.negBall,
             connectionPoint.add(u.mul(PetriArc.negBallRadius))
         )
         
@@ -498,8 +577,9 @@ class PetriArc extends AGenericPetriElement {
     }
 
     private newLine(startPoint: Vector, endPoint: Vector) {
-        const line = createLine(startPoint, endPoint)
-        line.setAttribute('pe-parent', this.id)
+        const line = createLine(startPoint, endPoint, {
+            PEParent: this.id
+        })
         this.linesGroup.appendChild(line)
     }
 
@@ -524,7 +604,6 @@ class PetriArc extends AGenericPetriElement {
                     this.corners[i]
                 )
             }
-            
         }
     }
 
@@ -534,21 +613,9 @@ class PetriArc extends AGenericPetriElement {
         this.updateTransPos()
     }
 
-    private createMidNode(idx: number, pos: Vector) {
-        const node = createRect(pos, 3, 3)
-        node.setAttribute('pe-parent', this.id)
-        node.setAttribute('drag', 'arcMidNode')
-        node.setAttribute('cornerIdx', String(idx))
-        node.setAttribute('fill', 'blue')
-        node.setAttribute('stroke', 'black')
-        node.setAttribute('stroke-width', '0.5')
-
-        this.cornersGroup.appendChild(node)
-    }
-
     private createNode(idx: number, pos: Vector, type: string) {
         const node = createRect(pos, 3, 3)
-        node.setAttribute('pe-parent', this.id)
+        node.setAttribute('PEParent', this.id)
         node.setAttribute('cornerIdx', String(idx))
         node.setAttribute('stroke', 'black')
         node.setAttribute('stroke-width', '0.6')
@@ -677,7 +744,7 @@ class PetriArc extends AGenericPetriElement {
             this.createNode(i, getLineEndPoint(lines[i]), 'corner')
         }
 
-        this.createMidNode(lines.length, this.arrow.getMidPoint())
+        this.createNode(lines.length, this.arrow.getMidPoint(), 'arcMidNode')
     }
 
     cleanNodes() {
@@ -714,18 +781,6 @@ class PetriArc extends AGenericPetriElement {
                 weight: this.getPETextPosition('weight')
             }
         }
-    }
-
-    static load(data: ArcData) {
-        const arc = new PetriArc(
-            data.id,
-            null, 
-            null, 
-            data.arcType
-        )
-        arc.weight = data.weight
-
-        return arc
     }
 }
 

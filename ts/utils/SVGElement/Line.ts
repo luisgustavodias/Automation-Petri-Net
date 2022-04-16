@@ -1,4 +1,5 @@
-import Vector from "./Vector.js";
+import { createSVGElement, SVGElementAttrs } from "./base.js";
+import Vector from "../Vector.js";
 
 export function getLineStartPoint(line: SVGLineElement) {
     return new Vector(
@@ -49,9 +50,12 @@ export function invertLine(line: SVGLineElement) {
     )
 }
 
-export function createLine(startPoint: Vector, endPoint: Vector) {
-    const line = <SVGLineElement><unknown>document
-        .createElementNS('http://www.w3.org/2000/svg', 'line')
+export function createLine(
+    startPoint: Vector, 
+    endPoint: Vector, 
+    attrs: SVGElementAttrs = {}
+) {
+    const line = <SVGLineElement>createSVGElement('line', attrs)
     setLineStartPoint(line, startPoint)
     setLineEndPoint(line, endPoint)
 

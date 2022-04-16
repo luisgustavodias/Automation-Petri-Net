@@ -164,7 +164,6 @@ function main() {
         const fileText = await file.write(JSON.stringify(netData));
         await file.close();
     };
-    // exampleNet(netManager)
-    testArc(netManager);
+    exampleNet(netManager);
 }
 window.onload = main;

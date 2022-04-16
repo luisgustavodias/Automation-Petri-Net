@@ -5,7 +5,7 @@ import { AGenericPetriElement, APetriElement, PetriPlace,
     PetriTrans, PetriArc, ArcType } from "./PNElements.js";
 import { Change, UndoRedoManager } from "./UndoRedoManager.js";
 import { Input } from "./InputsConfig.js";
-import { PetriNetData } from "./PNData.js";
+import { ArcData, PEId, PetriNetData, PlaceData, TransData } from "./PNData.js";
 
 export class PetriNet {
     readonly svgElement: SVGSVGElement
@@ -61,6 +61,10 @@ export class PetriNet {
         return Object.values(this.elements).filter(
             (ele) => ele.PEType === PEType
         )
+    }
+
+    getGenericPE(id: PEId) {
+        return this.elements[id]
     }
 
     getPlaces() {
@@ -131,35 +135,75 @@ export class PetriNet {
         this.elements[genericPE.id] = genericPE
     }
 
-    removeGenericPE(PEId: string) {
-        if (this.elements[PEId].PEType === 'arc') {
-            let arc = <PetriArc>this.elements[PEId]
+    removeGenericPE(id: PEId) {
+        if (this.elements[id].PEType === 'arc') {
+            let arc = <PetriArc>this.elements[id]
             let place = <PetriPlace>this.elements[arc.placeId]
             let trans = <PetriTrans>this.elements[arc.transId]
 
             place.disconnectArc(arc.id)
             trans.disconnectArc(arc.id)
         } else {
-            let petriElement = <APetriElement>this.elements[PEId]
+            let petriElement = <APetriElement>this.elements[id]
             if (petriElement.connectedArcs.length) {
                 throw "Can't remove a place or trans with connected arcs"
             }
         }
 
-        let element = this.elements[PEId]
+        let element = this.elements[id]
         element.svgElement.remove()
-        delete this.elements[PEId]
+        delete this.elements[id]
 
         return element
     }
 
-    getGenericPEAttr(PEId: string, attrName: string) {
-        return this.elements[PEId][attrName]
+    getGenericPEAttr(id: PEId, attrName: string) {
+        return this.elements[id][attrName]
     }
 
-    setGenericPEAttr(PEId: string, attrName: string, val: string) {
-        const ele = this.elements[PEId]
+    setGenericPEAttr(id: PEId, attrName: string, val: string) {
+        const ele = this.elements[id]
         ele[attrName] = val
+    }
+
+    private static loadPlace(data: PlaceData) {
+        const place = new PetriPlace(data.id)
+        place.name = data.name
+        place.placeType = data.placeType
+        place.initialMark = data.initialMark
+
+        place.position = new Vector(
+            data.position.x,
+            data.position.y
+        )
+    
+        return place
+    }
+
+    private static loadTrans(data: TransData) {
+        const trans = new PetriTrans(data.id)
+        trans.name = data.name
+        trans.delay = String(data.delay)
+        trans.guard = data.guard
+
+        trans.position = new Vector(
+            data.position.x,
+            data.position.y
+        )
+    
+        return trans
+    }
+
+    private static loadArc(data: ArcData, net: PetriNet) {
+        const arc = new PetriArc(
+            data.id,
+            <PetriPlace>net.getGenericPE(data.placeId), 
+            <PetriTrans>net.getGenericPE(data.transId), 
+            data.arcType
+        )
+        arc.weight = data.weight
+
+        return arc
     }
 
     static newNet() {
@@ -170,13 +214,13 @@ export class PetriNet {
         const net = new PetriNet()
 
         data.places.forEach(
-            placeData => { net.addGenericPE(PetriPlace.load(placeData)) }
+            placeData => { net.addGenericPE(this.loadPlace(placeData)) }
         )
         data.transitions.forEach(
-            transData => { net.addGenericPE(PetriTrans.load(transData)) }
+            transData => { net.addGenericPE(this.loadTrans(transData)) }
         )
         data.arcs.forEach(
-            arcData => { net.addGenericPE(PetriArc.load(arcData)) }
+            arcData => { net.addGenericPE(this.loadArc(arcData, net)) }
         )
 
         const viewBox = net.svgElement.viewBox.baseVal

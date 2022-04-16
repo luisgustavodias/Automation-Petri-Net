@@ -268,39 +268,8 @@
 
         <svg xmlns="http://www.w3.org/2000/svg">
             <defs>
-                <g class="place draggable" id=place-model transform="translate(0 0)" arcsId="[]" initialMark="0">
-                    <circle r="8" fill="white" stroke="black" drag="pe" pe-parent="place-model" />
-                    <g class="place-mark">
-
-                    </g>
-                    <text class="draggable place-name" transform="translate(6.5 -8)"
-                        pe-text="name" drag="self" pe-parent="place-model">p1</text>
-                    <text class="draggable place-type" transform="translate(7 8.5)"
-                        pe-text="placeType" drag="self" pe-parent="place-model">INT</text>
-                </g>
-                <g class="trans draggable" id="trans-model" transform="translate(0 0)" arcsId="">
-                    <rect x="-5.5" y="-3" width="11" height="6" fill="black" stroke="black"
-                        drag="pe" PE-parent="trans-model" />
-                    <text class="draggable trans-name" transform="translate(6 -5.5)"
-                        pe-text="name" drag="self" PE-parent="trans-model">t1</text>
-                    <text class="draggable trans-delay" transform="translate(6 5.5)" 
-                        pe-text="delay" drag="self" pe-parent="trans-model"></text>
-                    <text class="draggable trans-guard" transform="translate(-6 -5.5)" text-anchor="end"
-                        style="font-family: courier" pe-text="guard" drag="self" pe-parent="trans-model"></text>
-                </g>
-                <g class="arc" id="arc-model" placeId="place-model" transId="trans-model" arcType="input">
-                    <g pe-comp="arrow" stroke-linecap="round"></g>
-                    <g pe-comp="lines" stroke="black" stroke-linecap="round"></g>
-                    <g pe-comp="arcNodes"></g>
-                    <circle r='2' fill='white' stroke='black' stroke-width='0.8' visibility="hidden"
-                    PE-parent="arc-model" />
-                    <text class="draggable arc-weight" transform="translate(0 0)" visibility="hidden"
-                    text-anchor="middle" dominant-baseline="middle" pe-text="weight" drag="self" pe-parent="arc-model">1</text>
-                </g>
-                <rect id="arc-node-model" x="-1.5" y="-1.5" width="3" height="3" fill="blue" stroke="black"
-                    stroke-width="0.5" transform="translate(0 0)" pe-parent="arc-model" />
                 <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.7"/>
+                    <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.2"/>
                 </pattern>
             </defs>
         </svg>

@@ -1,6 +1,6 @@
 import Vector from "./utils/Vector.js"
 import { AGenericPetriElement, PetriPlace, PetriTrans } from "./PNElements.js";
-import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/Line.js";
+import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/SVGElement/Line.js";
 import { PetriNetManager } from "./PetriNet.js";
 
 const SVG_BG_ID = 'svg-background'
@@ -78,7 +78,7 @@ class ArcTool extends GenericTool {
         }
 
         const genericPE = this.netManager.getPE(
-            target.getAttribute('pe-parent')
+            target.getAttribute('PEParent')
         )
 
         if (genericPE.PEType === 'place' 
@@ -112,7 +112,7 @@ class ArcTool extends GenericTool {
         }
 
         const genericPE = this.netManager.getPE(
-            target.getAttribute('pe-parent')
+            target.getAttribute('PEParent')
         )
 
         if (this.firstPE.PEType === 'place' 
@@ -161,7 +161,7 @@ class MouseTool extends GenericTool {
             return
         }
 
-        const PEId = evt.target.getAttribute('pe-parent')
+        const PEId = evt.target.getAttribute('PEParent')
 
         if (!this.netManager.selectedPE) {
             this.netManager.selectPE(PEId)
@@ -184,7 +184,7 @@ class MouseTool extends GenericTool {
         } 
                 
         this.dragging = true
-        this.lastMousePos = this.netManager.getMousePosition(evt, true)
+        this.lastMousePos = this.netManager.getMousePosition(evt)
     }
 
     onMouseMove(evt) {

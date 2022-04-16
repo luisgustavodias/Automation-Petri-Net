@@ -1,4 +1,5 @@
-import { createLine, updateLine } from './Line.js'
+import { createLine, updateLine } from './SVGElement/Line.js'
+import { createPolygon } from './SVGElement/others.js'
 import Vector from './Vector.js'
 
 export class Arrow {
@@ -15,8 +16,7 @@ export class Arrow {
         this.tailPos = new Vector(50, 20)
         this.line = createLine(this.headPos, this.tailPos)
         this.line.setAttribute('stroke', 'black')
-        this.head = <SVGPolygonElement><unknown>document
-            .createElementNS('http://www.w3.org/2000/svg', 'polygon')
+        this.head = createPolygon()
         this._update()
     }
     

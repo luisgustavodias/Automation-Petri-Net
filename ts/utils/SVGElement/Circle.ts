@@ -1,4 +1,5 @@
-import Vector from "./Vector.js";
+import Vector from "../Vector.js";
+import { createSVGElement, SVGElementAttrs } from "./base.js";
 
 function getCircleRadius(circle: SVGCircleElement) {
     return parseInt(circle.getAttribute('r'))
@@ -20,9 +21,12 @@ function setCircleCenter(circle: SVGCircleElement, center: Vector) {
     circle.setAttribute('cy', String(center.y))
 }
 
-function createCircle(center: Vector, radius: number) {
-    const circle = <SVGCircleElement><unknown>document
-        .createElementNS('http://www.w3.org/2000/svg', 'circle')
+function createCircle(
+    center: Vector, 
+    radius: number, 
+    attrs: SVGElementAttrs = {}
+) {
+    const circle = <SVGCircleElement>createSVGElement('circle', attrs)
     setCircleCenter(circle, center)
     setCircleRadius(circle, radius)
 

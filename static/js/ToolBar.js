@@ -1,5 +1,5 @@
 import Vector from "./utils/Vector.js";
-import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/Line.js";
+import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/SVGElement/Line.js";
 const SVG_BG_ID = 'svg-background';
 class GenericTool {
     netManager;
@@ -57,7 +57,7 @@ class ArcTool extends GenericTool {
             this.restart();
             return;
         }
-        const genericPE = this.netManager.getPE(target.getAttribute('pe-parent'));
+        const genericPE = this.netManager.getPE(target.getAttribute('PEParent'));
         if (genericPE.PEType === 'place'
             || genericPE.PEType === 'trans') {
             this.firstPE = genericPE;
@@ -82,7 +82,7 @@ class ArcTool extends GenericTool {
             this.restart();
             return;
         }
-        const genericPE = this.netManager.getPE(target.getAttribute('pe-parent'));
+        const genericPE = this.netManager.getPE(target.getAttribute('PEParent'));
         if (this.firstPE.PEType === 'place'
             && genericPE.PEType === 'trans') {
             this.netManager.createArc(this.firstPE.id, genericPE.id, 'Input');
@@ -115,7 +115,7 @@ class MouseTool extends GenericTool {
             this.netManager.deselectPE();
             return;
         }
-        const PEId = evt.target.getAttribute('pe-parent');
+        const PEId = evt.target.getAttribute('PEParent');
         if (!this.netManager.selectedPE) {
             this.netManager.selectPE(PEId);
         }
@@ -136,7 +136,7 @@ class MouseTool extends GenericTool {
             }
         }
         this.dragging = true;
-        this.lastMousePos = this.netManager.getMousePosition(evt, true);
+        this.lastMousePos = this.netManager.getMousePosition(evt);
     }
     onMouseMove(evt) {
         if (this.dragging) {

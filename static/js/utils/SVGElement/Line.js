@@ -1,5 +1,5 @@
-import { createSVGElement } from "./SVGElement/base.js";
-import Vector from "./Vector.js";
+import { createSVGElement } from "./base.js";
+import Vector from "../Vector.js";
 export function getLineStartPoint(line) {
     return new Vector(parseFloat(line.getAttribute('x1')), parseFloat(line.getAttribute('y1')));
 }
@@ -27,8 +27,8 @@ export function updateLine(line, startPoint, endPoint) {
 export function invertLine(line) {
     updateLine(line, getLineEndPoint(line), getLineStartPoint(line));
 }
-export function createLine(startPoint, endPoint) {
-    const line = createSVGElement('line');
+export function createLine(startPoint, endPoint, attrs = {}) {
+    const line = createSVGElement('line', attrs);
     setLineStartPoint(line, startPoint);
     setLineEndPoint(line, endPoint);
     return line;

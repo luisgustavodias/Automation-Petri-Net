@@ -212,8 +212,7 @@ function main() {
         await file.close()
     }
 
-    // exampleNet(netManager)
-    testArc(netManager)
+    exampleNet(netManager)
 }
 
 window.onload = main

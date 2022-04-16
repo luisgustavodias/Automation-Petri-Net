@@ -92,7 +92,7 @@ interface PetriNetData extends PetriNetBasicData {
     nextTransNumber: number
 }
 
-export { PEId, PlaceType,
+export { PEId, PlaceType, ArcType, PetriElementType, InputType,
     GenericPEBasicData, PlaceBasicData, TransBasicData,
     ArcBasicData, PlaceData, TransData, ArcData, PetriNetBasicData,
     PetriNetData }

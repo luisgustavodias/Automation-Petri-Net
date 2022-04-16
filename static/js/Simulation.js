@@ -1,5 +1,5 @@
 import { InputWindow } from "./InputWindow.js";
-import { createCircle, setCircleCenter } from "./utils/Circle.js";
+import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js";
 const FIRE_TRANS_ANIMATION_TIME = 1500;
 const STEP_INTERVAL_TIME = 250;
 const TRANS_ENABLE_COLOR = '#04c200';

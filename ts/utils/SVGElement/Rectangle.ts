@@ -1,4 +1,5 @@
-import Vector from "./Vector.js";
+import Vector from "../Vector.js";
+import { createSVGElement, SVGElementAttrs } from "./base.js";
 
 function getRectPos(rect: SVGRectElement) {
     return new Vector(
@@ -36,9 +37,13 @@ function getRectSizeAsVector(rect: SVGRectElement) {
     return new Vector(getRectWidth(rect), getRectHeight(rect))
 }
 
-function createRect(pos: Vector, width: number, height: number) {
-    const rect = <SVGRectElement><unknown>document
-        .createElementNS('http://www.w3.org/2000/svg', 'rect')
+function createRect(
+    pos: Vector, 
+    width: number, 
+    height: number,
+    attrs: SVGElementAttrs = {}
+) {
+    const rect = <SVGRectElement>createSVGElement('rect', attrs)
     setRectHeight(rect, height)
     setRectWidth(rect, width)
     setRectCenter(rect, pos)

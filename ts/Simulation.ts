@@ -7,7 +7,7 @@ import {
     ArcType
 } from "./PNElements.js"
 import { InputValues, InputWindow } from "./InputWindow.js"
-import { createCircle, setCircleCenter } from "./utils/Circle.js"
+import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js"
 import Vector from "./utils/Vector.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
