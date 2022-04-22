@@ -39,6 +39,12 @@ export class Arrow {
     }
     updateHeadPos(pos) { this.update(this.tailPos, pos); }
     updateTailPos(pos) { this.update(pos, this.headPos); }
+    getHeadPos() {
+        return this.headPos;
+    }
+    getTailPos() {
+        return this.tailPos;
+    }
     getMidPoint() {
         return this.tailPos.add(this.headPos.sub(this.tailPos).mul(0.5));
     }

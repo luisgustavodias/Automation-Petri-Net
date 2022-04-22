@@ -5,7 +5,7 @@ import {
     PetriTrans, 
     PetriArc
 } from "./PNElements.js"
-import { ArcType, PetriNetData, PlaceType } from "./PNData.js"
+import { ArcType, PEId, PetriNetData, PlaceType } from "./PNData.js"
 import { InputValues, InputWindow } from "./InputWindow.js"
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js"
 import Vector from "./utils/Vector.js"
@@ -152,12 +152,84 @@ class LogicalNet {
     }
 }
 
+interface TokenAnimStep {
+    startPoint: Vector
+    velocity: Vector
+    endTime: number
+}
+
+class TokenAnimation {
+    private readonly animSteps: TokenAnimStep[]
+    private readonly token: SVGCircleElement
+    private currentStep: number
+
+    constructor(pathPoints: Vector[]) {
+        const segmentsDistVect = []
+        for (let i = 1; i < pathPoints.length; i++)
+            segmentsDistVect.push(pathPoints[i].sub(pathPoints[i-1]))
+
+        const totalLength = segmentsDistVect.map(v => v.mag()).reduce(
+            (a, b) => a + b, 0
+        )
+
+        const animDuration = FIRE_TRANS_ANIMATION_TIME/2
+        
+        this.animSteps = []
+
+        for (let i = 0; i < segmentsDistVect.length; i++) {
+            const distVect = segmentsDistVect[i]
+            const stepEndTime = distVect.mag()*animDuration/totalLength
+            let endTime = stepEndTime
+            if (i > 0)
+                endTime += this.animSteps[i-1].endTime
+
+            this.animSteps.push({
+                startPoint: pathPoints[i],
+                velocity: distVect.mul(1/stepEndTime),
+                endTime: endTime 
+            })
+        }
+
+        this.token = createCircle(this.animSteps[0].startPoint, 2)
+        this.currentStep = null
+    }
+
+    start() {
+        this.currentStep = 0
+        document.getElementById('IEs').appendChild(this.token)  
+        setCircleCenter(this.token, this.animSteps[0].startPoint)    
+    }
+
+    update(t: number) {
+        if (t > this.animSteps[this.currentStep].endTime)
+            this.currentStep++
+
+        const currentStep = this.animSteps[this.currentStep]
+        let stepTime
+        if (this.currentStep === 0) 
+            stepTime = t
+        else
+            stepTime = t - this.animSteps[this.currentStep - 1].endTime
+
+        setCircleCenter(
+            this.token,
+            currentStep.startPoint.add(currentStep.velocity.mul(stepTime))
+        )
+    }
+
+    stop() {
+        this.token.remove()
+        this.currentStep = null
+    }
+}
+
 class Simulator {
     private currentNet: PetriNet
     private playing: boolean
     private stoping: boolean
     private logicalNet: LogicalNet
     private inputWindow: InputWindow
+    private tokenAnimByArc: {[arcId: PEId]: TokenAnimation}
 
     constructor(net: PetriNet) {
         this.currentNet = net
@@ -170,7 +242,7 @@ class Simulator {
     private updatePlaceMarks(marksToUpdate: PlaceMarks) {
         for (const placeId in marksToUpdate) {
             const place = <PetriPlace>this.currentNet.getGenericPE(placeId)
-            place.mark = String(marksToUpdate[placeId])
+            place.mark = marksToUpdate[placeId]
         }
     }
 
@@ -198,44 +270,24 @@ class Simulator {
         }
     }
 
-    private newTokenAnimation(arc: PetriArc) {
-        const place = <PetriPlace>this.currentNet.getGenericPE(arc.placeId)
-        const trans = <PetriTrans>this.currentNet.getGenericPE(arc.transId)
-        const placePos = place.position
-        const transPos = trans.position
-
-        let startPoint: Vector, v: Vector
-        if (arc.arcType === 'Input') {
-            startPoint = placePos
-            v = transPos.sub(placePos)
-        } else if (arc.arcType === 'Output') {
-            startPoint = transPos
-            v = placePos.sub(transPos)
-        } else {
-            throw `Can't create a animation to a ${arc.arcType} arc.`
-        }
-
+    private animateTokens(arcs: PetriArc[]) {
         const animDuration = FIRE_TRANS_ANIMATION_TIME/2
-        const vel = v.mul(1/animDuration)
-
-        const token = createCircle(startPoint, 2)
-        document.getElementById('IEs').appendChild(token)
-
         let startTime = null
+        const animations = arcs.map(arc => this.tokenAnimByArc[arc.id])
+        animations.forEach(anim => anim.start())
 
         function animFunc(timestamp: number) {
             if (!startTime) { startTime = timestamp }
 
             const t = (timestamp - startTime)
             if (t > animDuration) {
-                token.remove()
+                animations.forEach(anim => anim.stop())
                 return
             }
 
-            setCircleCenter(
-                token,
-                startPoint.add(vel.mul(t))
-            )
+            for (const anim of animations)
+                anim.update(t)
+
             requestAnimationFrame(animFunc) 
         }
 
@@ -244,22 +296,27 @@ class Simulator {
 
     private fireTrans(transId: string, marksToUpdate: PlaceMarks) {
         const trans = <PetriTrans>this.currentNet.getGenericPE(transId)
-        this.setTransColor(trans, TRANS_FIRE_COLOR)
+        const inputArcs = []
+        const outputArcs = []
         for (const arcId of trans.connectedArcs) {
             const arc = <PetriArc>this.currentNet.getGenericPE(arcId)
-            if (arc.arcType === 'Input') {
-                this.newTokenAnimation(arc)
-                const place = <PetriPlace>this.currentNet.getGenericPE(arc.placeId)
-                place.mark = String(marksToUpdate[arc.placeId])
-            }
+            if (arc.arcType === 'Input')
+                inputArcs.push(arc)
+            else if (arc.arcType === 'Output') 
+                outputArcs.push(arc)
         }
+        
+        for (const arc of inputArcs) {
+            const place = <PetriPlace>this.currentNet
+                    .getGenericPE(arc.placeId)
+            place.mark = marksToUpdate[arc.placeId]
+        }
+
+        this.setTransColor(trans, TRANS_FIRE_COLOR)
+        this.animateTokens(inputArcs)
+
         setTimeout(() => {
-            for (const arcId of trans.connectedArcs) {
-                const arc = <PetriArc>this.currentNet.getGenericPE(arcId)
-                if (arc.arcType === 'Output') {
-                    this.newTokenAnimation(arc)
-                }
-            }
+            this.animateTokens(outputArcs)
         }, FIRE_TRANS_ANIMATION_TIME/2)
         setTimeout(() => {
             this.logicalNet.updatePlaceMarks(marksToUpdate)
@@ -276,7 +333,7 @@ class Simulator {
     private restartNet() {
         for (const placeId in this.logicalNet.placeMarks) {
             const place = <PetriPlace>this.currentNet.getGenericPE(placeId)
-            place.mark = place.initialMark
+            place.mark = parseInt(place.initialMark)
         }
         for (const transId in this.logicalNet.arcsByTrans) {
             this.disableTrans(transId)
@@ -286,9 +343,18 @@ class Simulator {
     private init(net: PetriNet) {
         this.currentNet = net
         this.inputWindow.open(this.currentNet.inputs)
+        const netData = this.currentNet.getNetData()
         this.logicalNet = new LogicalNet(
-            this.currentNet.getNetData(), this.inputWindow.readInputs()
+            netData, this.inputWindow.readInputs()
         )
+        this.tokenAnimByArc = Object.fromEntries(
+            netData.arcs.filter(
+                arcData => ['Input', 'Output'].includes(arcData.arcType)
+            ).map(arcData => {
+                const arc = <PetriArc>net.getGenericPE(arcData.id)
+                return [arc.id, new TokenAnimation(arc.getArcPath())]
+            }
+        ))
         this.logicalNet.updateTransState()
         this.restartNet()
         document.getElementById('simulating-text').style.display = 'block'

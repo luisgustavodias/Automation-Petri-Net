@@ -133,10 +133,12 @@ class PetriPlace extends APetriElement {
     static tokenRadius = 1.5
     readonly PEType = 'place'
     private _initialMark: string
+    private _mark: number
 
     constructor (id: PEId) {
         super(id, 'place-model')
         this._initialMark = '0'
+        this._mark = 0
         this.svgElement.appendChild(createCircle(
             new Vector(0,0), 
             PetriPlace.placeRadius,
@@ -176,28 +178,33 @@ class PetriPlace extends APetriElement {
         this.setPEText('placeType', val) 
     }
 
-    set mark(val: string) { 
+    get mark() {
+        return this._mark
+    }
+
+    set mark(val: number) { 
+        this._mark = val
         this.svgElement.children[1].innerHTML = ''
 
         let tokens: SVGCircleElement[] = []
-        if (val === '0') {
+        if (val === 0) {
             return
-        } else if (val === '1') {
+        } else if (val === 1) {
             tokens = [this.createToken(new Vector(0, 0))]
-        } else if (val === '2') {
+        } else if (val === 2) {
             const d = PetriPlace.tokenRadius * 1.3
             tokens = [
                 this.createToken(new Vector(-d, 0)),
                 this.createToken(new Vector(d, 0))                
             ]
-        } else if (val === '3') {
+        } else if (val === 3) {
             const d = PetriPlace.tokenRadius * 1.3
             tokens = [
                 this.createToken(new Vector(0, -d)),
                 this.createToken(new Vector(-d, d)),                
                 this.createToken(new Vector(d, d))                
             ]
-        } else if (val === '4') {
+        } else if (val === 4) {
             const d = PetriPlace.tokenRadius * 1.3
             tokens = [
                 this.createToken(new Vector(-d, -d)),
@@ -205,7 +212,7 @@ class PetriPlace extends APetriElement {
                 this.createToken(new Vector(d, -d)),                
                 this.createToken(new Vector(d, d))                
             ]
-        } else if (val === '5') {
+        } else if (val === 5) {
             const d = PetriPlace.tokenRadius * 1.7
             tokens = [
                 this.createToken(new Vector(0, 0)),
@@ -214,7 +221,7 @@ class PetriPlace extends APetriElement {
                 this.createToken(new Vector(d, -d)),                
                 this.createToken(new Vector(d, d))                
             ]
-        } else if (val === '6') {
+        } else if (val === 6) {
             const d1 = PetriPlace.tokenRadius * 1.3
             const d2 = PetriPlace.tokenRadius * 2.3
             tokens = [
@@ -225,7 +232,7 @@ class PetriPlace extends APetriElement {
                 this.createToken(new Vector(d2, -d1)),                
                 this.createToken(new Vector(d2, d1))                
             ]
-        } else if (val === '7') {
+        } else if (val === 7) {
             const d1 = PetriPlace.tokenRadius * 1.3
             const d2 = PetriPlace.tokenRadius * 2.3
             tokens = [
@@ -253,10 +260,10 @@ class PetriPlace extends APetriElement {
             textElement.setAttribute('transform', 'translate(0 0.5)')
             textElement.setAttribute('PEParent', this.id)
 
-            if (parseInt(val) > 99) {
+            if (val > 99) {
                 textElement.innerHTML = '99+'
             } else {
-                textElement.innerHTML = val
+                textElement.innerHTML = String(val)
             }
 
             this.svgElement.children[1].appendChild(textElement)
@@ -274,7 +281,7 @@ class PetriPlace extends APetriElement {
 
     set initialMark(val: string) {
         this._initialMark = val
-        this.mark = val
+        this.mark = parseInt(val)
     }
 
     private createToken(pos: Vector) {
@@ -774,6 +781,24 @@ class PetriArc extends AGenericPetriElement {
         this.selected = false
         this.setArcColor('black')
         this.cleanNodes()
+    }
+
+    /*
+     * Return the vector with the points the define the arc path.
+     * The start point, the corners and the and the end point.
+     */
+    getArcPath() {
+        if (this.corners.length) {
+            return [
+                getLineStartPoint(
+                    <SVGLineElement>this.linesGroup.children[0]
+                ), 
+                ...this.corners,
+                this.arrow.getHeadPos()
+            ]
+        }
+
+        return [this.arrow.getTailPos(), this.arrow.getHeadPos()]
     }
 
     getData(): ArcData {

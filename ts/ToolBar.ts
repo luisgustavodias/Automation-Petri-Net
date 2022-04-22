@@ -322,7 +322,6 @@ export default class ToolBar {
     }
 
     private addListeners() {
-        console.log('adding listeners');
         const eventNames = [
             'mousedown', 
             'mouseup', 

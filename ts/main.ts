@@ -57,7 +57,7 @@ function exampleNet(net: PetriNet) {
     const placeId1 = net.createPlace(new Vector(150, 50))
     const placeId2 = net.createPlace(new Vector(100, 150))
     const placeId3 = net.createPlace(new Vector(200, 150))
-    const placeId4 = net.createPlace(new Vector(300, 200))
+    const placeId4 = net.createPlace(new Vector(250, 50))
     const placeId5 = net.createPlace(new Vector(50, 200))
 
     const transId1 = net.createTrans(new Vector(150, 100))
@@ -69,10 +69,13 @@ function exampleNet(net: PetriNet) {
     net.createArc(placeId3, transId1, "Output")
     net.createArc(placeId2, transId2, "Input")
     net.createArc(placeId3, transId2, "Input")
-    net.createArc(placeId4, transId2, "Output")
+    const arcId6 = net.createArc(placeId4, transId2, "Output")
     net.createArc(placeId5, transId2, "Output")
     net.createArc(placeId5, transId3, "Input")
     net.createArc(placeId1, transId3, "Output")
+
+    net.addArcCorner(arcId6, 0)
+    net.moveArcCorner(arcId6, 0, new Vector(250, 200))
 
     net.setGenericPEAttr(placeId1, 'initialMark', '1')
     
@@ -129,6 +132,24 @@ function testArc(net: PetriNet) {
     net.zoom(new Vector(10, 100), 0.6)
 
     console.log(arc)
+}
+
+function testTokenAnimation(net: PetriNet, simulator: Simulator) {
+    const placeId1 = net.createPlace(new Vector(50, 50))
+    const placeId2 = net.createPlace(new Vector(100, 50))
+    const transId1 = net.createTrans(new Vector(100 , 100))
+
+    net.zoom(new Vector(0, 0), 0.5)
+
+    const arcId1 = net.createArc(placeId1, transId1, 'Output')
+    const arcId2 = net.createArc(placeId2, transId1, 'Input')
+
+    net.setGenericPEAttr(placeId2, 'initialMark', '50')
+    
+    net.addArcCorner(arcId1, 0)
+    net.moveArcCorner(arcId1, 0, new Vector(50, 100))
+
+    simulator.step(net)
 }
 
 const filePickerOptions = {
@@ -203,6 +224,7 @@ function main() {
 
     editor.open(net)
 
+    //testTokenAnimation(net, simulator)
     exampleNet(net)
 }
 
