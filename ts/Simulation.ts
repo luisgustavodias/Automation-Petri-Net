@@ -3,9 +3,9 @@ import {
     AGenericPetriElement, 
     PetriPlace, 
     PetriTrans, 
-    PetriArc,
-    ArcType
+    PetriArc
 } from "./PNElements.js"
+import { ArcType, PetriNetData, PlaceType } from "./PNData.js"
 import { InputValues, InputWindow } from "./InputWindow.js"
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js"
 import Vector from "./utils/Vector.js"
@@ -26,14 +26,10 @@ interface LogicalPetriArc {
 type ArcsByTrans = {[transId: string]: LogicalPetriArc[]}
 type GuardFunc = (...args: number[]) => boolean
 
-function filterNetElementsByType(net: PetriNet, PEType: string) {
-    return Object.values(net.elements).filter(
-        (ele) => ele.PEType === PEType
-    )
-}
 
 class LogicalNet {
     readonly placeMarks: PlaceMarks
+    readonly placeTypes: {[transId: string]: PlaceType}
     readonly arcsByTrans: ArcsByTrans
     readonly transOrder: string[]
     readonly transState: {[transId: string]: boolean}
@@ -41,20 +37,14 @@ class LogicalNet {
     readonly transGuardFuncs: {[transId: string]: GuardFunc}
     private readonly inputValues: Map<string, number> //InputValues
 
-    constructor(net: PetriNet, inputValues: InputValues) {
-        const places = <PetriPlace[]>filterNetElementsByType(
-            net, 'place'
-        )
-
+    constructor(netData: PetriNetData, inputValues: InputValues) {
         this.placeMarks = {}
-        places.forEach((place) => { 
+        this.placeTypes = {}
+        netData.places.forEach((place) => { 
             this.placeMarks[place.id] = parseInt(place.initialMark) 
+            this.placeTypes[place.id] = place.placeType
         })
 
-        const trasitions = <PetriTrans[]>filterNetElementsByType(
-            net, 'trans'
-        )
-        
         this.inputValues = new Map()
         for (const inputName in inputValues) {
             this.inputValues.set(inputName, inputValues[inputName])
@@ -63,18 +53,7 @@ class LogicalNet {
         // trasitions.sort((a, b) => a.priority - b.priority)
         this.transOrder = []
         this.transGuardFuncs = {}
-        this.arcsByTrans = {}
-        trasitions.forEach((trans) => { 
-            this.arcsByTrans[trans.id] = trans.connectedArcs.map(
-                (arcId) => {
-                    const arc = <PetriArc>net.elements[arcId]
-                    return {
-                        placeId: arc.placeId,
-                        arcType: arc.arcType,
-                        weight: parseInt(arc.weight)
-                    }
-                }
-            )
+        netData.transitions.forEach((trans) => { 
             this.transOrder.push(trans.id)
             
             if (trans.guard) {
@@ -86,7 +65,19 @@ class LogicalNet {
             }
         })
 
-        this.transState = Object.fromEntries(trasitions.map(
+        this.arcsByTrans = {}
+        netData.arcs.forEach(arc => {
+            if (!(arc.transId in this.arcsByTrans))
+                this.arcsByTrans[arc.transId] = []
+
+            this.arcsByTrans[arc.transId].push({
+                placeId: arc.placeId,
+                arcType: arc.arcType,
+                weight: parseInt(arc.weight)
+            })
+        })
+
+        this.transState = Object.fromEntries(netData.transitions.map(
             trans => [trans.id, false]
         ))
 
@@ -110,15 +101,18 @@ class LogicalNet {
     checkTrans(transId: string) {
         for (const arc of this.arcsByTrans[transId]) {
             if (arc.arcType === "Input" || arc.arcType === "Test") {
-                if (this.placeMarks[arc.placeId] < arc.weight) {
+                if (this.placeMarks[arc.placeId] < arc.weight)
                     return false
-                }
             } 
             else if (arc.arcType === "Inhibitor") {
-                if (this.placeMarks[arc.placeId] >= arc.weight) {
+                if (this.placeMarks[arc.placeId] >= arc.weight)
                     return false
-                }
             }
+            else if (arc.arcType === "Output" && 
+                    this.placeTypes[arc.placeId] === "BOOL") {
+                if (this.placeMarks[arc.placeId] === 1)
+                    return false
+            } 
         }
         
         if (!this.transGuardFuncs[transId](...this.inputValues.values()))
@@ -159,14 +153,14 @@ class LogicalNet {
 }
 
 class Simulator {
-    private net: PetriNet
+    private currentNet: PetriNet
     private playing: boolean
     private stoping: boolean
     private logicalNet: LogicalNet
     private inputWindow: InputWindow
 
     constructor(net: PetriNet) {
-        this.net = net
+        this.currentNet = net
         this.playing = false
         this.stoping = false
         this.logicalNet = null
@@ -175,7 +169,7 @@ class Simulator {
 
     private updatePlaceMarks(marksToUpdate: PlaceMarks) {
         for (const placeId in marksToUpdate) {
-            const place = <PetriPlace>this.net.elements[placeId]
+            const place = <PetriPlace>this.currentNet.getGenericPE(placeId)
             place.mark = String(marksToUpdate[placeId])
         }
     }
@@ -184,19 +178,13 @@ class Simulator {
         trans.svgElement.children[0].setAttribute('stroke', color)
     }
 
-    private setArcColor(arc: PetriArc, color: string) {
-        arc.svgElement.children[0].setAttribute('stroke', color)
-        arc.svgElement.children[1].setAttribute('fill', color)
-        arc.svgElement.children[2].setAttribute('stroke', color)
-    }
-
     private enableTrans(id: string) {
-        const trans = <PetriTrans>this.net.elements[id]
+        const trans = <PetriTrans>this.currentNet.getGenericPE(id)
         this.setTransColor(trans, TRANS_ENABLE_COLOR)
     }
 
     private disableTrans(id: string) {
-        const trans = <PetriTrans>this.net.elements[id]
+        const trans = <PetriTrans>this.currentNet.getGenericPE(id)
         this.setTransColor(trans, 'black')
     }
 
@@ -211,8 +199,8 @@ class Simulator {
     }
 
     private newTokenAnimation(arc: PetriArc) {
-        const place = <PetriPlace>this.net.elements[arc.placeId]
-        const trans = <PetriTrans>this.net.elements[arc.transId]
+        const place = <PetriPlace>this.currentNet.getGenericPE(arc.placeId)
+        const trans = <PetriTrans>this.currentNet.getGenericPE(arc.transId)
         const placePos = place.position
         const transPos = trans.position
 
@@ -255,19 +243,19 @@ class Simulator {
     }
 
     private fireTrans(transId: string, marksToUpdate: PlaceMarks) {
-        const trans = <PetriTrans>this.net.elements[transId]
+        const trans = <PetriTrans>this.currentNet.getGenericPE(transId)
         this.setTransColor(trans, TRANS_FIRE_COLOR)
         for (const arcId of trans.connectedArcs) {
-            const arc = <PetriArc>this.net.elements[arcId]
+            const arc = <PetriArc>this.currentNet.getGenericPE(arcId)
             if (arc.arcType === 'Input') {
                 this.newTokenAnimation(arc)
-                const place = <PetriPlace>this.net.elements[arc.placeId]
+                const place = <PetriPlace>this.currentNet.getGenericPE(arc.placeId)
                 place.mark = String(marksToUpdate[arc.placeId])
             }
         }
         setTimeout(() => {
             for (const arcId of trans.connectedArcs) {
-                const arc = <PetriArc>this.net.elements[arcId]
+                const arc = <PetriArc>this.currentNet.getGenericPE(arcId)
                 if (arc.arcType === 'Output') {
                     this.newTokenAnimation(arc)
                 }
@@ -287,7 +275,7 @@ class Simulator {
 
     private restartNet() {
         for (const placeId in this.logicalNet.placeMarks) {
-            const place = <PetriPlace>this.net.elements[placeId]
+            const place = <PetriPlace>this.currentNet.getGenericPE(placeId)
             place.mark = place.initialMark
         }
         for (const transId in this.logicalNet.arcsByTrans) {
@@ -295,20 +283,21 @@ class Simulator {
         }
     }
 
-    private init() {
-        this.inputWindow.open(this.net.inputs)
+    private init(net: PetriNet) {
+        this.currentNet = net
+        this.inputWindow.open(this.currentNet.inputs)
         this.logicalNet = new LogicalNet(
-            this.net, this.inputWindow.readInputs()
+            this.currentNet.getNetData(), this.inputWindow.readInputs()
         )
         this.logicalNet.updateTransState()
         this.restartNet()
         document.getElementById('simulating-text').style.display = 'block'
     }
 
-    start() {
+    start(net: PetriNet) {
         if (!this.logicalNet) {
             console.log('not locicalNet')
-            this.init()
+            this.init(net)
         } 
         this.playing = true
         this._step()
@@ -318,8 +307,8 @@ class Simulator {
         this.playing = false
     }
 
-    restart() {
-        this.init()
+    restart(net: PetriNet) {
+        this.init(net)
     }
 
     private _stop() {
@@ -337,7 +326,6 @@ class Simulator {
         if (this.logicalNet && !this.stoping) {
             this.stoping = true
         }
-        
     }
 
     private _step() {
@@ -368,9 +356,9 @@ class Simulator {
         )
     }
 
-    step() {
+    step(net: PetriNet) {
         if (!this.logicalNet) {
-            this.init()
+            this.init(net)
         } 
         this._step()
     }
@@ -378,21 +366,19 @@ class Simulator {
 
 function createSimulator(
     net: PetriNet, 
-    startSimObserver: VoidFunction,
+    startSimObserver: () => PetriNet,
     stopSimObserver: VoidFunction 
 ) {
     const simulator = new Simulator(net)
 
     document.getElementById('step-button').onclick = 
         () => { 
-            simulator.step()
-            startSimObserver()
+            simulator.step(startSimObserver())
         }
     
     document.getElementById('start-button').onclick = 
         () => { 
-            simulator.start()
-            startSimObserver()
+            simulator.start(startSimObserver())
         }
 
     document.getElementById('pause-button').onclick = 
@@ -400,8 +386,7 @@ function createSimulator(
 
     document.getElementById('restart-button').onclick = 
         () => { 
-            simulator.restart()
-            startSimObserver()
+            simulator.restart(startSimObserver())
         }
 
     document.getElementById('stop-button').onclick = 

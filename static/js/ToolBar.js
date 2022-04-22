@@ -2,10 +2,10 @@ import Vector from "./utils/Vector.js";
 import { setLineStartPoint, setLineEndPoint, createLine } from "./utils/SVGElement/Line.js";
 const SVG_BG_ID = 'svg-background';
 class GenericTool {
-    netManager;
+    editor;
     buttonId;
-    constructor(netManager, buttonId) {
-        this.netManager = netManager;
+    constructor(editor, buttonId) {
+        this.editor = editor;
         this.buttonId = buttonId;
     }
     onMouseDown(evt) { }
@@ -20,14 +20,14 @@ class GenericTool {
 }
 class PetriElementTool extends GenericTool {
     createMethod;
-    constructor(createMethod, netManager, buttonId) {
-        super(netManager, buttonId);
+    constructor(createMethod, editor, buttonId) {
+        super(editor, buttonId);
         this.createMethod = createMethod;
     }
     onMouseDown(evt) {
         const ele = evt.target;
         if (ele.id === SVG_BG_ID) {
-            const coord = this.netManager.getMousePosition(evt);
+            const coord = this.editor.currentNet.getMousePosition(evt);
             this.createMethod(coord);
         }
     }
@@ -36,10 +36,10 @@ class ArcTool extends GenericTool {
     line;
     firstPE;
     mouseDownPos;
-    constructor(netManager) {
-        super(netManager, "arc-tool");
+    constructor(editor) {
+        super(editor, "arc-tool");
         this.line = createLine(new Vector(20, 20), new Vector(20, 80));
-        // this.netManager.addIE(<SVGAElement><unknown>this.line)
+        // this.currentNet.addIE(<SVGAElement><unknown>this.line)
         this.line.setAttribute('stroke', 'black');
         this.line.setAttribute('stroke-dasharray', '3 1');
         // this.line.setAttribute('stroke-width', '4')
@@ -57,23 +57,23 @@ class ArcTool extends GenericTool {
             this.restart();
             return;
         }
-        const genericPE = this.netManager.getPE(target.getAttribute('PEParent'));
+        const genericPE = this.editor.currentNet.getGenericPE(target.getAttribute('PEParent'));
         if (genericPE.PEType === 'place'
             || genericPE.PEType === 'trans') {
             this.firstPE = genericPE;
-            this.mouseDownPos = this.netManager.getMousePosition(evt);
+            this.mouseDownPos = this.editor.currentNet.getMousePosition(evt);
             setLineStartPoint(this.line, this.mouseDownPos);
             setLineEndPoint(this.line, this.mouseDownPos);
-            this.netManager.addIE(this.line);
+            this.editor.currentNet.addIE(this.line);
         }
     }
     onMouseMove(evt) {
         if (!this.mouseDownPos) {
             return;
         }
-        const u = this.netManager.getMousePosition(evt)
+        const u = this.editor.currentNet.getMousePosition(evt)
             .sub(this.mouseDownPos).norm();
-        setLineEndPoint(this.line, this.netManager.getMousePosition(evt).sub(u.mul(0.02)));
+        setLineEndPoint(this.line, this.editor.currentNet.getMousePosition(evt).sub(u.mul(0.02)));
     }
     onMouseUp(evt) {
         const target = evt.target;
@@ -82,14 +82,14 @@ class ArcTool extends GenericTool {
             this.restart();
             return;
         }
-        const genericPE = this.netManager.getPE(target.getAttribute('PEParent'));
+        const genericPE = this.editor.currentNet.getGenericPE(target.getAttribute('PEParent'));
         if (this.firstPE.PEType === 'place'
             && genericPE.PEType === 'trans') {
-            this.netManager.createArc(this.firstPE.id, genericPE.id, 'Input');
+            this.editor.currentNet.createArc(this.firstPE.id, genericPE.id, 'Input');
         }
         else if (this.firstPE.PEType === 'trans'
             && genericPE.PEType === 'place') {
-            this.netManager.createArc(genericPE.id, this.firstPE.id, 'Output');
+            this.editor.currentNet.createArc(genericPE.id, this.firstPE.id, 'Output');
         }
         this.restart();
     }
@@ -100,74 +100,114 @@ class ArcTool extends GenericTool {
     }
 }
 class MouseTool extends GenericTool {
+    selectedPEId;
     dragging;
-    lastMousePos;
+    dragStartPos;
     cornerIdx;
+    propertyWindow;
     // dragManager: DragManager
-    constructor(netManager) {
-        super(netManager, "mouse-tool");
+    constructor(editor, propertyWindor) {
+        super(editor, "mouse-tool");
+        this.selectedPEId = null;
         this.dragging = false;
         this.cornerIdx = null;
+        this.dragStartPos = null;
+        this.propertyWindow = propertyWindor;
         // this.dragManager = dragManager
+    }
+    selectPE(id) {
+        if (this.selectedPEId) {
+            throw 'Need to deselect one element to select other';
+        }
+        this.editor.currentNet.selectPE(id);
+        this.selectedPEId = id;
+        this.propertyWindow.open(this.editor.currentNet.getGenericPEType(id), (attrName, val) => {
+            this.editor.currentNet.setGenericPEAttr(id, attrName, val);
+        }, this.editor.currentNet.getGenericPEData(id));
+    }
+    deselectPE() {
+        if (!this.selectedPEId)
+            return;
+        this.editor.currentNet.deselectPE(this.selectedPEId);
+        this.propertyWindow.close();
+        this.selectedPEId = null;
+        this.dragging = false;
+        this.cornerIdx = null;
+    }
+    drag(evt, registryChange = false) {
+        const mousePos = this.editor.currentNet.getMousePosition(evt);
+        if (this.cornerIdx !== null) {
+            return this.editor.currentNet.moveArcCorner(this.selectedPEId, this.cornerIdx, mousePos, registryChange, this.dragStartPos);
+        }
+        else {
+            return this.editor.currentNet.movePE(this.selectedPEId, mousePos, registryChange, this.dragStartPos);
+        }
+    }
+    endDrag(evt) {
+        if (this.dragging) {
+            this.drag(evt, true);
+        }
+        this.dragging = false;
+        this.cornerIdx = null;
     }
     onMouseDown(evt) {
         if (evt.target.id === SVG_BG_ID) {
-            this.netManager.deselectPE();
+            this.deselectPE();
             return;
         }
         const PEId = evt.target.getAttribute('PEParent');
-        if (!this.netManager.selectedPE) {
-            this.netManager.selectPE(PEId);
+        if (!this.selectedPEId) {
+            this.selectPE(PEId);
         }
-        else if (this.netManager.selectedPE.id !== PEId) {
-            this.netManager.deselectPE();
-            this.netManager.selectPE(PEId);
+        else if (this.selectedPEId !== PEId) {
+            this.deselectPE();
+            this.selectPE(PEId);
         }
-        if (this.netManager.selectedPE.PEType === 'arc') {
+        const elementType = this.editor.currentNet.getGenericPEType(this.selectedPEId);
+        if (elementType === 'arc') {
             if (evt.target.getAttribute('drag') === 'corner') {
+                this.dragging = true;
                 this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'));
             }
             else if (evt.target.getAttribute('drag') === 'arcMidNode') {
+                this.dragging = true;
                 this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'));
-                this.netManager.addArcCorner(this.netManager.selectedPE.id, this.cornerIdx);
+                this.editor.currentNet.addArcCorner(this.selectedPEId, this.cornerIdx);
             }
             else {
+                this.dragging = false;
                 this.cornerIdx = null;
             }
         }
-        this.dragging = true;
-        this.lastMousePos = this.netManager.getMousePosition(evt);
+        else {
+            this.dragging = true;
+        }
+        if (this.dragging) {
+            console.log(this.cornerIdx, this.selectedPEId);
+            this.dragStartPos = this.drag(evt);
+        }
+        console.log(this.dragStartPos);
     }
     onMouseMove(evt) {
         if (this.dragging) {
-            const mousePos = this.netManager.getMousePosition(evt);
-            const displacement = mousePos.sub(this.lastMousePos);
-            this.lastMousePos = mousePos;
-            if (this.cornerIdx !== null) {
-                this.netManager.moveArcCorner(this.netManager.selectedPE.id, this.cornerIdx, displacement);
-            }
-            else {
-                this.netManager.movePE(this.netManager.selectedPE.id, displacement);
-            }
+            this.drag(evt);
         }
     }
     onMouseUp(evt) {
-        this.dragging = false;
-        this.cornerIdx = null;
+        this.endDrag(evt);
     }
     onMouseLeave(evt) {
-        this.dragging = false;
-        this.cornerIdx = null;
+        this.endDrag(evt);
     }
     onKeyDown(evt) {
-        if (evt.key === "Delete" && this.netManager.selectedPE) {
-            const PEId = this.netManager.selectedPE.id;
-            this.netManager.deselectPE();
-            this.netManager.removeElement(PEId);
+        if (evt.key === "Delete" && this.selectedPEId) {
+            const id = this.selectedPEId;
+            this.deselectPE();
+            this.editor.currentNet.removeGenericPE(id);
         }
     }
     onChangeTool() {
-        this.netManager.deselectPE();
+        this.deselectPE();
         super.onChangeTool();
     }
 }
@@ -176,15 +216,17 @@ export default class ToolBar {
     tools;
     currentTool;
     movingScreenOffset;
-    netManager;
-    constructor(netManager) {
+    editor;
+    propertyWindow;
+    constructor(editor, propertyWindow) {
         this._active = true;
-        this.netManager = netManager;
+        this.editor = editor;
+        this.propertyWindow = propertyWindow;
         this.tools = {
-            'mouse-tool': new MouseTool(netManager),
-            'place-tool': new PetriElementTool((coord) => { netManager.createPlace(coord); }, netManager, "place-tool"),
-            'trans-tool': new PetriElementTool((coord) => { netManager.createTrans(coord); }, netManager, "trans-tool"),
-            'arc-tool': new ArcTool(netManager)
+            'mouse-tool': new MouseTool(editor, propertyWindow),
+            'place-tool': new PetriElementTool(coord => { editor.currentNet.createPlace(coord); }, editor, 'place-tool'),
+            'trans-tool': new PetriElementTool(coord => { editor.currentNet.createTrans(coord); }, editor, 'trans-tool'),
+            'arc-tool': new ArcTool(editor)
         };
         this.currentTool = this.tools['mouse-tool'];
         this.movingScreenOffset = null;
@@ -203,22 +245,23 @@ export default class ToolBar {
         for (let name of eventNames) {
             ele.addEventListener(name, this[name]);
         }
-        document.body.addEventListener('keydown', evt => {
-            this.keydown(evt);
-        });
+        ele.addEventListener('contextmenu', event => event.preventDefault());
+        document.body.addEventListener('keydown', this.keydown);
         for (let tool in this.tools) {
             document.getElementById(tool).addEventListener('mousedown', evt => { this.changeTool(tool); });
         }
     }
-    mousedown = evt => {
-        if (evt.ctrlKey) {
-            this.movingScreenOffset = this.netManager.getMousePosition(evt);
+    mousedown = (evt) => {
+        if (evt.ctrlKey || evt.button === 2) {
+            this.movingScreenOffset = this.editor.currentNet
+                .getMousePosition(evt);
         }
         else if (this._active) {
             this.currentTool.onMouseDown(evt);
         }
     };
     mouseup = evt => {
+        evt.preventDefault();
         this.movingScreenOffset = null;
         if (this._active) {
             this.currentTool.onMouseUp(evt);
@@ -226,8 +269,8 @@ export default class ToolBar {
     };
     mousemove = evt => {
         if (this.movingScreenOffset) {
-            this.netManager.moveScreen(this.netManager.getMousePosition(evt)
-                .sub(this.movingScreenOffset));
+            const mousePos = this.editor.currentNet.getMousePosition(evt);
+            this.editor.currentNet.moveScreen(mousePos.sub(this.movingScreenOffset));
         }
         else if (this._active) {
             this.currentTool.onMouseMove(evt);
@@ -242,19 +285,20 @@ export default class ToolBar {
     wheel = evt => {
         evt.preventDefault();
         const scale = Math.min(Math.max(.9, 1 + .01 * evt.deltaY), 1.1);
-        this.netManager.zoom(this.netManager.getMousePosition(evt), scale);
+        const mousePos = this.editor.currentNet.getMousePosition(evt);
+        this.editor.currentNet.zoom(mousePos, scale);
     };
     keydown = evt => {
         let ele = evt.target;
         if (ele.tagName === "BODY") {
             if (evt.key === 'Shift') {
-                this.netManager.toggleGrid();
+                this.editor.currentNet.grid = !this.editor.currentNet.grid;
             }
             else if (evt.key === 'z' && evt.ctrlKey) {
-                this.netManager.undo();
+                this.editor.currentNet.undo();
             }
             else if (evt.key === 'y' && evt.ctrlKey) {
-                this.netManager.redo();
+                this.editor.currentNet.redo();
             }
             else if (this._active) {
                 this.currentTool.onKeyDown(evt);

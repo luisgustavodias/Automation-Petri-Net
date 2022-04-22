@@ -7,11 +7,16 @@ import { createGroup, createText } from "./utils/SVGElement/others.js";
 class AGenericPetriElement {
     svgElement;
     PEType;
+    selected;
     constructor(id, modelId) {
         this.svgElement = createGroup({ id: id });
+        this.selected = false;
     }
     get id() {
         return this.svgElement.id;
+    }
+    isSelected() {
+        return this.selected;
     }
     getPETextElement(attrName) {
         return this.svgElement.querySelector(`[PEText="${attrName}"]`);
@@ -57,9 +62,11 @@ class APetriElement extends AGenericPetriElement {
         this.position = this._position.add(displacement);
     }
     select() {
+        this.selected = true;
         this.svgElement.children[0].setAttribute('stroke', 'blue');
     }
     deselect() {
+        this.selected = true;
         this.svgElement.children[0].setAttribute('stroke', 'black');
     }
     connectArc(PEId) {
@@ -73,6 +80,17 @@ class APetriElement extends AGenericPetriElement {
         if (index !== -1) {
             this.connectedArcs.splice(index, 1);
         }
+    }
+    isInside(topLeft, size) {
+        if (topLeft.x > this.position.x)
+            return false;
+        if (topLeft.y > this.position.y)
+            return false;
+        if (topLeft.x + size.x < this.position.x)
+            return false;
+        if (topLeft.y + size.y < this.position.y)
+            return false;
+        return true;
     }
 }
 class PetriPlace extends APetriElement {
@@ -340,7 +358,6 @@ class PetriArc extends AGenericPetriElement {
         this.svgElement.children[0].appendChild(this.arrow.head);
         this.corners = [];
         this.arcType = arctype;
-        console.log(this.svgElement.children[2]);
     }
     get lastCorner() {
         return this.corners[this.corners.length - 1];
@@ -404,6 +421,9 @@ class PetriArc extends AGenericPetriElement {
         this.updateLines();
         this.updatePlacePos();
         this.updateTransPos();
+    }
+    getCornerPos(cornerIndex) {
+        return this.corners[cornerIndex];
     }
     updateWeightPos() {
         let n = this.corners.length;
@@ -479,10 +499,25 @@ class PetriArc extends AGenericPetriElement {
             }
         }
     }
+    cleanNodes() {
+        this.cornersGroup.innerHTML = '';
+    }
+    showNodes() {
+        this.cleanNodes();
+        const lines = this.
+            linesGroup.children;
+        for (let i = 0; i < lines.length; i++) {
+            this.createNode(i, getLineMidPoint(lines[i]), 'arcMidNode');
+            this.createNode(i, getLineEndPoint(lines[i]), 'corner');
+        }
+        this.createNode(lines.length, this.arrow.getMidPoint(), 'arcMidNode');
+    }
     updateArc() {
         this.updateLines();
         this.updatePlacePos();
         this.updateTransPos();
+        if (this.selected)
+            this.showNodes();
     }
     createNode(idx, pos, type) {
         const node = createRect(pos, 3, 3);
@@ -532,63 +567,30 @@ class PetriArc extends AGenericPetriElement {
             }
         }
     }
-    addCorner(idx) {
-        if (idx < this.corners.length) {
-            const pos = getLineMidPoint(this.linesGroup.children[idx]);
-            this.corners.splice(idx, 0, pos);
+    addCorner(cornerIndex) {
+        if (cornerIndex < this.corners.length) {
+            const pos = getLineMidPoint(this.linesGroup.children[cornerIndex]);
+            this.corners.splice(cornerIndex, 0, pos);
         }
-        else if (idx === this.corners.length) {
+        else if (cornerIndex === this.corners.length) {
             const pos = this.arrow.getMidPoint();
             this.corners.push(pos);
-            this.arrow.updateTailPos(pos);
         }
         else {
             throw "Invalid corner index";
         }
         this.updateArc();
     }
-    removeCorner(idx) {
-        if (idx < this.corners.length) {
-            const pos = getLineMidPoint(this.linesGroup.children[idx]);
-            this.corners.splice(idx, 0, pos);
-            this.linesGroup.appendChild(createLine(pos, pos));
+    removeCorner(cornerIndex) {
+        if (cornerIndex >= this.corners.length) {
+            throw "Invalid cornerIndex";
         }
-        else if (idx === this.corners.length) {
-            const pos = this.arrow.getMidPoint();
-            this.corners.push(pos);
-            this.linesGroup.appendChild(createLine(pos, pos));
-            this.arrow.updateTailPos(pos);
-        }
-        else {
-            throw "Invalid corner index";
-        }
-        this.updateLines();
+        this.corners.splice(cornerIndex, 1);
+        this.updateArc();
     }
-    moveCorner(idx, displacement) {
-        console.log(idx, displacement, this.corners[idx]);
-        this.corners[idx] = this.corners[idx].add(displacement);
-        this.updateLines();
-        console.log(this.corners[idx]);
-        if (idx === this.corners.length - 1) {
-            this.arrow.updateTailPos(this.corners[this.corners.length - 1]);
-            if (this._arcType === 'Output')
-                this.updatePlacePos();
-            else
-                this.updateTransPos();
-        }
-    }
-    showNodes() {
-        console.log(this.cornersGroup);
-        const lines = this.
-            linesGroup.children;
-        for (let i = 0; i < lines.length; i++) {
-            this.createNode(i, getLineMidPoint(lines[i]), 'arcMidNode');
-            this.createNode(i, getLineEndPoint(lines[i]), 'corner');
-        }
-        this.createNode(lines.length, this.arrow.getMidPoint(), 'arcMidNode');
-    }
-    cleanNodes() {
-        this.cornersGroup.innerHTML = '';
+    moveCorner(idx, pos) {
+        this.corners[idx] = pos;
+        this.updateArc();
     }
     setArcColor(color) {
         this.linesGroup.setAttribute('stroke', color);
@@ -598,10 +600,12 @@ class PetriArc extends AGenericPetriElement {
         this.arrow.head.setAttribute('stroke', color);
     }
     select() {
+        this.selected = true;
         this.setArcColor('blue');
         this.showNodes();
     }
     deselect() {
+        this.selected = false;
         this.setArcColor('black');
         this.cleanNodes();
     }

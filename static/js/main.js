@@ -1,63 +1,64 @@
-import { PetriNet, PetriNetManager } from './PetriNet.js';
+import { PetriNet } from './PetriNet.js';
 import Vector from './utils/Vector.js';
 import ToolBar from './ToolBar.js';
 import { PropertyWindow } from './PropertyWindow.js';
 import { createSimulator } from './Simulation.js';
 import { InputConfig } from './InputsConfig.js';
-function testNetManager(netManager) {
-    const placeId = netManager.createPlace(new Vector(100, 50));
-    const placeId2 = netManager.createPlace(new Vector(50, 100));
-    const placeId3 = netManager.createPlace(new Vector(150, 150));
-    const transId = netManager.createTrans(new Vector(150, 50));
-    const transId2 = netManager.createTrans(new Vector(75, 150));
-    const transId3 = netManager.createTrans(new Vector(50, 50));
-    const arcId = netManager.createArc(placeId2, transId2, "Output");
-    const arcId2 = netManager.createArc(placeId, transId, "Input");
-    const arcId3 = netManager.createArc(placeId, transId2, "Inhibitor");
-    netManager.createArc(placeId3, transId2, "Input");
-    netManager.createArc(placeId2, transId3, "Input");
-    netManager.createArc(placeId, transId3, "Output");
-    netManager.createArc(placeId3, transId, "Output");
-    netManager.zoom(new Vector(100, 100), 0.7);
-    netManager.moveScreen(new Vector(20, 20));
-    netManager.selectPE(placeId);
-    netManager.setGenericPEAttr(arcId, 'weight', '2');
-    netManager.setGenericPEAttr(arcId2, 'weight', '2');
-    netManager.setGenericPEAttr(arcId3, 'weight', '3');
-    netManager.setGenericPEAttr(placeId, 'initialMark', '6');
-    netManager.setGenericPEAttr(placeId3, 'initialMark', '7');
-    netManager.removeElement(placeId);
-    netManager.undo();
-    netManager.undo();
-    netManager.undo();
-    netManager.undo();
-    netManager.undo();
-    netManager.redo();
-    netManager.redo();
-    netManager.redo();
-    netManager.redo();
-    netManager.undo();
+import Editor from './Editor.js';
+function testNetManager(net) {
+    const placeId = net.createPlace(new Vector(100, 50));
+    const placeId2 = net.createPlace(new Vector(50, 100));
+    const placeId3 = net.createPlace(new Vector(150, 150));
+    const transId = net.createTrans(new Vector(150, 50));
+    const transId2 = net.createTrans(new Vector(75, 150));
+    const transId3 = net.createTrans(new Vector(50, 50));
+    const arcId = net.createArc(placeId2, transId2, "Output");
+    const arcId2 = net.createArc(placeId, transId, "Input");
+    const arcId3 = net.createArc(placeId, transId2, "Inhibitor");
+    net.createArc(placeId3, transId2, "Input");
+    net.createArc(placeId2, transId3, "Input");
+    net.createArc(placeId, transId3, "Output");
+    net.createArc(placeId3, transId, "Output");
+    net.zoom(new Vector(100, 100), 0.7);
+    net.moveScreen(new Vector(20, 20));
+    net.selectPE(placeId);
+    net.setGenericPEAttr(arcId, 'weight', '2');
+    net.setGenericPEAttr(arcId2, 'weight', '2');
+    net.setGenericPEAttr(arcId3, 'weight', '3');
+    net.setGenericPEAttr(placeId, 'initialMark', '6');
+    net.setGenericPEAttr(placeId3, 'initialMark', '7');
+    net.removeGenericPE(placeId);
+    net.undo();
+    net.undo();
+    net.undo();
+    net.undo();
+    net.undo();
+    net.redo();
+    net.redo();
+    net.redo();
+    net.redo();
+    net.undo();
 }
-function exampleNet(netManager) {
-    const placeId1 = netManager.createPlace(new Vector(150, 50));
-    const placeId2 = netManager.createPlace(new Vector(100, 150));
-    const placeId3 = netManager.createPlace(new Vector(200, 150));
-    const placeId4 = netManager.createPlace(new Vector(300, 200));
-    const placeId5 = netManager.createPlace(new Vector(50, 200));
-    const transId1 = netManager.createTrans(new Vector(150, 100));
-    const transId2 = netManager.createTrans(new Vector(150, 200));
-    const transId3 = netManager.createTrans(new Vector(50, 50));
-    netManager.createArc(placeId1, transId1, "Input");
-    netManager.createArc(placeId2, transId1, "Output");
-    netManager.createArc(placeId3, transId1, "Output");
-    netManager.createArc(placeId2, transId2, "Input");
-    netManager.createArc(placeId3, transId2, "Input");
-    netManager.createArc(placeId4, transId2, "Output");
-    netManager.createArc(placeId5, transId2, "Output");
-    netManager.createArc(placeId5, transId3, "Input");
-    netManager.createArc(placeId1, transId3, "Output");
-    netManager.setGenericPEAttr(placeId1, 'initialMark', '1');
-    netManager.net.inputs = [
+function exampleNet(net) {
+    const placeId1 = net.createPlace(new Vector(150, 50));
+    const placeId2 = net.createPlace(new Vector(100, 150));
+    const placeId3 = net.createPlace(new Vector(200, 150));
+    const placeId4 = net.createPlace(new Vector(300, 200));
+    const placeId5 = net.createPlace(new Vector(50, 200));
+    const transId1 = net.createTrans(new Vector(150, 100));
+    const transId2 = net.createTrans(new Vector(150, 200));
+    const transId3 = net.createTrans(new Vector(50, 50));
+    net.createArc(placeId1, transId1, "Input");
+    net.createArc(placeId2, transId1, "Output");
+    net.createArc(placeId3, transId1, "Output");
+    net.createArc(placeId2, transId2, "Input");
+    net.createArc(placeId3, transId2, "Input");
+    net.createArc(placeId4, transId2, "Output");
+    net.createArc(placeId5, transId2, "Output");
+    net.createArc(placeId5, transId3, "Input");
+    net.createArc(placeId1, transId3, "Output");
+    net.setGenericPEAttr(placeId1, 'initialMark', '1');
+    net.inputs = [
         {
             name: 's1',
             type: 'BOOL',
@@ -77,93 +78,83 @@ function exampleNet(netManager) {
             description: ''
         },
     ];
-    netManager.setGenericPEAttr(transId1, 'guard', 's1 and s2');
-    netManager.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)');
-    netManager.moveScreen(new Vector(50, 0));
+    net.setGenericPEAttr(transId1, 'guard', 's1 and s2');
+    net.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)');
+    net.moveScreen(new Vector(50, 0));
 }
-function testArc(netManager) {
-    const p1 = netManager.createPlace(new Vector(20, 50));
-    const p2 = netManager.createPlace(new Vector(20, 150));
-    const p3 = netManager.createPlace(new Vector(100, 150));
-    const t1 = netManager.createTrans(new Vector(50, 100));
-    const t2 = netManager.createTrans(new Vector(100, 50));
-    const a1 = netManager.createArc(p1, t1, 'Input');
-    const a2 = netManager.createArc(p2, t1, 'Input');
-    const a3 = netManager.createArc(p3, t1, 'Input');
-    const a4 = netManager.createArc(p3, t2, 'Input');
-    const a5 = netManager.createArc(p1, t2, 'Input');
-    const arc = netManager.getPE(a4);
+function testArc(net) {
+    const p1 = net.createPlace(new Vector(20, 50));
+    const p2 = net.createPlace(new Vector(20, 150));
+    const p3 = net.createPlace(new Vector(100, 150));
+    const t1 = net.createTrans(new Vector(50, 100));
+    const t2 = net.createTrans(new Vector(100, 50));
+    const a1 = net.createArc(p1, t1, 'Input');
+    const a2 = net.createArc(p2, t1, 'Input');
+    const a3 = net.createArc(p3, t1, 'Input');
+    const a4 = net.createArc(p3, t2, 'Input');
+    const a5 = net.createArc(p1, t2, 'Input');
+    const arc = net.getGenericPE(a4);
     arc.addCorner(0);
-    netManager.movePE(t2, new Vector(20, 0));
+    net.movePE(t2, new Vector(20, 0));
     arc.addCorner(1);
     arc.addCorner(0);
     //netManager.selectPE(a4)
-    netManager.moveArcCorner(a4, 0, new Vector(10, -10));
-    netManager.zoom(new Vector(10, 100), 0.6);
+    net.moveArcCorner(a4, 0, new Vector(10, -10));
+    net.zoom(new Vector(10, 100), 0.6);
     console.log(arc);
+}
+const filePickerOptions = {
+    types: [{
+            description: 'Automation Petri Net',
+            accept: {
+                'text/plain': ['.txt']
+            }
+        }],
+    excludeAcceptAllOption: true,
+    multiple: false
+};
+async function loadNet() {
+    let fileHandle;
+    //@ts-ignore
+    [fileHandle] = await window.showOpenFilePicker(filePickerOptions);
+    const file = await fileHandle.getFile();
+    const fileText = await file.text();
+    const netData = JSON.parse(fileText);
+    return PetriNet.loadNet(netData);
+}
+async function saveNet(net) {
+    let fileHandle;
+    //@ts-ignore
+    [fileHandle] = await window.showOpenFilePicker(filePickerOptions);
+    const file = await fileHandle.createWritable();
+    await file.write(JSON.stringify(net.getNetData()));
+    await file.close();
 }
 function main() {
     console.log('Creating net');
     const net = PetriNet.newNet();
-    const netManager = new PetriNetManager(net);
-    const toolBar = new ToolBar(netManager);
+    const editor = new Editor();
+    const propertyWindow = new PropertyWindow();
+    const toolBar = new ToolBar(editor, propertyWindow);
     const inputConfig = new InputConfig();
     document.getElementById('inputs-button')
         .onclick = () => {
-        inputConfig.open(netManager.net.inputs, inputs => { netManager.net.inputs = inputs; });
+        inputConfig.open(editor.currentNet.inputs, inputs => { editor.currentNet.inputs = inputs; });
     };
-    const propertyWindow = new PropertyWindow();
-    netManager.selectObserver = (PEId) => {
-        const genericPE = netManager.getPE(PEId);
-        propertyWindow.open(genericPE.PEType, (attr, val) => {
-            netManager.setGenericPEAttr(PEId, attr, val);
-        }, genericPE);
-    };
-    netManager.deselectObserver = () => { propertyWindow.close(); };
-    const simulator = createSimulator(netManager.net, () => {
+    const simulator = createSimulator(editor.currentNet, () => {
         toolBar.disable();
-        netManager.deselectPE();
+        return editor.currentNet;
     }, () => { toolBar.enable(); });
+    document.getElementById('new-button').onclick = () => {
+        editor.open(PetriNet.newNet());
+    };
     document.getElementById('load-button').onclick = async () => {
-        let fileHandle;
-        //@ts-ignore
-        [fileHandle] = await window.showOpenFilePicker({
-            types: [
-                {
-                    description: 'Automation Petri Net',
-                    accept: {
-                        'text/plain': ['.txt']
-                    }
-                },
-            ],
-            excludeAcceptAllOption: true,
-            multiple: false
-        });
-        const file = await fileHandle.getFile();
-        const fileText = await file.text();
-        console.log(fileText);
-        const netData = JSON.parse(fileText);
-        netManager.open(PetriNet.loadNet(netData));
+        editor.open(await loadNet());
     };
     document.getElementById('save-button').onclick = async () => {
-        //@ts-ignore
-        let [fileHandle] = await window.showOpenFilePicker({
-            types: [
-                {
-                    description: 'Automation Petri Net',
-                    accept: {
-                        'text/plain': ['.txt']
-                    }
-                },
-            ],
-            excludeAcceptAllOption: true,
-            multiple: false
-        });
-        const file = await fileHandle.createWritable();
-        const netData = netManager.net.getData();
-        const fileText = await file.write(JSON.stringify(netData));
-        await file.close();
+        await saveNet(editor.currentNet);
     };
-    exampleNet(netManager);
+    editor.open(net);
+    exampleNet(net);
 }
 window.onload = main;

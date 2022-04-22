@@ -12,17 +12,24 @@ import { createGroup, createText } from "./utils/SVGElement/others.js";
 abstract class AGenericPetriElement {
     readonly svgElement: SVGGElement
     readonly PEType: string
-
-    abstract select(): void
-    abstract deselect(): void
+    protected selected: boolean
 
     constructor (id: PEId, modelId: string) {
         this.svgElement = createGroup({id: id})
+        this.selected = false
     }
 
     get id() {
         return this.svgElement.id
     }
+
+    isSelected() {
+        return this.selected
+    }
+
+    abstract select(): void
+
+    abstract deselect(): void
 
     protected getPETextElement(attrName: string): SVGAElement {
         return this.svgElement.querySelector(`[PEText="${attrName}"]`)
@@ -84,10 +91,12 @@ abstract class APetriElement extends AGenericPetriElement {
     }
 
     select() {
+        this.selected = true
         this.svgElement.children[0].setAttribute('stroke', 'blue');
     }
     
     deselect() {
+        this.selected = true
         this.svgElement.children[0].setAttribute('stroke', 'black');
     }
     
@@ -103,6 +112,19 @@ abstract class APetriElement extends AGenericPetriElement {
         if (index !== -1) {
             this.connectedArcs.splice(index, 1);
         }
+    }
+
+    isInside(topLeft: Vector, size: Vector) {
+        if (topLeft.x > this.position.x)
+            return false
+        if (topLeft.y > this.position.y)
+            return false
+        if (topLeft.x + size.x < this.position.x)
+            return false
+        if (topLeft.y + size.y < this.position.y)
+            return false
+        
+        return true
     }
 }
 
@@ -384,8 +406,8 @@ class PetriArc extends AGenericPetriElement {
     private _arcType: ArcType
     private place: PetriPlace
     private trans: PetriTrans
-    arrow: Arrow
-    corners: Vector[]
+    private arrow: Arrow
+    private corners: Vector[]
 
     constructor (
         id: PEId,
@@ -436,7 +458,6 @@ class PetriArc extends AGenericPetriElement {
         this.svgElement.children[0].appendChild(this.arrow.head)
         this.corners = []
         this.arcType = arctype
-        console.log(this.svgElement.children[2])
     }
 
     private get lastCorner() { 
@@ -511,6 +532,10 @@ class PetriArc extends AGenericPetriElement {
         this.updateLines()
         this.updatePlacePos()
         this.updateTransPos()
+    }
+
+    getCornerPos(cornerIndex: number) {
+        return this.corners[cornerIndex]
     }
 
     private updateWeightPos() {
@@ -607,10 +632,34 @@ class PetriArc extends AGenericPetriElement {
         }
     }
 
+    private cleanNodes() {
+        this.cornersGroup.innerHTML = ''
+    }
+
+    private showNodes() {
+        this.cleanNodes()
+
+        const lines = <HTMLCollectionOf<SVGLineElement>>this.
+            linesGroup.children
+        for (let i = 0; i < lines.length; i++) {
+            this.createNode(i, getLineMidPoint(lines[i]), 'arcMidNode')
+            this.createNode(i, getLineEndPoint(lines[i]), 'corner')
+        }
+
+        this.createNode(
+            lines.length, 
+            this.arrow.getMidPoint(), 
+            'arcMidNode'
+        )
+    }
+
     private updateArc() {
         this.updateLines()
         this.updatePlacePos()
         this.updateTransPos()
+
+        if (this.selected)
+            this.showNodes()
     }
 
     private createNode(idx: number, pos: Vector, type: string) {
@@ -677,16 +726,15 @@ class PetriArc extends AGenericPetriElement {
         }
     }
 
-    addCorner(idx: number) {
-        if (idx < this.corners.length) {
+    addCorner(cornerIndex: number) {
+        if (cornerIndex < this.corners.length) {
             const pos = getLineMidPoint(
-                <SVGLineElement>this.linesGroup.children[idx]
+                <SVGLineElement>this.linesGroup.children[cornerIndex]
             )
-            this.corners.splice(idx, 0, pos)
-        } else if (idx === this.corners.length) {
+            this.corners.splice(cornerIndex, 0, pos)
+        } else if (cornerIndex === this.corners.length) {
             const pos = this.arrow.getMidPoint()
             this.corners.push(pos)
-            this.arrow.updateTailPos(pos)
         } else {
             throw "Invalid corner index"
         }
@@ -694,61 +742,18 @@ class PetriArc extends AGenericPetriElement {
         this.updateArc()
     }
 
-    removeCorner(idx: number) {
-        if (idx < this.corners.length) {
-            const pos = getLineMidPoint(
-                <SVGLineElement>this.linesGroup.children[idx]
-            )
-            this.corners.splice(idx, 0, pos)
-            this.linesGroup.appendChild(
-                createLine(pos, pos)
-            )
-        } else if (idx === this.corners.length) {
-            const pos = this.arrow.getMidPoint()
-            this.corners.push(pos)
-            this.linesGroup.appendChild(
-                createLine(pos, pos)
-            )
-            this.arrow.updateTailPos(pos)
-        } else {
-            throw "Invalid corner index"
-        }
-
-        this.updateLines()
+    removeCorner(cornerIndex: number) {
+        if (cornerIndex >= this.corners.length) {
+            throw "Invalid cornerIndex"
+        } 
+        
+        this.corners.splice(cornerIndex, 1)
+        this.updateArc()
     }
 
-    moveCorner(idx: number, displacement: Vector) {
-        console.log(idx, displacement, this.corners[idx])
-        this.corners[idx] = this.corners[idx].add(displacement)
-        this.updateLines()
-        console.log(this.corners[idx])
-
-        if (idx === this.corners.length - 1) {
-            this.arrow.updateTailPos(
-                this.corners[this.corners.length - 1]
-            )
-
-            if (this._arcType === 'Output')
-                this.updatePlacePos()
-            else
-                this.updateTransPos()
-        }
-    }
-
-    showNodes() {
-        console.log(this.cornersGroup)
-        const lines = <HTMLCollectionOf<SVGLineElement>>this.
-            linesGroup.children
-        for (let i = 0; i < lines.length; i++) {
-            this.createNode(i, getLineMidPoint(lines[i]), 'arcMidNode')
-            this.createNode(i, getLineEndPoint(lines[i]), 'corner')
-        }
-
-        this.createNode(lines.length, this.arrow.getMidPoint(), 'arcMidNode')
-    }
-
-    cleanNodes() {
-       this.cornersGroup.innerHTML = ''
+    moveCorner(idx: number, pos: Vector) {
+        this.corners[idx] = pos
+        this.updateArc()
     }
 
     setArcColor(color: string) {
@@ -760,11 +765,13 @@ class PetriArc extends AGenericPetriElement {
     }
 
     select() {
+        this.selected = true
         this.setArcColor('blue')
         this.showNodes()
     }
         
     deselect() {
+        this.selected = false
         this.setArcColor('black')
         this.cleanNodes()
     }
@@ -786,4 +793,4 @@ class PetriArc extends AGenericPetriElement {
 
 
 export {AGenericPetriElement, APetriElement, PetriPlace, 
-    PetriTrans, PetriArc, ArcType}
+    PetriTrans, PetriArc}
