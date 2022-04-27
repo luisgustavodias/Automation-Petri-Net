@@ -9,14 +9,17 @@ interface Input {
 }
 
 const inputDataMapper = {
-    name: 0,
-    type: 1,
-    initialValue: 2,
-    description: 3
+    name: 1,
+    type: 2,
+    initialValue: 3,
+    description: 4
 }
 const modal = document.getElementById("inputs-modal")
 const tbody = document.getElementById("inputs-config")
-const inputRowModel = <HTMLTemplateElement>document.getElementById("input-row");
+const selectAllRadioButton = <HTMLInputElement>document
+    .querySelector("#inputs-modal th input")
+const inputRowModel = <HTMLTemplateElement>document
+    .getElementById("input-row");
 
 
 function addInput(input: Input) {
@@ -28,6 +31,24 @@ function addInput(input: Input) {
         inpElement.value = input[attr]
     }
     tbody.appendChild(cloneNode);
+}
+
+function removeInputs() {
+    const rowsToRemove = [...tbody.children].filter(
+        //@ts-ignore
+        row => row.children[0].children[0].checked
+    )
+
+    rowsToRemove.forEach(row => {
+        row.remove()
+    });
+}
+
+function toggleSelectionAll() {
+    for (const row of tbody.children) {
+        const radioButton = <HTMLInputElement>row.children[0].children[0]
+        radioButton.checked = selectAllRadioButton.checked
+    }
 }
 
 function getInputElement(row: HTMLTableRowElement, index: number) {
@@ -65,6 +86,9 @@ class InputConfig {
                 initialValue: 'false',
                 description: ''
             })
+        document.getElementById('remove-inputs-button')
+            .onclick = removeInputs
+        selectAllRadioButton.onclick = toggleSelectionAll
         document.getElementById('inputs-modal-close')
             .onclick = this.close
         document.getElementById('inputs-config-cancel')

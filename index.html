@@ -6,10 +6,12 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automation Petri Net</title>
+    <link rel="stylesheet" href="static/css/main.css">
     <link rel="stylesheet" href="static/css/navbar.css">
     <link rel="stylesheet" href="static/css/toolbar.css">
     <link rel="stylesheet" href="static/css/sidebar.css">
     <link rel="stylesheet" href="static/css/modal.css">
+    <link rel="stylesheet" href="static/css/inputs-config-modal.css">
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -30,20 +32,8 @@
             border-bottom: 2px solid black;
         }
 
-        .draggable {
-            cursor: pointer;
-        }
-
         text {
             font-size: 4.5pt;
-            -webkit-user-select: none;
-            -moz-user-select: none;
-            -ms-user-select: none;
-            user-select: none;
-        }
-
-        .place-type {
-            font-size: 4pt;
             -webkit-user-select: none;
             -moz-user-select: none;
             -ms-user-select: none;
@@ -148,6 +138,7 @@
     <div id="inputs-modal" class="modal">
         <template id="input-row">
             <tr>
+                <td><input type="checkbox"></td>
                 <td><input type="text"></td>
                 <td>
                     <select>
@@ -162,29 +153,47 @@
 
         <div class="modal-content">
             <div class="modal-header">
-                <span id="inputs-modal-close" class="modal-close">&times;</span>
                 <h2>Inputs Configuration</h2>
+                <span id="inputs-modal-close" class="modal-close">&times;</span>
             </div>
             <div class="modal-body">
-                <button id="new-input-button">New Input</button>
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Name</th>
-                            <th>Type</th>
-                            <th style="width: 40px;">Initial Value</th>
-                            <th>Description</th>
-                        </tr>
-                    </thead>
-                    <tbody id="inputs-config">
-
-                    </tbody>
-                </table>
+                <div>
+                    <div class="input-buttons">
+                        <button id="new-input-button" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 48 48">
+                                <path fill="white" d="M22.5 38V25.5H10V22.5H22.5V10H25.5V22.5H38V25.5H25.5V38Z"/>
+                            </svg>
+                            Add
+                        </button>
+                        <button id="remove-inputs-button" class="btn btn-primary">
+                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                                <path fill="white" d="M15 39H33Q33 39 33 39Q33 39 33 39V15H15V39Q15 39 15 39Q15 39 15 39ZM10.5 11V8H17.2L19.2 6H28.8L30.8 8H37.5V11ZM15 42Q13.8 42 12.9 41.1Q12 40.2 12 39V12H36V39Q36 40.2 35.1 41.1Q34.2 42 33 42ZM15 39H33Q33 39 33 39Q33 39 33 39H15Q15 39 15 39Q15 39 15 39Z"/>
+                            </svg>
+                            Remove
+                        </button>
+                    </div>
+                    <table id="inputs-config-table">
+                        <thead>
+                            <tr>
+                                <th style="width: 20px; padding: 3px;">
+                                    <input type="checkbox">
+                                </th>
+                                <th style="width: 180px;">Name</th>
+                                <th style="width: 60px;">Type</th>
+                                <th style="width: 50px;">Initial Value</th>
+                                <th style="width: 180px;">Description</th>
+                            </tr>
+                        </thead>
+                        <tbody id="inputs-config">
+                            
+                        </tbody>
+                    </table>
+                </div>
             </div>
             <div class="modal-footer">
-                <div style="float: right">
-                    <button id="inputs-config-save">Save</button>
-                    <button id="inputs-config-cancel">Cancel</button>
+                <div>
+                    <button id="inputs-config-save" class="btn btn-primary">Save</button>
+                    <button id="inputs-config-cancel" class="btn btn-secondary">Cancel</button>
                 </div>
             </div>
         </div>
@@ -226,43 +235,49 @@
     <div class="test">
         <div id="side-bar">
             <div id="property-window">
-                <div id="pw-div">
-                    <div id="pw-place" style="display: none;">
-                        <label>Name</label>
-                        <input id="pw-place-name" type="text" class="pw-text-input">
-                        <label>Type</label>
-                        <select id="pw-place-placeType" class="pw-select">
-                            <option value="BOOL">BOOL</option>
-                            <option value="INT">INT</option>
-                        </select>
-                        <label>Initial Mark</label>
-                        <input id="pw-place-initialMark" type="text" class="pw-text-input">
-                    </div>
-                    <div id="pw-trans" style="display: none;">
-                        <label>Name</label>
-                        <input id="pw-trans-name" type="text" class="pw-text-input">
-                        <label>Time</label>
-                        <input id="pw-trans-time" type="text" class="pw-text-input">
-                        <label>Guard</label>
-                        <input id="pw-trans-guard" type="text" class="pw-text-input">
-                    </div>
-                    <div id="pw-arc" style="display: none;">
-                        <label>Type</label>
-                        <select id="pw-arc-arcType" class="pw-select">
-                            <option value="Input">Input</option>
-                            <option value="Output">Output</option>
-                            <option value="Test">Test arc</option>
-                            <option value="Inhibitor">Inhibitor</option>
-                        </select>
-                        <label>Weight</label>
-                        <input id="pw-arc-weight" class="pw-text-input" type="text" value="1">
-                    </div>
+                <div id="pw-place" style="display: none;">
+                    <label>Name</label>
+                    <input id="pw-place-name" type="text">
+                    <label>Type</label>
+                    <select id="pw-place-placeType">
+                        <option value="BOOL">BOOL</option>
+                        <option value="INT">INT</option>
+                    </select>
+                    <label>Initial Mark</label>
+                    <input id="pw-place-initialMark" type="text">
+                </div>
+                <div id="pw-trans" style="display: none;">
+                    <label>Name</label>
+                    <input id="pw-trans-name" type="text">
+                    <label>Delay</label>
+                    <input id="pw-trans-delay" type="text">
+                    <label>Guard</label>
+                    <input id="pw-trans-guard" type="text">
+                </div>
+                <div id="pw-arc" style="display: none;">
+                    <label>Type</label>
+                    <select id="pw-arc-arcType">
+                        <option value="Input">Input</option>
+                        <option value="Output">Output</option>
+                        <option value="Test">Test arc</option>
+                        <option value="Inhibitor">Inhibitor</option>
+                    </select>
+                    <label>Weight</label>
+                    <input id="pw-arc-weight" type="text" value="1">
                 </div>
             </div>
 
-
             <div id="inputs-window" style="display: none;">
-
+                <table>
+                    <thead>
+                        <th style="width: 72%;">Input</th>
+                        <th>Value</th>
+                    </thead>
+                    <tbody>
+                        
+                    </tbody>
+                    
+                </table>
             </div>
         </div>
 

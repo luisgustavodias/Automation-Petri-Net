@@ -30,7 +30,7 @@ class ElementPropertyWindow {
 }
 const attrNames = {
     place: ["name", "placeType", "initialMark"],
-    trans: ["name", "time", "guard"],
+    trans: ["name", "delay", "guard"],
     arc: ["arcType", "weight"]
 };
 class PropertyWindow {

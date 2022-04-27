@@ -1,0 +1,58 @@
+div.input-buttons {
+    display: flex;
+    flex-direction: row;
+    margin-bottom: 5px;
+}
+
+#inputs-modal input, #inputs-modal select {
+    border: none;
+    width: 98%;
+}
+
+#inputs-modal .modal-content {
+    max-width: 600px;
+}
+
+#inputs-modal input[type="checkbox"] {
+    margin: 0;
+    accent-color: var(--color-secondary);
+}
+
+#inputs-modal input:focus, 
+#inputs-modal select:focus {
+    outline: none;
+    border: none;
+}
+
+#inputs-config-table {
+    border-collapse: collapse;
+    margin-bottom: 15px;
+}
+
+#inputs-config-table td {
+    border: 1px solid var(--color-border);
+    padding: 3px;
+}
+
+#inputs-config-table th {
+    border: 1px solid var(--color-border);
+    font-size: 9pt;
+    padding: 2pt;
+    color: white;
+    background-color: var(--color-primary-darker);
+}
+
+
+.btn svg {
+    height: 12pt;
+    width: 12pt;
+}
+
+.btn {
+    margin-left: 5px;
+}
+
+#modal-footer {
+    float: right; 
+    margin-left: auto;
+}

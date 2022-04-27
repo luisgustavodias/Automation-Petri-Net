@@ -2,23 +2,28 @@ import { Input } from "./InputsConfig.js"
 
 type InputValues = { [inputName: string]: number }
 
-const inputWindowDiv = document.getElementById("inputs-window")
+const inputsTableBody = document.querySelector("#inputs-window tbody")
 
 abstract class AGenericInput {
     protected readonly element: HTMLInputElement
     readonly name: string
 
     constructor(inputType: string, inputName: string) {
+        inputsTableBody
+        const row = document.createElement('tr')
+        const td1 = document.createElement('td')
+        const td2 = document.createElement('td')
         this.element = document.createElement('input')
-        const label = document.createElement('label')
+
+        td1.innerHTML = inputName
+
         this.element.type = inputType
-        label.className = "input-label"
-        label.innerHTML = inputName
         this.name = inputName
-        this.element.id = "input-" + inputName
-        label.setAttribute("for", this.element.id)
-        inputWindowDiv.appendChild(this.element)
-        inputWindowDiv.appendChild(label)
+
+        inputsTableBody.append(row)
+        row.append(td1)
+        row.append(td2)
+        td2.appendChild(this.element)
     }
 
     abstract read(): number
@@ -63,7 +68,7 @@ class InputWindow {
     open(inputs: Input[]) {
         document.getElementById('inputs-window').style.display = 'block'
 
-        inputWindowDiv.innerHTML = ''
+        inputsTableBody.innerHTML = ''
         
         this.inputs = []
         for (const input of inputs) {
