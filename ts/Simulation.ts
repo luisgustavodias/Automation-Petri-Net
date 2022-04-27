@@ -223,18 +223,24 @@ class TokenAnimation {
     }
 }
 
+enum SimState {
+    Running,
+    Pausing,
+    Paused,
+    Stopping,
+    Stopped
+}
+
 class Simulator {
     private currentNet: PetriNet
-    private playing: boolean
-    private stoping: boolean
+    private state: SimState
     private logicalNet: LogicalNet
     private inputWindow: InputWindow
     private tokenAnimByArc: {[arcId: PEId]: TokenAnimation}
 
     constructor(net: PetriNet) {
         this.currentNet = net
-        this.playing = false
-        this.stoping = false
+        this.state = SimState.Stopped
         this.logicalNet = null
         this.inputWindow = new InputWindow()
     }
@@ -320,13 +326,8 @@ class Simulator {
         }, FIRE_TRANS_ANIMATION_TIME/2)
         setTimeout(() => {
             this.logicalNet.updatePlaceMarks(marksToUpdate)
-            this.logicalNet.updateTransState()
             this.updatePlaceMarks(marksToUpdate)
-            this.updateTransitions()
-
-            if (this.playing) {
-                setTimeout(() => {this._step()}, STEP_INTERVAL_TIME)
-            }
+            this.disableTrans(trans.id)
         }, FIRE_TRANS_ANIMATION_TIME)
     }
 
@@ -357,60 +358,41 @@ class Simulator {
         ))
         this.logicalNet.updateTransState()
         this.restartNet()
-        document.getElementById('simulating-text').style.display = 'block'
+        this.state = SimState.Paused
     }
 
-    start(net: PetriNet) {
-        if (!this.logicalNet) {
-            console.log('not locicalNet')
-            this.init(net)
-        } 
-        this.playing = true
-        this._step()
-    }
-
-    pause() {
-        this.playing = false
-    }
-
-    restart(net: PetriNet) {
-        this.init(net)
+    private _pause() {
+        this.state = SimState.Paused
+        document.getElementById('simulating-text')
+            .innerHTML = 'Paused'
     }
 
     private _stop() {
         this.restartNet()
         this.logicalNet = null
-        this.playing = false
-        this.stoping = true
+        this.state = SimState.Stopped
         this.inputWindow.close()
-        document.getElementById('simulating-text').style.display = 'none'
-
-        this.stoping = false
+        document.getElementById('simulating-text')
+            .innerHTML = ''
     }
 
-    stop() {
-        if (this.logicalNet && !this.stoping) {
-            this.stoping = true
-        }
-    }
+    private _step = () => {
+        if (this.state !== SimState.Running) {
+            if (this.state === SimState.Stopping)
+                this._stop()
+            if (this.state === SimState.Pausing)
+                this._pause()
 
-    private _step() {
-        this.logicalNet.updateInputValues(this.inputWindow.readInputs())
-        const enabledTransitions = this.logicalNet.getEnabledTransitions()
-
-        if (this.stoping) {
-            this._stop()
             return
         }
+        
+        this.logicalNet.updateInputValues(this.inputWindow.readInputs())
+        this.logicalNet.updateTransState()
+        this.updateTransitions()
+        const enabledTransitions = this.logicalNet.getEnabledTransitions()
 
         if (!enabledTransitions.length) {
-            this.logicalNet.updateTransState()
-            setTimeout(() => { 
-                if (this.playing) {
-                    this._step()
-                } 
-            }, STEP_INTERVAL_TIME)
-
+            setTimeout(this._step, STEP_INTERVAL_TIME)
             return
         } 
 
@@ -420,13 +402,47 @@ class Simulator {
                 enabledTransitions[0]
             )
         )
+        setTimeout(this._step, FIRE_TRANS_ANIMATION_TIME 
+            + STEP_INTERVAL_TIME)
+    }
+
+    start(net: PetriNet) {
+        if (this.state === SimState.Stopped) {
+            this.init(net)
+            this.state = SimState.Running
+            this._step()
+            document.getElementById('simulating-text')
+                .innerHTML = 'Simulating...'
+        } else if (this.state === SimState.Paused) {
+            this.state = SimState.Running
+            this._step()
+            document.getElementById('simulating-text')
+                .innerHTML = 'Simulating...'
+        }
+    }
+
+    pause() {
+        if (this.state === SimState.Running)
+            this.state = SimState.Pausing
+    }
+
+    restart(net: PetriNet) {
+        if (this.state !== SimState.Stopped)
+            this.init(net)
+    }
+
+    stop() {
+        if (this.state !== SimState.Stopped) {
+            if (this.state === SimState.Paused)
+                this._stop()
+            else
+                this.state = SimState.Stopping
+        }
     }
 
     step(net: PetriNet) {
-        if (!this.logicalNet) {
-            this.init(net)
-        } 
-        this._step()
+        this.start(net)
+        this.state = SimState.Pausing
     }
 }
 

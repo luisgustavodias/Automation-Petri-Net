@@ -153,17 +153,23 @@ class TokenAnimation {
         this.currentStep = null;
     }
 }
+var SimState;
+(function (SimState) {
+    SimState[SimState["Running"] = 0] = "Running";
+    SimState[SimState["Pausing"] = 1] = "Pausing";
+    SimState[SimState["Paused"] = 2] = "Paused";
+    SimState[SimState["Stopping"] = 3] = "Stopping";
+    SimState[SimState["Stopped"] = 4] = "Stopped";
+})(SimState || (SimState = {}));
 class Simulator {
     currentNet;
-    playing;
-    stoping;
+    state;
     logicalNet;
     inputWindow;
     tokenAnimByArc;
     constructor(net) {
         this.currentNet = net;
-        this.playing = false;
-        this.stoping = false;
+        this.state = SimState.Stopped;
         this.logicalNet = null;
         this.inputWindow = new InputWindow();
     }
@@ -237,12 +243,8 @@ class Simulator {
         }, FIRE_TRANS_ANIMATION_TIME / 2);
         setTimeout(() => {
             this.logicalNet.updatePlaceMarks(marksToUpdate);
-            this.logicalNet.updateTransState();
             this.updatePlaceMarks(marksToUpdate);
-            this.updateTransitions();
-            if (this.playing) {
-                setTimeout(() => { this._step(); }, STEP_INTERVAL_TIME);
-            }
+            this.disableTrans(trans.id);
         }, FIRE_TRANS_ANIMATION_TIME);
     }
     restartNet() {
@@ -265,59 +267,75 @@ class Simulator {
         }));
         this.logicalNet.updateTransState();
         this.restartNet();
-        document.getElementById('simulating-text').style.display = 'block';
+        this.state = SimState.Paused;
     }
-    start(net) {
-        if (!this.logicalNet) {
-            console.log('not locicalNet');
-            this.init(net);
-        }
-        this.playing = true;
-        this._step();
-    }
-    pause() {
-        this.playing = false;
-    }
-    restart(net) {
-        this.init(net);
+    _pause() {
+        this.state = SimState.Paused;
+        document.getElementById('simulating-text')
+            .innerHTML = 'Paused';
     }
     _stop() {
         this.restartNet();
         this.logicalNet = null;
-        this.playing = false;
-        this.stoping = true;
+        this.state = SimState.Stopped;
         this.inputWindow.close();
-        document.getElementById('simulating-text').style.display = 'none';
-        this.stoping = false;
+        document.getElementById('simulating-text')
+            .innerHTML = '';
     }
-    stop() {
-        if (this.logicalNet && !this.stoping) {
-            this.stoping = true;
-        }
-    }
-    _step() {
-        this.logicalNet.updateInputValues(this.inputWindow.readInputs());
-        const enabledTransitions = this.logicalNet.getEnabledTransitions();
-        if (this.stoping) {
-            this._stop();
+    _step = () => {
+        if (this.state !== SimState.Running) {
+            if (this.state === SimState.Stopping)
+                this._stop();
+            if (this.state === SimState.Pausing)
+                this._pause();
             return;
         }
+        this.logicalNet.updateInputValues(this.inputWindow.readInputs());
+        this.logicalNet.updateTransState();
+        this.updateTransitions();
+        const enabledTransitions = this.logicalNet.getEnabledTransitions();
         if (!enabledTransitions.length) {
-            this.logicalNet.updateTransState();
-            setTimeout(() => {
-                if (this.playing) {
-                    this._step();
-                }
-            }, STEP_INTERVAL_TIME);
+            setTimeout(this._step, STEP_INTERVAL_TIME);
             return;
         }
         this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));
+        setTimeout(this._step, FIRE_TRANS_ANIMATION_TIME
+            + STEP_INTERVAL_TIME);
+    };
+    start(net) {
+        if (this.state === SimState.Stopped) {
+            this.init(net);
+            this.state = SimState.Running;
+            this._step();
+            document.getElementById('simulating-text')
+                .innerHTML = 'Simulating...';
+        }
+        else if (this.state === SimState.Paused) {
+            this.state = SimState.Running;
+            this._step();
+            document.getElementById('simulating-text')
+                .innerHTML = 'Simulating...';
+        }
+    }
+    pause() {
+        if (this.state === SimState.Running)
+            this.state = SimState.Pausing;
+    }
+    restart(net) {
+        if (this.state !== SimState.Stopped)
+            this.init(net);
+    }
+    stop() {
+        if (this.state !== SimState.Stopped) {
+            if (this.state === SimState.Paused)
+                this._stop();
+            else
+                this.state = SimState.Stopping;
+        }
     }
     step(net) {
-        if (!this.logicalNet) {
-            this.init(net);
-        }
-        this._step();
+        this.start(net);
+        this.state = SimState.Pausing;
     }
 }
 function createSimulator(net, startSimObserver, stopSimObserver) {
