@@ -55,7 +55,7 @@ function exampleNet(net) {
     net.createArc(placeId3, transId2, "Input");
     const arcId6 = net.createArc(placeId4, transId2, "Output");
     net.createArc(placeId5, transId2, "Output");
-    net.createArc(placeId5, transId3, "Input");
+    const arcId8 = net.createArc(placeId5, transId3, "Input");
     net.createArc(placeId1, transId3, "Output");
     net.addArcCorner(arcId6, 0);
     net.moveArcCorner(arcId6, 0, new Vector(250, 200));
@@ -170,6 +170,6 @@ function main() {
     };
     editor.open(net);
     //testTokenAnimation(net, simulator)
-    exampleNet(net);
+    //exampleNet(net)
 }
 window.onload = main;

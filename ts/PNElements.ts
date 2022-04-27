@@ -451,8 +451,10 @@ class PetriArc extends AGenericPetriElement {
         ))
         this.svgElement.appendChild(createText(
             '1',
-            new Vector(7, 8.5),
+            new Vector(0, 0),
             {
+                'text-anchor': 'middle',
+                'dominant-baseline': 'central',
                 drag: 'self',
                 PEText: 'weight',
                 visibility: 'hidden',
@@ -553,25 +555,17 @@ class PetriArc extends AGenericPetriElement {
             anchorPoint = this.arrow.getMidPoint()
             direction = this.arrow.getDirection()
         } else {
-            if (n % 2 === 1) {
-                anchorPoint = getLineMidPoint(
-                    <SVGLineElement>this.linesGroup.children[(n - 1)/2]
-                )
-                direction = getLineDirection(
-                    <SVGLineElement>this.linesGroup.children[(n - 1)/2]
-                )
-            } else {
-                anchorPoint = getLineStartPoint(
-                    <SVGLineElement>this.linesGroup.children[n/2]
-                )
-                direction = getLineDirection(
-                    <SVGLineElement>this.linesGroup.children[n/2]
-                )
-            }
+            const lineIndex = n % 2 === 0 ? n/2 : (n - 1)/2
+            anchorPoint = getLineMidPoint(
+                <SVGLineElement>this.linesGroup.children[lineIndex]
+            )
+            direction = getLineDirection(
+                <SVGLineElement>this.linesGroup.children[lineIndex]
+            )
         }
         
         let pos = anchorPoint.add(
-            direction.norm().ortogonal().mul(4.5)
+            direction.norm().ortogonal().mul(6)
         )
         this.weightElement.setAttribute('x', String(pos.x))
         this.weightElement.setAttribute('y', String(pos.y))
@@ -592,8 +586,6 @@ class PetriArc extends AGenericPetriElement {
         let u = (this.place.position.sub(this.trans.position)).norm()
         let placePoint = this.place.getConnectionPoint(u)
         let transPoint = this.trans.getConnectionPoint(u)
-        // setCircleCenter(<any>this.svgElement.children[3], placePoint)
-        // setCircleCenter(<any>this.svgElement.children[4], transPoint)
         
         if (this._arcType === 'Output') {
             this.arrow.update(transPoint, placePoint)
@@ -605,7 +597,7 @@ class PetriArc extends AGenericPetriElement {
                 this.arrow.update(placePoint, transPoint)
             }
         }
-        //this.updateWeightPos()
+        this.updateWeightPos()
     }
 
     private newLine(startPoint: Vector, endPoint: Vector) {
@@ -665,6 +657,7 @@ class PetriArc extends AGenericPetriElement {
         this.updatePlacePos()
         this.updateTransPos()
 
+        this.updateWeightPos()
         if (this.selected)
             this.showNodes()
     }
@@ -705,6 +698,9 @@ class PetriArc extends AGenericPetriElement {
                     this.place.position.sub(this.corners[0]).norm()
                 )
             )
+
+            if (this.corners.length === 1)
+                this.updateWeightPos()
         }
     }
 
@@ -718,6 +714,9 @@ class PetriArc extends AGenericPetriElement {
                 <SVGLineElement>this.linesGroup.children[0], 
                 connectionPoint
             )
+            
+            if (this.corners.length === 1)
+                this.updateWeightPos()
         } else {
             const u = this.lastCorner.sub(this.trans.position).norm()
             const connectionPoint = this.trans.getConnectionPoint(u)

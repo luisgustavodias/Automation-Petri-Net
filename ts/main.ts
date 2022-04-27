@@ -71,7 +71,7 @@ function exampleNet(net: PetriNet) {
     net.createArc(placeId3, transId2, "Input")
     const arcId6 = net.createArc(placeId4, transId2, "Output")
     net.createArc(placeId5, transId2, "Output")
-    net.createArc(placeId5, transId3, "Input")
+    const arcId8 = net.createArc(placeId5, transId3, "Input")
     net.createArc(placeId1, transId3, "Output")
 
     net.addArcCorner(arcId6, 0)
@@ -99,6 +99,7 @@ function exampleNet(net: PetriNet) {
             description: ''
         },
     ]
+    
     net.setGenericPEAttr(transId1, 'guard', 's1 and s2')
     net.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)')
 
@@ -225,7 +226,7 @@ function main() {
     editor.open(net)
 
     //testTokenAnimation(net, simulator)
-    exampleNet(net)
+    //exampleNet(net)
 }
 
 window.onload = main
