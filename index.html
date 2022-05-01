@@ -12,6 +12,7 @@
     <link rel="stylesheet" href="static/css/sidebar.css">
     <link rel="stylesheet" href="static/css/modal.css">
     <link rel="stylesheet" href="static/css/inputs-config-modal.css">
+    <link rel="stylesheet" href="static/css/welcome-window.css">
     <style>
         body {
             font-family: Arial, Helvetica, sans-serif;
@@ -51,6 +52,15 @@
             padding-left: 1rem;
         }
 
+        #alpha-version {
+            color: rgb(179, 179, 15);
+            float: right;
+            margin: 6px 6px 0 0;
+            padding-inline: 2px;
+            font-size: 11pt;
+            border: 1px solid rgb(179, 179, 15);
+            border-radius: 3px;
+        }
     </style>
 </head>
 
@@ -61,10 +71,11 @@
                 <i class="fa fa-caret-down"></i>
             </button>
             <div class="dropdown-content">
-                <a id="new-button">New</a>
-                <a id="load-button">Load</a>
-                <a id="save-button">Save</a>
+                <a id="new-file-button">New</a>
+                <a id="load-file-button">Load</a>
+                <a id="save-file-button">Save</a>
                 <!-- <a id="save-as-button">Save as</a> -->
+                <a id="close-file-button">Close</a>
             </div>
         </div>
         <!-- <a href="#news">View</a>
@@ -80,6 +91,8 @@
             </div>
         </div> -->
         <a id="inputs-button">Inputs</a>
+
+        <span id="alpha-version" >Alpha Version</span>
     </div>
 
     <div id="tool-bar">
@@ -289,7 +302,52 @@
             </defs>
         </svg>
 
-        <div id="svg-div">
+        <div id="welcome-window">
+            <h1>Automation Petri Net</h1>
+            <h5>A Petri Net editor, simulator and code generator for automation</h5>
+
+            <h4>Start</h4>
+            <a onclick="document.getElementById('new-file-button').click()">
+                New File
+            </a>
+            <a onclick="document.getElementById('load-file-button').click()">
+                Open File
+            </a>
+
+            <div id="fast-tutorial">
+                <h4>Fast Tutorial</h4>
+                <div>
+                    <img src="static/icons/mouse/mouse-left-btn.svg"/> 
+                    Select and drag element
+                </div>
+                <div>
+                    <img src="static/icons/mouse/mouse-right-btn.svg"/> 
+                    Pan
+                </div>
+                <div>
+                    <img src="static/icons/mouse/mouse-weel.svg"/> 
+                    Zoom
+                </div>
+                <div>
+                    <kbd>Shift</kbd> 
+                    <span>Toggle grid</span>
+                </div>
+                <div>
+                    <kbd>Ctrl</kbd> + <kbd>z</kbd> 
+                    <span>Undo</span>
+                </div>
+                <div>
+                    <kbd>Ctrl</kbd> + <kbd>y</kbd> 
+                    <span>Redo</span>
+                </div>
+                <div>
+                    <kbd>Delete</kbd> 
+                    <span>Delete the selected element</span>
+                </div>
+            </div>
+        </div>
+
+        <div id="svg-div" style="display: none;">
 
         </div>
 

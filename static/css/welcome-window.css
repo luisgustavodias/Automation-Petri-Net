@@ -1,0 +1,64 @@
+#welcome-window {
+    position: absolute;
+    left: 202px;
+    padding-left: 80px;
+    padding-top: 40px;
+    display: flex;
+    flex-direction: column;
+    color: var(--color-primary-darker);
+}
+
+h1 {
+    margin-bottom: 5px;
+    color: var(--color-primary-darker);
+}
+
+h4 {
+    margin-bottom: 10px;
+}
+
+h5 {
+    margin-top: 0px;
+    color: var(--color-primary-dark);
+    width: 300px;
+}
+
+#welcome-window a {
+    text-decoration: underline;
+    color: var(--color-secondary);
+    padding-bottom: 10px;
+    cursor: pointer;
+}
+
+#fast-tutorial {
+    padding-top: 20px;
+}
+
+#fast-tutorial div{
+    display: flex;
+    align-items: center;
+    padding-top: 5px;
+}
+
+#fast-tutorial span{
+    padding-left: 5px;
+}
+
+#fast-tutorial img{
+    width: 24px;
+    height: 24px;
+}
+
+kbd {
+    background-color: #eee;
+    border-radius: 3px;
+    border: 1px solid #b4b4b4;
+    box-shadow: 0 1px 1px rgba(0, 0, 0, .2), 0 2px 0 0 rgba(255, 255, 255, .7) inset;
+    color: #333;
+    display: inline-block;
+    font-size: 1em;
+    font-weight: 800;
+    line-height: 1;
+    padding: 2px 4px;
+    white-space: nowrap;
+}

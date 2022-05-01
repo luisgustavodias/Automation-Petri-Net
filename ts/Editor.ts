@@ -19,12 +19,15 @@ class Editor {
         }
 
         this._currentNet = net
+
+        this.divElement.style.display = 'block'
         this.divElement.appendChild(net.svgElement)
     }
 
     close() {
         if (this._currentNet) {
             this._currentNet.svgElement.remove()
+            this.divElement.style.display = 'none'
         }
     }
 }

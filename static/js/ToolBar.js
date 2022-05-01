@@ -219,7 +219,7 @@ export default class ToolBar {
     editor;
     propertyWindow;
     constructor(editor, propertyWindow) {
-        this._active = true;
+        this._active = false;
         this.editor = editor;
         this.propertyWindow = propertyWindow;
         this.tools = {
@@ -253,7 +253,7 @@ export default class ToolBar {
     mousedown = (evt) => {
         if (evt.ctrlKey || evt.button === 2) {
             this.movingScreenOffset = this.editor.currentNet
-                .getMousePosition(evt);
+                .getMousePosition(evt, true);
         }
         else if (this._active) {
             this.currentTool.onMouseDown(evt);
@@ -268,7 +268,7 @@ export default class ToolBar {
     };
     mousemove = evt => {
         if (this.movingScreenOffset) {
-            const mousePos = this.editor.currentNet.getMousePosition(evt);
+            const mousePos = this.editor.currentNet.getMousePosition(evt, true);
             this.editor.currentNet.moveScreen(mousePos.sub(this.movingScreenOffset));
         }
         else if (this._active) {
@@ -288,7 +288,9 @@ export default class ToolBar {
         this.editor.currentNet.zoom(mousePos, scale);
     };
     keydown = evt => {
-        let ele = evt.target;
+        if (!this.editor.currentNet)
+            return;
+        const ele = evt.target;
         if (ele.tagName === "BODY") {
             if (evt.key === 'Shift') {
                 this.editor.currentNet.grid = !this.editor.currentNet.grid;

@@ -211,19 +211,22 @@ function main() {
         () => { toolBar.enable() },
     )
 
-    document.getElementById('new-button').onclick = () => {
+    document.getElementById('new-file-button').onclick = () => {
         editor.open(PetriNet.newNet())
+        toolBar.enable()
     }
 
-    document.getElementById('load-button').onclick = async () => {
+    document.getElementById('close-file-button').onclick = () => {
+        editor.close()
+    }
+
+    document.getElementById('load-file-button').onclick = async () => {
         editor.open(await loadNet())
     }
 
-    document.getElementById('save-button').onclick = async () => {
+    document.getElementById('save-file-button').onclick = async () => {
         await saveNet(editor.currentNet)
     }
-
-    editor.open(net)
 
     //testTokenAnimation(net, simulator)
     //exampleNet(net)
