@@ -810,7 +810,8 @@ class PetriArc extends AGenericPetriElement {
             weight: this.weight,
             textsPosition: {
                 weight: this.getPETextPosition('weight')
-            }
+            },
+            corners: [...this.corners]
         }
     }
 }

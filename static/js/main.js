@@ -168,6 +168,7 @@ function main() {
     };
     document.getElementById('load-file-button').onclick = async () => {
         editor.open(await loadNet());
+        toolBar.enable();
     };
     document.getElementById('save-file-button').onclick = async () => {
         await saveNet(editor.currentNet);

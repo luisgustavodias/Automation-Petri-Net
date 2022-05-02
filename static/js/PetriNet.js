@@ -294,6 +294,12 @@ export class PetriNet {
     static loadArc(data, net) {
         const arc = new PetriArc(data.id, net.getGenericPE(data.placeId), net.getGenericPE(data.transId), data.arcType);
         arc.weight = data.weight;
+        if (data.corners) {
+            for (const corner of data.corners.reverse()) {
+                arc.addCorner(0);
+                arc.moveCorner(0, new Vector(corner.x, corner.y));
+            }
+        }
         return arc;
     }
     static newNet() {
@@ -312,6 +318,7 @@ export class PetriNet {
         });
         const viewBox = net.svgElement.viewBox.baseVal;
         Object.assign(viewBox, data.viewBox);
+        console.log(net);
         return net;
     }
 }

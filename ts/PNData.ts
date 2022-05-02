@@ -1,10 +1,13 @@
-import Vector from "./utils/Vector.js"
-
 type PEId = string
 type PlaceType = "INT" | "BOOL"
 type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
 type InputType = "INT" | "BOOL"
 type PetriElementType = "place" | "trans" | "arc"
+
+interface IVector {
+    x: number,
+    y: number
+}
 
 interface Input {
     name: string
@@ -38,32 +41,33 @@ interface ArcBasicData extends GenericPEBasicData {
 }
 
 interface PlaceTextsPosition {
-    name: Vector
-    placeType: Vector
+    name: IVector
+    placeType: IVector
 }
 
 interface TransTextsPosition {
-    name: Vector
-    delay: Vector
-    guard: Vector
+    name: IVector
+    delay: IVector
+    guard: IVector
 }
 
 interface ArcTextPosition {
-    weight: Vector
+    weight: IVector
 }
 
 interface PlaceData extends PlaceBasicData {
-    position: Vector
+    position: IVector
     textsPosition: PlaceTextsPosition
 }
 
 interface TransData extends TransBasicData {
-    position: Vector
+    position: IVector
     textsPosition: TransTextsPosition
 }
 
 interface ArcData extends ArcBasicData {
     textsPosition: ArcTextPosition
+    corners: IVector[]
 }
 
 interface PetriNetBasicData {
