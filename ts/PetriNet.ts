@@ -19,8 +19,7 @@ export class PetriNet {
     private transNumber: number
     private undoRedoManager: UndoRedoManager
     private _grid: boolean
-    private metadata: { fileName: string, filePath: string }
-
+    
     private constructor() {
         this.svgElement = document.createElementNS(
             'http://www.w3.org/2000/svg', 'svg'
@@ -43,7 +42,6 @@ export class PetriNet {
         this.placeNumber = 1
         this.transNumber = 1
         this._grid = false
-        this.metadata = { fileName: '', filePath: '' }
         this.undoRedoManager = new UndoRedoManager()
     }
 
@@ -90,40 +88,6 @@ export class PetriNet {
     deselectPE(id: PEId) {
         this.elements[id].deselect()
     }  
-
-    getNetData(): PetriNetData {
-        const viewBox = this.svgElement.viewBox.baseVal
-
-        const elementsDataByPEType = Object.fromEntries(
-            ['place', 'trans', 'arc'].map(PEType => [
-                PEType,
-                Object.values(this.elements).filter(
-                    (ele) => ele.PEType === PEType
-                ).map(ele => ele.getData())
-            ])
-        )
-
-        return {
-            name: 'no name',
-
-            places: elementsDataByPEType['place'],
-            transitions: elementsDataByPEType['trans'],
-            arcs: elementsDataByPEType['arc'],
-            inputs: this.inputs,
-
-            grid: this.grid,
-            nextPlaceNumber: this.placeNumber,
-            nextTransNumber: this.transNumber,
-            viewBox: {
-                x: viewBox.x,
-                y: viewBox.y,
-                width: viewBox.width,
-                heigth: viewBox.height
-            },
-            preScript: ""
-        }
-    }
-
     getMousePosition(evt: MouseEvent, ignoreGrid: boolean = false) {
         const CTM = this.svgElement.getScreenCTM();
         const pos = new Vector(
@@ -440,6 +404,39 @@ export class PetriNet {
         return new PetriNet()
     }
 
+    getNetData(): PetriNetData {
+        const viewBox = this.svgElement.viewBox.baseVal
+
+        const elementsDataByPEType = Object.fromEntries(
+            ['place', 'trans', 'arc'].map(PEType => [
+                PEType,
+                Object.values(this.elements).filter(
+                    (ele) => ele.PEType === PEType
+                ).map(ele => ele.getData())
+            ])
+        )
+
+        return {
+            name: 'Untiteled_Net',
+
+            places: elementsDataByPEType['place'],
+            transitions: elementsDataByPEType['trans'],
+            arcs: elementsDataByPEType['arc'],
+            inputs: this.inputs,
+
+            grid: this.grid,
+            nextPlaceNumber: this.placeNumber,
+            nextTransNumber: this.transNumber,
+            viewBox: {
+                x: viewBox.x,
+                y: viewBox.y,
+                width: viewBox.width,
+                heigth: viewBox.height
+            },
+            preScript: ""
+        }
+    }
+
     static loadNet(data: PetriNetData) {
         const net = new PetriNet()
 
@@ -452,6 +449,8 @@ export class PetriNet {
         data.arcs.forEach(arcData => { 
             net.addGenericPE(this.loadArc(arcData, net), false) 
         })
+
+        net.inputs = data.inputs
 
         const viewBox = net.svgElement.viewBox.baseVal
         Object.assign(viewBox, data.viewBox)

@@ -9,6 +9,13 @@ interface IVector {
     y: number
 }
 
+interface IViewBox {
+    x: number, 
+    y: number, 
+    width: number, 
+    heigth: number
+}
+
 interface Input {
     name: string
     type: InputType
@@ -51,7 +58,7 @@ interface TransTextsPosition {
     guard: IVector
 }
 
-interface ArcTextPosition {
+interface ArcTextsPosition {
     weight: IVector
 }
 
@@ -66,7 +73,7 @@ interface TransData extends TransBasicData {
 }
 
 interface ArcData extends ArcBasicData {
-    textsPosition: ArcTextPosition
+    textsPosition: ArcTextsPosition
     corners: IVector[]
 }
 
@@ -80,18 +87,17 @@ interface PetriNetBasicData {
     inputs: Input[]
 }
 
-interface PetriNetData extends PetriNetBasicData {
+interface PetriNetData {
+    name: string
+    preScript: string
+
     places: PlaceData[]
     transitions: TransData[]
     arcs: ArcData[]
+    inputs: Input[]
 
     grid: boolean
-    viewBox: {
-        x: number, 
-        y: number, 
-        width: number, 
-        heigth: number, 
-    }
+    viewBox: IViewBox
     nextPlaceNumber: number
     nextTransNumber: number
 }
