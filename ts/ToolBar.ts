@@ -43,7 +43,7 @@ class PetriElementTool extends GenericTool {
     onMouseDown(evt: MouseEvent) {
         const ele = <SVGAElement>evt.target
         if (ele.id === SVG_BG_ID) {
-            const coord = this.editor.currentNet.getMousePosition(evt)
+            const coord = this.editor.currentNet.getMousePosition(evt, false)
             this.createMethod(coord);
         }
     }
@@ -136,7 +136,9 @@ class ArcTool extends GenericTool {
         this.restart()
     }
 
-    onMouseLeave(evt: Event) { this.restart() }
+    onMouseLeave(evt: Event) { 
+        this.restart() 
+    }
 
     onChangeTool() {
         this.restart()
@@ -147,21 +149,24 @@ class ArcTool extends GenericTool {
 class MouseTool extends GenericTool {
     selectedPEId: PEId
     dragging: boolean
-    dragStartPos: Vector
+    dragInitialPos: Vector
+    dragMouseInitialPos: Vector
     cornerIdx: number
+    peTextName: string
     
     propertyWindow: PropertyWindow
     // dragManager: DragManager
 
-    constructor(editor: Editor, propertyWindor: PropertyWindow) {
+    constructor(editor: Editor, propertyWindow: PropertyWindow) {
         super(editor, "mouse-tool")
         this.selectedPEId = null
         this.dragging = false
         this.cornerIdx = null
-        this.dragStartPos = null
+        this.peTextName = null
+        this.dragInitialPos = null
+        this.dragMouseInitialPos = null
 
-        this.propertyWindow = propertyWindor
-        // this.dragManager = dragManager
+        this.propertyWindow = propertyWindow
     }
 
     selectPE(id: PEId) {
@@ -193,19 +198,29 @@ class MouseTool extends GenericTool {
         const mousePos = this.editor.currentNet.getMousePosition(evt)
 
         if (this.cornerIdx !== null) {
-            return this.editor.currentNet.moveArcCorner(
+            this.dragInitialPos = this.editor.currentNet.moveArcCorner(
                 this.selectedPEId,
                 this.cornerIdx,
-                mousePos,
+                mousePos.sub(this.dragMouseInitialPos),
                 registryChange,
-                this.dragStartPos
+                false,
+                this.dragInitialPos
+            )
+        } else if (this.peTextName !== null) {
+            this.dragInitialPos = this.editor.currentNet.movePEText(
+                this.selectedPEId,
+                this.peTextName,
+                mousePos.sub(this.dragMouseInitialPos),
+                registryChange,
+                this.dragInitialPos
             )
         } else {
-            return this.editor.currentNet.movePE(
-                this.selectedPEId, 
-                mousePos,
+            this.dragInitialPos = this.editor.currentNet.movePE(
+                this.selectedPEId,
+                mousePos.sub(this.dragMouseInitialPos),
                 registryChange,
-                this.dragStartPos
+                false,
+                this.dragInitialPos
             )
         }
     } 
@@ -216,6 +231,8 @@ class MouseTool extends GenericTool {
         }
         this.dragging = false
         this.cornerIdx = null
+        this.peTextName = null
+        this.dragInitialPos = null
     }
 
     onMouseDown(evt) {
@@ -233,33 +250,25 @@ class MouseTool extends GenericTool {
             this.selectPE(PEId)
         }
 
-        const elementType = this.editor.currentNet.getGenericPEType(
-            this.selectedPEId
-        )
-        if (elementType === 'arc') {
-            if (evt.target.getAttribute('drag') === 'corner') {
-                this.dragging = true
-                this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'))
-            } else if (evt.target.getAttribute('drag') === 'arcMidNode') {
-                this.dragging = true
-                this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'))
-                this.editor.currentNet.addArcCorner(
-                    this.selectedPEId,
-                    this.cornerIdx
-                )
-            } else {
-                this.dragging = false
-                this.cornerIdx = null
-            }
-        } else {
-            this.dragging = true
-        }
+        const dragWhat = evt.target.getAttribute('drag')
 
-        if (this.dragging) {
-            console.log(this.cornerIdx, this.selectedPEId)
-            this.dragStartPos = this.drag(evt)
+        if (!dragWhat) return
+        
+        this.dragging = true
+        this.dragMouseInitialPos = this.editor.currentNet
+            .getMousePosition(evt)
+
+        if (dragWhat === 'corner') {
+            this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'))
+        } else if (dragWhat === 'arcMidNode') {
+            this.cornerIdx = parseInt(evt.target.getAttribute('cornerIdx'))
+            this.editor.currentNet.addArcCorner(
+                this.selectedPEId,
+                this.cornerIdx
+            )
+        } else if (dragWhat === 'PEText') {
+            this.peTextName = evt.target.getAttribute('PEText')
         }
-        console.log(this.dragStartPos)
     }
 
     onMouseMove(evt) {
@@ -409,6 +418,8 @@ export default class ToolBar {
     }
     
     private changeTool (tool) {
+        if (!this._active) return
+        
         this.currentTool.onChangeTool();
         this.currentTool = this.tools[tool];
         document.getElementById(tool).classList.add("selected-tool-bar-item");
@@ -422,6 +433,7 @@ export default class ToolBar {
 
     disable() {
         this._active = false
+        this.currentTool.onChangeTool()
         document.getElementById(this.currentTool.buttonId)
             .classList.remove("selected-tool-bar-item")
     }

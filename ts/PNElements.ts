@@ -43,13 +43,13 @@ abstract class AGenericPetriElement {
         this.getPETextElement(attrName).innerHTML = val
     }
 
-    protected getPETextPosition(attrName: string) {
+    getPETextPosition(attrName: string) {
         const matrix = this.getPETextElement(attrName).transform
             .baseVal.getItem(0).matrix
         return new Vector(matrix.e, matrix.f)
     }
 
-    protected setPETextPosition(attrName: string, pos: Vector) {
+    setPETextPosition(attrName: string, pos: Vector) {
         const transform = this.getPETextElement(attrName).transform
             .baseVal.getItem(0)
         transform.setTranslate(pos.x, pos.y)
@@ -85,10 +85,6 @@ abstract class APetriElement extends AGenericPetriElement {
     }
 
     abstract getConnectionPoint(u: Vector)
-
-    move(displacement: Vector) {
-        this.position = this._position.add(displacement)
-    }
 
     select() {
         this.selected = true
@@ -154,7 +150,7 @@ class PetriPlace extends APetriElement {
             'p1',
             new Vector(6.5, -8),
             {
-                drag: 'self',
+                drag: 'PEText',
                 PEText: 'name',
                 PEParent: id
             }
@@ -163,7 +159,7 @@ class PetriPlace extends APetriElement {
             'INT',
             new Vector(7, 8.5),
             {
-                drag: 'self',
+                drag: 'PEText',
                 PEText: 'placeType',
                 PEParent: id
             }
@@ -333,7 +329,7 @@ class PetriTrans extends APetriElement {
             'p1',
             new Vector(6, -5.5),
             {
-                drag: 'self',
+                drag: 'PEText',
                 PEText: 'name',
                 PEParent: id
             }
@@ -342,7 +338,7 @@ class PetriTrans extends APetriElement {
             '',
             new Vector(6, 5.5),
             {
-                drag: 'self',
+                drag: 'PEText',
                 PEText: 'delay',
                 PEParent: id
             }
@@ -351,7 +347,7 @@ class PetriTrans extends APetriElement {
             '',
             new Vector(-6, -5.5),
             {
-                drag: 'self',
+                drag: 'PEText',
                 PEText: 'guard',
                 'text-anchor': 'end',
                 style: 'font-family: courier',
@@ -455,7 +451,7 @@ class PetriArc extends AGenericPetriElement {
             {
                 'text-anchor': 'middle',
                 'dominant-baseline': 'central',
-                drag: 'self',
+                drag: 'PEText',
                 PEText: 'weight',
                 visibility: 'hidden',
                 PEParent: id

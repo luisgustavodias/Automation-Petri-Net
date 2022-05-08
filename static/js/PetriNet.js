@@ -36,7 +36,12 @@ export class PetriNet {
         this._grid = false;
         this.undoRedoManager = new UndoRedoManager();
     }
-    get grid() { return this._grid; }
+    generateId() {
+        return String(Math.random());
+    }
+    get grid() {
+        return this._grid;
+    }
     set grid(val) {
         if (val) {
             document.getElementById('svg-background')
@@ -54,14 +59,6 @@ export class PetriNet {
     getGenericPEType(id) {
         return this.elements[id].PEType;
     }
-    getPEPos(id) {
-        const genericPE = this.elements[id];
-        if (genericPE.PEType === 'arc') {
-            throw "Petri has no attribute position";
-        }
-        const petriElement = genericPE;
-        return petriElement.position;
-    }
     getGenericPEData(id) {
         return this.elements[id].getData();
     }
@@ -71,12 +68,14 @@ export class PetriNet {
     deselectPE(id) {
         this.elements[id].deselect();
     }
-    getMousePosition(evt, ignoreGrid = false) {
+    fitToGrid(pos) {
+        return new Vector(Math.round(pos.x / PetriNet.GRID_SIZE) * PetriNet.GRID_SIZE, Math.round(pos.y / PetriNet.GRID_SIZE) * PetriNet.GRID_SIZE);
+    }
+    getMousePosition(evt, ignoreGrid = true) {
         const CTM = this.svgElement.getScreenCTM();
         const pos = new Vector((evt.clientX - CTM.e) / CTM.a, (evt.clientY - CTM.f) / CTM.d);
-        if (!ignoreGrid && this.grid) {
-            return new Vector(Math.round(pos.x / PetriNet.GRID_SIZE) * PetriNet.GRID_SIZE, Math.round(pos.y / PetriNet.GRID_SIZE) * PetriNet.GRID_SIZE);
-        }
+        if (!ignoreGrid && this.grid)
+            return this.fitToGrid(pos);
         return pos;
     }
     addGenericPE(genericPE, registryChange = true) {
@@ -146,37 +145,43 @@ export class PetriNet {
             });
         }
     }
-    movePE(id, pos, registryChange = true, startPos = null) {
+    moveGenegic(currentPos, displacement, initialPos, setPos, registryChange, ignoreGrid) {
+        const _initialPos = initialPos ? initialPos : currentPos.position;
+        let targetPos = _initialPos.add(displacement);
+        if (!ignoreGrid && this.grid)
+            targetPos = this.fitToGrid(currentPos);
+        setPos(targetPos);
+        if (registryChange) {
+            this.undoRedoManager.registryChange({
+                undo: () => setPos(_initialPos),
+                redo: () => setPos(targetPos),
+            });
+        }
+        return _initialPos;
+    }
+    movePE(id, displacement, registryChange = true, ignoreGrid = false, initialPos = null) {
         const genericPE = this.elements[id];
-        if (genericPE.PEType === 'arc') {
+        if (genericPE.PEType === 'arc')
             return;
-        }
         const petriElement = genericPE;
-        let previousPos;
-        if (registryChange && startPos) {
-            previousPos = startPos;
-        }
-        else {
-            previousPos = petriElement.position;
-        }
-        petriElement.position = pos;
+        const _initialPos = initialPos ? initialPos : petriElement.position;
+        petriElement.position = _initialPos.add(displacement);
+        if (!ignoreGrid && this.grid)
+            petriElement.position = this.fitToGrid(petriElement.position);
         for (const arcId of petriElement.connectedArcs) {
-            if (genericPE.PEType === 'place') {
-                //@ts-ignore
-                this.elements[arcId].updatePlacePos();
-            }
-            else {
-                //@ts-ignore
-                this.elements[arcId].updateTransPos();
-            }
+            const arc = this.elements[arcId];
+            if (genericPE.PEType === 'place')
+                arc.updatePlacePos();
+            else
+                arc.updateTransPos();
         }
         if (registryChange) {
             this.undoRedoManager.registryChange({
-                undo: () => this.movePE(id, previousPos, false),
-                redo: () => this.movePE(id, pos, false),
+                undo: () => this.movePE(id, new Vector(0, 0), false, true, _initialPos),
+                redo: () => this.movePE(id, displacement, false, true, _initialPos),
             });
         }
-        return previousPos;
+        return _initialPos;
     }
     addArcCorner(arcId, cornerIndex, registryChange = true) {
         const arc = this.elements[arcId];
@@ -188,26 +193,33 @@ export class PetriNet {
             });
         }
     }
-    moveArcCorner(arcId, cornerIndex, pos, registryChange = true, startPos = null) {
+    moveArcCorner(arcId, cornerIndex, displacement, registryChange = true, ignoreGrid = false, initialPos = null) {
         const arc = this.elements[arcId];
-        let previousPos;
-        if (registryChange && startPos) {
-            previousPos = startPos;
-        }
-        else {
-            previousPos = arc.getCornerPos(cornerIndex);
-        }
-        arc.moveCorner(cornerIndex, pos);
+        const _initialPos = initialPos ? initialPos : arc.getCornerPos(cornerIndex);
+        arc.moveCorner(cornerIndex, _initialPos.add(displacement));
+        if (!ignoreGrid)
+            arc.moveCorner(cornerIndex, this.fitToGrid(arc.getCornerPos(cornerIndex)));
         if (registryChange) {
             this.undoRedoManager.registryChange({
-                undo: () => this.moveArcCorner(arcId, cornerIndex, previousPos, false),
-                redo: () => this.moveArcCorner(arcId, cornerIndex, pos, false),
+                undo: () => this.moveArcCorner(arcId, cornerIndex, new Vector(0, 0), false, true, _initialPos),
+                redo: () => this.moveArcCorner(arcId, cornerIndex, displacement, false, true, _initialPos),
             });
         }
-        return previousPos;
+        return _initialPos;
     }
-    generateId() {
-        return String(Math.random());
+    movePEText(id, attrName, displacement, registryChange = true, initialPos = null) {
+        const genericPE = this.elements[id];
+        const _initialPos = initialPos ?
+            initialPos :
+            genericPE.getPETextPosition(attrName);
+        genericPE.setPETextPosition(attrName, _initialPos.add(displacement));
+        if (registryChange) {
+            this.undoRedoManager.registryChange({
+                undo: () => this.movePEText(id, attrName, new Vector(0, 0), false, _initialPos),
+                redo: () => this.movePEText(id, attrName, displacement, false, _initialPos),
+            });
+        }
+        return _initialPos;
     }
     createPlace(coord) {
         const place = new PetriPlace(this.generateId());

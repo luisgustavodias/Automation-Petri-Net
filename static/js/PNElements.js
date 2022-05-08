@@ -58,9 +58,6 @@ class APetriElement extends AGenericPetriElement {
         const transform = this.svgElement.transform.baseVal.getItem(0);
         transform.setTranslate(coord.x, coord.y);
     }
-    move(displacement) {
-        this.position = this._position.add(displacement);
-    }
     select() {
         this.selected = true;
         this.svgElement.children[0].setAttribute('stroke', 'blue');
@@ -111,12 +108,12 @@ class PetriPlace extends APetriElement {
         }));
         this.svgElement.appendChild(createGroup());
         this.svgElement.appendChild(createText('p1', new Vector(6.5, -8), {
-            drag: 'self',
+            drag: 'PEText',
             PEText: 'name',
             PEParent: id
         }));
         this.svgElement.appendChild(createText('INT', new Vector(7, 8.5), {
-            drag: 'self',
+            drag: 'PEText',
             PEText: 'placeType',
             PEParent: id
         }));
@@ -266,17 +263,17 @@ class PetriTrans extends APetriElement {
             PEParent: id
         }));
         this.svgElement.appendChild(createText('p1', new Vector(6, -5.5), {
-            drag: 'self',
+            drag: 'PEText',
             PEText: 'name',
             PEParent: id
         }));
         this.svgElement.appendChild(createText('', new Vector(6, 5.5), {
-            drag: 'self',
+            drag: 'PEText',
             PEText: 'delay',
             PEParent: id
         }));
         this.svgElement.appendChild(createText('', new Vector(-6, -5.5), {
-            drag: 'self',
+            drag: 'PEText',
             PEText: 'guard',
             'text-anchor': 'end',
             style: 'font-family: courier',
@@ -355,7 +352,7 @@ class PetriArc extends AGenericPetriElement {
         this.svgElement.appendChild(createText('1', new Vector(0, 0), {
             'text-anchor': 'middle',
             'dominant-baseline': 'central',
-            drag: 'self',
+            drag: 'PEText',
             PEText: 'weight',
             visibility: 'hidden',
             PEParent: id
