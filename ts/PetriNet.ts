@@ -296,7 +296,7 @@ export class PetriNet {
         
         arc.moveCorner(cornerIndex, _initialPos.add(displacement))
 
-        if (!ignoreGrid)
+        if (!ignoreGrid && this.grid)
             arc.moveCorner(
                 cornerIndex, this.fitToGrid(arc.getCornerPos(cornerIndex))
             )

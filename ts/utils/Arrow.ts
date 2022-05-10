@@ -1,133 +1,184 @@
+import { ArcType, PEId } from '../PNData.js'
+import { createSVGElement } from './SVGElement/base.js'
 import { createLine, updateLine } from './SVGElement/Line.js'
 import { createPolygon } from './SVGElement/others.js'
 import Vector from './Vector.js'
 
-export class Arrow {
-    headWidth = 6
-    headHeight = 2
+export class CurvedArrow {
+    private static readonly headWidth = 6
+    private static readonly headHeight = 2
+    private static readonly inhibitorBallRadius = 9
 
-    readonly line: SVGLineElement
-    readonly head: SVGPolygonElement
-    private headPos: Vector
-    private tailPos: Vector
 
-    constructor () { // line: SVGLineElement, head: SVGPolygonElement
-        this.headPos = new Vector(20, 20)
-        this.tailPos = new Vector(50, 20)
-        this.line = createLine(this.headPos, this.tailPos)
-        this.line.setAttribute('stroke', 'black')
-        this.head = createPolygon()
-        this._update()
+    private readonly polyline: SVGPolylineElement
+    private readonly clickablePolyline: SVGPolylineElement
+    private readonly arrowHead: SVGPolygonElement
+    private readonly points: Vector[]
+
+    constructor (
+        parentElement: SVGGElement, 
+        startPos: Vector, 
+        endPos: Vector, 
+        PEParentId: PEId
+    ) {
+        this.points = [startPos, endPos]
+        this.polyline = <SVGPolylineElement>createSVGElement(
+            'polyline', { 
+                'stroke': 'black',
+                'fill': 'none',
+                'stroke-linecap': 'round'
+            }
+        )
+        this.clickablePolyline = <SVGPolylineElement>createSVGElement(
+            'polyline', {
+                'PEParent': PEParentId, 
+                'stroke': 'black',
+                'opacity': '0',
+                'stroke-width': '6',
+                'fill': 'none',
+                'stroke-linecap': 'round'
+            }
+        )
+        this.arrowHead = createPolygon({'PEParent': PEParentId})
+        parentElement.appendChild(this.polyline)
+        parentElement.appendChild(this.arrowHead)
+        parentElement.appendChild(this.clickablePolyline)
+        this.draw()
     }
-    
-    private updateHead(u: Vector, v1: Vector) {
+
+    private drawHead(u: Vector, v1: Vector) {
         let w = u.ortogonal()
         
-        // v1, v2 e v3 são os vétices do triângulo que forma a cabeça do arco
-        let v2 = v1.add(u.mul(this.headWidth)).add(w.mul(this.headHeight))
-        let v3 = v2.sub(w.mul(2 * this.headHeight))
+        // v1, v2 e v3 are the vertices of the triangle(arrow head)
+        let v2 = v1.add(u.mul(CurvedArrow.headWidth))
+            .add(w.mul(CurvedArrow.headHeight))
+        let v3 = v2.sub(w.mul(2 * CurvedArrow.headHeight))
         let points = v1.str() + ' ' + v2.str() + ' ' + v3.str()
-        this.head.setAttribute('points', points)
+        this.arrowHead.setAttribute('points', points)
     }
 
-    getDirection() {
-        return (this.headPos.sub(this.tailPos)).norm()
-    }
+    draw() {
+        const pointsStr = this.points
+            .map(p => `${p.x} ${p.y}`).join(', ')
 
-    private _update() {
-        let u = this.getDirection()
-        updateLine(
-            this.line,
-            this.tailPos, 
-            this.headPos.add(u.mul(-this.headWidth))
-        )
-        this.updateHead(u.mul(-1), this.headPos)
-    }
+        this.polyline.setAttribute('points', pointsStr)
+        this.clickablePolyline.setAttribute('points', pointsStr)
 
-    update(tailPos: Vector, headPos: Vector) {
-        this.tailPos = tailPos
-        this.headPos = headPos
-        this._update()
+        const headPos = this.getHeadPos()
+        const u = this.points[this.points.length - 2].sub(headPos).norm()
+        
+        this.drawHead(u, headPos)
     }
-
-    updateHeadPos(pos: Vector) { this.update(this.tailPos, pos) }
-    
-    updateTailPos(pos: Vector) { this.update(pos, this.headPos) }
 
     getHeadPos() {
-        return this.headPos
+        return this.points[this.points.length - 1]
     }
 
     getTailPos() {
-        return this.tailPos
+        return this.points[0]
     }
 
-    getMidPoint() {
-        return this.tailPos.add(this.headPos.sub(this.tailPos).mul(0.5))
+    getPointPos(idx: number) {
+        return this.points[idx >= 0 ? idx : (this.points.length + idx)]
     }
 
-    // changeLine(line: SVGLineElement) {
-    //     this.line = line
-    //     this._update()
-    // }
-}
+    getNextLineMidPoint(cornerIdx: number) {
+        return this.points[cornerIdx + 1]
+            .add(this.points[cornerIdx]).mul(0.5)
+    }
 
-// type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
+    getPath() {
+        return [...this.points]
+    }
 
-// export class CurvedArrow {
-//     svgGElement: SVGGElement
-//     startPos: Vector
-//     endPos: Vector
+    hasCorner() {
+        return this.points.length > 2
+    }
 
-//     constructor (svgGElement: SVGGElement) {
-//         this.svgGElement = svgGElement
-//         this.startPos = 
-//     }
+    numberOfCorners() {
+        return this.points.length - 2
+    }
 
-//     private updateLine(startPoint: Vector, endPoint: Vector) {
-//         this.line.setAttribute('x1', String(startPoint.x))
-//         this.line.setAttribute('y1', String(startPoint.y))
-//         this.line.setAttribute('x2', String(endPoint.x))
-//         this.line.setAttribute('y2', String(endPoint.y))
-//     }
-    
-//     private updateHead(u: Vector, v1: Vector) {
-//         let w = u.ortogonal()
+    getCorners() {
+        return this.points.slice(1, -1)
+    }
+
+    getLinesMidPoint() {
+        const midPoints = []
+        for (let i = 0; i < this.points.length - 1; i++)
+            midPoints.push(this.getNextLineMidPoint(i))
+        return midPoints
+    }
+
+    setArcType(arcType: ArcType) {
+        if (arcType === 'Test')
+            this.polyline.setAttribute('stroke-dasharray', '2 2')
+        else
+            this.polyline.setAttribute('stroke-dasharray', '')
+
+        if (arcType === 'Inhibitor') {}
+        else {}
         
-//         // v1, v2 e v3 são os vétices do triângulo que forma a cabeça do arco
-//         let v2 = v1.add(u.mul(this.headWidth)).add(w.mul(this.headHeight))
-//         let v3 = v2.sub(w.mul(2 * this.headHeight))
-//         let points = v1.str() + ' ' + v2.str() + ' ' + v3.str()
-//         this.head.setAttribute('points', points)
-//     }
-
-//     getDirection() {
-//         return (this.headPos.sub(this.tailPos)).norm()
-//     }
-
-//     private _update() {
-//         let u = this.getDirection()
-//         updateLine(
-//             this.line,
-//             this.tailPos, 
-//             this.headPos.add(u.mul(this.headWidth))
-//         )
-//         this.updateHead(u.mul(-1), this.headPos)
-//     }
-
-//     update(tailPos: Vector, headPos: Vector) {
-//         this.tailPos = tailPos
-//         this.headPos = headPos
-//         this._update()
-//     }
-
-//     updateHeadPos(pos: Vector) { this.update(this.tailPos, pos) }
+        this.draw()
+    }
     
-//     updateTailPos(pos: Vector) { this.update(pos, this.headPos) }
+    reverse() {
+        this.points.reverse()
+        this.draw()
+    }
 
-//     changeLine(line: SVGLineElement) {
-//         this.line = line
-//         this._update()
-//     }
-// }
+    updateHeadPos(pos: Vector, reDraw: boolean = true) { 
+        this.points[this.points.length - 1] = pos
+        if (reDraw)
+            this.draw()
+    }
+    
+    updateTailPos(pos: Vector, reDraw: boolean = true) { 
+        this.points[0] = pos
+        if (reDraw)
+            this.draw()
+    }
+
+    updateTips(
+        startPos: Vector, 
+        endPos: Vector, 
+        reDraw: boolean = true
+    ) {
+        this.updateTailPos(startPos, false)
+        this.updateHeadPos(endPos, reDraw)
+    }
+
+    addCorner(cornerIndex: number) {
+        console.log(this.points.map(p => `${p.x} ${p.y}`).join(', '))
+        this.points.splice(
+            cornerIndex + 1, 
+            0, 
+            this.getNextLineMidPoint(cornerIndex)
+        )
+        console.log(this.points.map(p => `${p.x} ${p.y}`).join(', '))
+    }
+
+    removeCorner(cornerIndex: number) {
+        if (cornerIndex === 0 || cornerIndex === this.points.length - 1)
+            throw 'Invalid cornerIndex'
+        this.points.splice(cornerIndex, 1)
+    }
+
+    moveCorner(
+        cornerIndex: number, 
+        pos: Vector, 
+        reDraw: boolean = true) 
+    {
+        console.log(cornerIndex)
+        console.log(this.points.map(p => `${p.x} ${p.y}`).join(', '))
+        this.points[cornerIndex] = pos
+        if (reDraw)
+            this.draw()
+    }
+
+    setColor(color: string) {
+        this.polyline.setAttribute('stroke', color)
+        this.arrowHead.setAttribute('fill', color)
+    }
+}
 

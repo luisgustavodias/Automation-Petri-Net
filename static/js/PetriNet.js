@@ -197,7 +197,7 @@ export class PetriNet {
         const arc = this.elements[arcId];
         const _initialPos = initialPos ? initialPos : arc.getCornerPos(cornerIndex);
         arc.moveCorner(cornerIndex, _initialPos.add(displacement));
-        if (!ignoreGrid)
+        if (!ignoreGrid && this.grid)
             arc.moveCorner(cornerIndex, this.fitToGrid(arc.getCornerPos(cornerIndex)));
         if (registryChange) {
             this.undoRedoManager.registryChange({

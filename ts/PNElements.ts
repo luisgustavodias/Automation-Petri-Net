@@ -3,11 +3,12 @@ import {
     getLineEndPoint, getLineStartPoint,
     getLineMidPoint, setLineStartPoint, getLineDirection, createLine
 } from './utils/SVGElement/Line.js';
-import { Arrow } from "./utils/Arrow.js";
+import { CurvedArrow } from "./utils/Arrow.js";
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js";
 import { ArcData, PEId, PlaceData, PlaceType, TransData, ArcType } from "./PNData.js";
 import { createRect } from "./utils/SVGElement/Rectangle.js";
 import { createGroup, createText } from "./utils/SVGElement/others.js";
+import { createSVGElement } from "./utils/SVGElement/base.js";
 
 abstract class AGenericPetriElement {
     readonly svgElement: SVGGElement
@@ -409,8 +410,7 @@ class PetriArc extends AGenericPetriElement {
     private _arcType: ArcType
     private place: PetriPlace
     private trans: PetriTrans
-    private arrow: Arrow
-    private corners: Vector[]
+    private arrow: CurvedArrow
 
     constructor (
         id: PEId,
@@ -421,30 +421,15 @@ class PetriArc extends AGenericPetriElement {
         super(id, 'arc-model')
         this.place = place
         this.trans = trans
-        this.arrow = new Arrow()
-        this.svgElement.appendChild(createGroup(
-            {
-                'stroke-linecap': 'round'
-            }
-        ))
-        this.svgElement.appendChild(createGroup(
-            {
-                'stroke-linecap': 'round',
-                'stroke': 'black'
-            }
-        ))
+        const arrowGroup = createGroup()
+        this.arrow = new CurvedArrow(
+            arrowGroup,
+            place.position,
+            trans.position,
+            this.id
+        )
+        this.svgElement.appendChild(arrowGroup)
         this.svgElement.appendChild(createGroup())
-        this.svgElement.appendChild(createCircle(
-            new Vector(0,0), 
-            PetriArc.negBallRadius,
-            {
-                fill: 'white',
-                stroke: 'black',
-                'stroke-width': '0.8',
-                visibility: 'hidden',
-                PEParent: id
-            }
-        ))
         this.svgElement.appendChild(createText(
             '1',
             new Vector(0, 0),
@@ -457,32 +442,16 @@ class PetriArc extends AGenericPetriElement {
                 PEParent: id
             }
         ))
-        this.arrow.line.setAttribute('PEParent', this.id)
-        this.arrow.head.setAttribute('PEParent', this.id)
-        this.svgElement.children[0].appendChild(this.arrow.line)
-        this.svgElement.children[0].appendChild(this.arrow.head)
-        this.corners = []
+        
         this.arcType = arctype
     }
 
-    private get lastCorner() { 
-        return this.corners[this.corners.length - 1] 
-    }
-
-    private get linesGroup() {
-        return this.svgElement.children[1]
-    }
-
-    private get negBall() { 
-        return <SVGCircleElement>this.svgElement.children[3] 
-    }
-
     private get weightElement() { 
-        return this.svgElement.children[4] 
+        return this.svgElement.children[2] 
     }
 
     private get cornersGroup() { 
-        return this.svgElement.children[2] 
+        return this.svgElement.children[1] 
     }
 
     get placeId() { 
@@ -513,118 +482,55 @@ class PetriArc extends AGenericPetriElement {
     }
 
     set arcType(val: ArcType) {
-        if (val === "Test") {
-            this.linesGroup.setAttribute('stroke-dasharray', '2 2')
-            this.arrow.line.setAttribute('stroke-dasharray', '2 2')
-        }
-        else {
-            this.linesGroup.setAttribute('stroke-dasharray', '')
-            this.arrow.line.setAttribute('stroke-dasharray', '')
-        }
-        if (val === "Inhibitor") {
-            this.negBall.setAttribute('visibility', 'visible');
-        }
-        else {
-            this.negBall.setAttribute('visibility', 'hidden');
-        }
         if (this.arcType !== val && 
                 (val === 'Output' || this._arcType === 'Output')) {
-            this.corners.reverse()
+            this.arrow.reverse()
         }
         this._arcType = val
-        this.svgElement.setAttribute('arc-type', val)
-        
-        this.updateLines()
-        this.updatePlacePos()
-        this.updateTransPos()
+        this.arrow.setArcType(val)
     }
 
     getCornerPos(cornerIndex: number) {
-        return this.corners[cornerIndex]
+        return this.arrow.getPointPos(cornerIndex + 1)
     }
 
     private updateWeightPos() {
-        let n = this.corners.length
-        let direction: Vector
-        let anchorPoint: Vector
-        if (n === 0) {
-            anchorPoint = this.arrow.getMidPoint()
-            direction = this.arrow.getDirection()
-        } else {
-            const lineIndex = n % 2 === 0 ? n/2 : (n - 1)/2
-            anchorPoint = getLineMidPoint(
-                <SVGLineElement>this.linesGroup.children[lineIndex]
-            )
-            direction = getLineDirection(
-                <SVGLineElement>this.linesGroup.children[lineIndex]
-            )
-        }
+        // let n = this.corners.length
+        // let direction: Vector
+        // let anchorPoint: Vector
+        // if (n === 0) {
+        //     anchorPoint = this.arrow.getMidPoint()
+        //     direction = this.arrow.getDirection()
+        // } else {
+        //     const lineIndex = n % 2 === 0 ? n/2 : (n - 1)/2
+        //     anchorPoint = getLineMidPoint(
+        //         <SVGLineElement>this.linesGroup.children[lineIndex]
+        //     )
+        //     direction = getLineDirection(
+        //         <SVGLineElement>this.linesGroup.children[lineIndex]
+        //     )
+        // }
         
-        let pos = anchorPoint.add(
-            direction.norm().ortogonal().mul(6)
-        )
-        this.weightElement.setAttribute('x', String(pos.x))
-        this.weightElement.setAttribute('y', String(pos.y))
-    }
-
-    private updateInhibitorArrow(connectionPoint: Vector, u: Vector) {
-        setCircleCenter(
-            this.negBall,
-            connectionPoint.add(u.mul(PetriArc.negBallRadius))
-        )
         
-        this.arrow.updateHeadPos(
-            connectionPoint.add(u.mul(2*PetriArc.negBallRadius))
-        )
+        // let pos = anchorPoint.add(
+        //     direction.norm().ortogonal().mul(6)
+        // )
+        // this.weightElement.setAttribute('x', String(pos.x))
+        // this.weightElement.setAttribute('y', String(pos.y))
     }
 
     private noCornerUpdate() {
-        let u = (this.place.position.sub(this.trans.position)).norm()
-        let placePoint = this.place.getConnectionPoint(u)
-        let transPoint = this.trans.getConnectionPoint(u)
+        const u = this.place.position.sub(this.trans.position).norm()
+        const placePoint = this.place.getConnectionPoint(u)
+        const transPoint = this.trans.getConnectionPoint(u)
         
         if (this._arcType === 'Output') {
-            this.arrow.update(transPoint, placePoint)
+            this.arrow.updateTips(transPoint, placePoint)
         } else {
-            if (this._arcType === 'Inhibitor') {
-                this.arrow.updateTailPos(placePoint)
-                this.updateInhibitorArrow(transPoint, u)
-            } else {
-                this.arrow.update(placePoint, transPoint)
-            }
+            this.arrow.updateTips(placePoint, transPoint)
         }
+        
         this.updateWeightPos()
-    }
-
-    private newLine(startPoint: Vector, endPoint: Vector) {
-        const line = createLine(startPoint, endPoint, {
-            PEParent: this.id
-        })
-        this.linesGroup.appendChild(line)
-    }
-
-    private updateLines() {
-        this.linesGroup.innerHTML = ''
-        if (!this.corners.length) return
-
-        let startPoint
-        if (this._arcType === "Output") {
-            const u = this.trans.position.sub(this.corners[0]).norm()
-            startPoint = this.trans.getConnectionPoint(u)
-        } else {
-            const u = this.place.position.sub(this.corners[0]).norm()
-            startPoint = this.place.getConnectionPoint(u)
-        }
-        for (let i = 0; i < this.corners.length; i++) {
-            if (i == 0) {
-                this.newLine(startPoint, this.corners[0])
-            } else {
-                this.newLine(
-                    this.corners[i-1],
-                    this.corners[i]
-                )
-            }
-        }
     }
 
     private cleanNodes() {
@@ -634,28 +540,14 @@ class PetriArc extends AGenericPetriElement {
     private showNodes() {
         this.cleanNodes()
 
-        const lines = <HTMLCollectionOf<SVGLineElement>>this.
-            linesGroup.children
-        for (let i = 0; i < lines.length; i++) {
-            this.createNode(i, getLineMidPoint(lines[i]), 'arcMidNode')
-            this.createNode(i, getLineEndPoint(lines[i]), 'corner')
+        const corners = this.arrow.getCorners()
+        const midPoints = this.arrow.getLinesMidPoint()
+
+        for (let i = 0; i < midPoints.length; i++) {
+            this.createNode(i, midPoints[i], 'arcMidNode')
+            if (i < corners.length)
+                this.createNode(i, corners[i], 'corner')
         }
-
-        this.createNode(
-            lines.length, 
-            this.arrow.getMidPoint(), 
-            'arcMidNode'
-        )
-    }
-
-    private updateArc() {
-        this.updateLines()
-        this.updatePlacePos()
-        this.updateTransPos()
-
-        this.updateWeightPos()
-        if (this.selected)
-            this.showNodes()
     }
 
     private createNode(idx: number, pos: Vector, type: string) {
@@ -678,92 +570,82 @@ class PetriArc extends AGenericPetriElement {
     updatePlacePos() {
         this.place.position
 
-        if (this.corners.length === 0) {
+        if (!this.arrow.hasCorner()) {
             this.noCornerUpdate()
         } else if (this._arcType === "Output") {
-            this.arrow.update(
-                this.lastCorner,
+            this.arrow.updateHeadPos(
                 this.place.getConnectionPoint(
-                    this.place.position.sub(this.lastCorner).norm()
+                    this.place.position.sub(
+                        this.arrow.getPointPos(-2)
+                    ).norm()
                 )
             )
         } else {
-            setLineStartPoint(
-                <SVGLineElement>this.linesGroup.children[0], 
+            this.arrow.updateTailPos(
                 this.place.getConnectionPoint(
-                    this.place.position.sub(this.corners[0]).norm()
+                    this.place.position.sub(
+                        this.arrow.getPointPos(1)
+                    ).norm()
                 )
             )
 
-            if (this.corners.length === 1)
+            if (this.arrow.numberOfCorners() === 1)
                 this.updateWeightPos()
         }
     }
 
     updateTransPos() {
-        if (this.corners.length === 0) {
+        if (!this.arrow.hasCorner()) {
             this.noCornerUpdate()
         } else if (this._arcType === "Output") {
-            const u = this.corners[0].sub(this.trans.position).norm()
-            const connectionPoint = this.trans.getConnectionPoint(u)
-            setLineStartPoint(
-                <SVGLineElement>this.linesGroup.children[0], 
-                connectionPoint
+            this.arrow.updateTailPos(
+                this.trans.getConnectionPoint(
+                    this.trans.position.sub(
+                        this.arrow.getPointPos(1)
+                    ).norm()
+                )
             )
             
-            if (this.corners.length === 1)
+            if (this.arrow.numberOfCorners() === 1)
                 this.updateWeightPos()
         } else {
-            const u = this.lastCorner.sub(this.trans.position).norm()
-            const connectionPoint = this.trans.getConnectionPoint(u)
-            this.arrow.updateTailPos(this.lastCorner)
-
-            if (this._arcType === "Inhibitor") {
-                this.updateInhibitorArrow(connectionPoint, u) 
-            } else {
-                this.arrow.updateHeadPos(
-                    connectionPoint
+            this.arrow.updateHeadPos(
+                this.trans.getConnectionPoint(
+                    this.trans.position.sub(
+                        this.arrow.getPointPos(-2)
+                    ).norm().neg()
                 )
-            }
+            )
         }
+    }
+
+    updateAll() {
+        this.updatePlacePos()
+        this.updateTransPos()
     }
 
     addCorner(cornerIndex: number) {
-        if (cornerIndex < this.corners.length) {
-            const pos = getLineMidPoint(
-                <SVGLineElement>this.linesGroup.children[cornerIndex]
-            )
-            this.corners.splice(cornerIndex, 0, pos)
-        } else if (cornerIndex === this.corners.length) {
-            const pos = this.arrow.getMidPoint()
-            this.corners.push(pos)
-        } else {
-            throw "Invalid corner index"
-        }
-
-        this.updateArc()
+        this.arrow.addCorner(cornerIndex)
     }
 
     removeCorner(cornerIndex: number) {
-        if (cornerIndex >= this.corners.length) {
-            throw "Invalid cornerIndex"
-        } 
+        this.arrow.removeCorner(cornerIndex + 1)
         
-        this.corners.splice(cornerIndex, 1)
-        this.updateArc()
+        this.updateAll()
+        if (this.selected)
+            this.showNodes()
     }
 
     moveCorner(idx: number, pos: Vector) {
-        this.corners[idx] = pos
-        this.updateArc()
+        this.arrow.moveCorner(idx+1, pos)
+
+        this.updateAll()
+        if (this.selected)
+            this.showNodes()
     }
 
     setArcColor(color: string) {
-        this.linesGroup.setAttribute('stroke', color);
-        this.negBall.setAttribute('stroke', color);
-        this.arrow.line.setAttribute('stroke', color);
-        this.arrow.head.setAttribute('fill', color);
-        this.arrow.head.setAttribute('stroke', color);
+        this.arrow.setColor(color)
     }
 
     select() {
@@ -778,22 +660,8 @@ class PetriArc extends AGenericPetriElement {
         this.cleanNodes()
     }
 
-    /*
-     * Return the vector with the points the define the arc path.
-     * The start point, the corners and the and the end point.
-     */
     getArcPath() {
-        if (this.corners.length) {
-            return [
-                getLineStartPoint(
-                    <SVGLineElement>this.linesGroup.children[0]
-                ), 
-                ...this.corners,
-                this.arrow.getHeadPos()
-            ]
-        }
-
-        return [this.arrow.getTailPos(), this.arrow.getHeadPos()]
+        return this.arrow.getPath()
     }
 
     getData(): ArcData {
@@ -807,7 +675,7 @@ class PetriArc extends AGenericPetriElement {
             textsPosition: {
                 weight: this.getPETextPosition('weight')
             },
-            corners: [...this.corners]
+            corners: this.arrow.getCorners()
         }
     }
 }
