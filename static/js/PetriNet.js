@@ -197,7 +197,7 @@ export class PetriNet {
         const arc = this.elements[arcId];
         const _initialPos = initialPos ? initialPos : arc.getCornerPos(cornerIndex);
         arc.moveCorner(cornerIndex, _initialPos.add(displacement));
-        if (!ignoreGrid)
+        if (!ignoreGrid && this.grid)
             arc.moveCorner(cornerIndex, this.fitToGrid(arc.getCornerPos(cornerIndex)));
         if (registryChange) {
             this.undoRedoManager.registryChange({
@@ -267,6 +267,9 @@ export class PetriNet {
         place.placeType = data.placeType;
         place.initialMark = data.initialMark;
         place.position = new Vector(data.position.x, data.position.y);
+        for (const attrName in data.textsPosition) {
+            place.setPETextPosition(attrName, data.textsPosition[attrName]);
+        }
         return place;
     }
     static loadTrans(data) {
@@ -275,6 +278,9 @@ export class PetriNet {
         trans.delay = String(data.delay);
         trans.guard = data.guard;
         trans.position = new Vector(data.position.x, data.position.y);
+        for (const attrName in data.textsPosition) {
+            trans.setPETextPosition(attrName, data.textsPosition[attrName]);
+        }
         return trans;
     }
     static loadArc(data, net) {
@@ -285,6 +291,9 @@ export class PetriNet {
                 arc.addCorner(0);
                 arc.moveCorner(0, new Vector(corner.x, corner.y));
             }
+        }
+        for (const attrName in data.textsPosition) {
+            arc.setPETextPosition(attrName, data.textsPosition[attrName]);
         }
         return arc;
     }

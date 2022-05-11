@@ -296,7 +296,7 @@ export class PetriNet {
         
         arc.moveCorner(cornerIndex, _initialPos.add(displacement))
 
-        if (!ignoreGrid)
+        if (!ignoreGrid && this.grid)
             arc.moveCorner(
                 cornerIndex, this.fitToGrid(arc.getCornerPos(cornerIndex))
             )
@@ -433,6 +433,12 @@ export class PetriNet {
             data.position.x,
             data.position.y
         )
+
+        for (const attrName in data.textsPosition) {
+            place.setPETextPosition(
+                attrName, data.textsPosition[attrName]
+            )
+        }
     
         return place
     }
@@ -447,6 +453,12 @@ export class PetriNet {
             data.position.x,
             data.position.y
         )
+
+        for (const attrName in data.textsPosition) {
+            trans.setPETextPosition(
+                attrName, data.textsPosition[attrName]
+            )
+        }
     
         return trans
     }
@@ -465,6 +477,12 @@ export class PetriNet {
                 arc.addCorner(0)
                 arc.moveCorner(0, new Vector(corner.x, corner.y))
             }
+        }
+
+        for (const attrName in data.textsPosition) {
+            arc.setPETextPosition(
+                attrName, data.textsPosition[attrName]
+            )
         }
 
         return arc
