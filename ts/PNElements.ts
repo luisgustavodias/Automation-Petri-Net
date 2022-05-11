@@ -496,7 +496,6 @@ class PetriArc extends AGenericPetriElement {
 
     private updateWeightPos() {
         const n = Math.floor(this.arrow.numberOfCorners()/2)
-        console.log(n, this.arrow.getPointPos(n/2))
         const direction = this.arrow.getPointPos(n + 1).sub(
             this.arrow.getPointPos(n)
         )
