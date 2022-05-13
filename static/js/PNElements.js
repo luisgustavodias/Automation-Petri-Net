@@ -381,6 +381,7 @@ class PetriArc extends AGenericPetriElement {
         }
         this._arcType = val;
         this.arrow.setArcType(val);
+        this.updateAll();
     }
     getCornerPos(cornerIndex) {
         return this.arrow.getPointPos(cornerIndex + 1);
