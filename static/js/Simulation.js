@@ -4,6 +4,47 @@ const FIRE_TRANS_ANIMATION_TIME = 1500;
 const STEP_INTERVAL_TIME = 250;
 const TRANS_ENABLE_COLOR = '#04c200';
 const TRANS_FIRE_COLOR = 'red';
+class LogicalTrans {
+    data;
+    inputsArcs;
+    outputsArcs;
+    testArcs;
+    inhibitorArcs;
+    delay;
+    // private readonly priority: number
+    timeToEnable;
+    guardFunc;
+    constructor(data, netInputs) {
+        this.data = data;
+        try {
+            this.delay = parseFloat(data.delay);
+        }
+        catch (e) {
+            throw "Can't convert delay to float.";
+        }
+        // try {
+        //     this.priority = parseFloat(data.priority)
+        // } catch(e) {
+        //     throw "Can't convert priority to float."
+        // }
+        try {
+            this.guardFunc = this.createGuardFunc(data.guard, [...netInputs.keys()]);
+            this.guardFunc(...netInputs.values());
+        }
+        catch (e) {
+        }
+    }
+    get id() {
+        return this.data.id;
+    }
+    createGuardFunc(guard, inputNames) {
+        const decodedGuard = guard
+            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
+            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
+            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!');
+        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`);
+    }
+}
 class LogicalNet {
     placeMarks;
     placeTypes;

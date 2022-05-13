@@ -5,7 +5,7 @@ import {
     PetriTrans, 
     PetriArc
 } from "./PNElements.js"
-import { ArcType, PEId, PetriNetData, PlaceType } from "./PNData.js"
+import { ArcType, PEId, PetriNetData, PlaceType, TransData } from "./PNData.js"
 import { InputValues, InputWindow } from "./InputWindow.js"
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js"
 import Vector from "./utils/Vector.js"
@@ -16,16 +16,113 @@ const TRANS_ENABLE_COLOR = '#04c200'
 const TRANS_FIRE_COLOR = 'red'
 
 type PlaceMarks = {[id: string]: number}
+type ArcsByTrans = {[transId: string]: LogicalPetriArc[]}
+type GuardFunc = (...args: number[]) => boolean
+
+interface LogicalPlace {
+    id: PEId
+    placeType: PlaceType
+    initialMark: number
+    mark: number
+}
 
 interface LogicalPetriArc {
-    placeId: string
+    id: PEId
+    place: LogicalPlace
     arcType: ArcType
     weight: number
 }
 
-type ArcsByTrans = {[transId: string]: LogicalPetriArc[]}
-type GuardFunc = (...args: number[]) => boolean
+class LogicalTrans {
+    private readonly id: PEId
+    readonly inputsArcs: LogicalPetriArc[]
+    readonly outputsArcs: LogicalPetriArc[]
+    readonly testArcs: LogicalPetriArc[]
+    readonly inhibitorArcs: LogicalPetriArc[]
+    private readonly delay: number
+    // private readonly priority: number
+    private timeToEnable: number
+    private readonly guardFunc: GuardFunc
 
+    constructor(data: TransData, netInputs: Map<string, number>) {
+        this.id = data.id
+        try {
+            this.delay = parseFloat(data.delay)
+        } catch(e) {
+            throw "Can't convert delay to float."
+        }
+        // try {
+        //     this.priority = parseFloat(data.priority)
+        // } catch(e) {
+        //     throw "Can't convert priority to float."
+        // }
+        try {
+            this.guardFunc = this.createGuardFunc(
+                data.guard, [...netInputs.keys()]
+            )
+            this.guardFunc(...netInputs.values())
+        } catch(e) {
+            'Invalid guard expression'
+        }
+    }
+
+    createGuardFunc(guard: string, inputNames: string[]): GuardFunc {
+        const decodedGuard = guard
+            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
+            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
+            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
+        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`)
+    }
+
+    addArc(arc: LogicalPetriArc) {
+        if (arc.arcType === 'Input')
+            this.inputsArcs.push(arc)
+        if (arc.arcType === 'Output')
+            this.outputsArcs.push(arc)
+        if (arc.arcType === 'Test')
+            this.testArcs.push(arc)
+        if (arc.arcType === 'Inhibitor')
+            this.inhibitorArcs.push(arc)
+    }
+
+    update(dt: number, netInputs: Map<string, number>) {
+        for (const arc of [...this.inputsArcs, ...this.testArcs]) {
+            if (arc.place.mark < arc.weight)
+                return false
+        }
+
+        for (const arc of this.inhibitorArcs) {
+            if (arc.place.mark >= arc.weight)
+                return false
+        }
+
+        for (const arc of this.outputsArcs) {
+            if (arc.place.mark < arc.weight)
+                return false
+        }
+
+        for (const arc of this.arcsByTrans[transId]) {
+            if (arc.arcType === "Input" || arc.arcType === "Test") {
+                if (this.placeMarks[arc.placeId] < arc.weight)
+                    return false
+            } 
+            else if (arc.arcType === "Inhibitor") {
+                if (this.placeMarks[arc.placeId] >= arc.weight)
+                    return false
+            }
+            else if (arc.arcType === "Output" && 
+                    this.placeTypes[arc.placeId] === "BOOL") {
+                if (this.placeMarks[arc.placeId] === 1)
+                    return false
+            } 
+        }
+        
+        if (!this.transGuardFuncs[transId](...this.inputValues.values()))
+            return false
+
+        return true
+    }
+}
 
 class LogicalNet {
     readonly placeMarks: PlaceMarks
