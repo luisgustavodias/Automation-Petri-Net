@@ -125,20 +125,25 @@ class LogicalNet {
         return this.transOrder.filter(transId => this.transState[transId])
     }
 
-    fireTransResult(transId: string) {
-        const result: PlaceMarks = {}
+    fireTransResult(transId: string): MarksToUpdate {
+        const inputsToUpdate: PlaceMarks = {}
+        const outputsToUpdate: PlaceMarks = {}
         for (const arc of this.arcsByTrans[transId]) {
             if (arc.arcType === "Input") {
-                result[arc.placeId] = this.placeMarks[arc.placeId] 
+                inputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId] 
                     - arc.weight
             }
             if (arc.arcType === "Output") {
-                result[arc.placeId] = this.placeMarks[arc.placeId] 
+                if (arc.placeId in inputsToUpdate)
+                    outputsToUpdate[arc.placeId] = inputsToUpdate[arc.placeId] 
                     + arc.weight
+                else
+                    outputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId] 
+                        + arc.weight
             }
         }
         
-        return result
+        return {inputsToUpdate: inputsToUpdate, outputsToUpdate: outputsToUpdate}
     }
 
     updateTransState() {
@@ -231,6 +236,8 @@ enum SimState {
     Stopped
 }
 
+type MarksToUpdate = {inputsToUpdate: PlaceMarks, outputsToUpdate: PlaceMarks}
+
 class Simulator {
     private currentNet: PetriNet
     private state: SimState
@@ -300,7 +307,7 @@ class Simulator {
         requestAnimationFrame(animFunc)
     }
 
-    private fireTrans(transId: string, marksToUpdate: PlaceMarks) {
+    private fireTrans(transId: string, marksToUpdate: MarksToUpdate) {
         const trans = <PetriTrans>this.currentNet.getGenericPE(transId)
         const inputArcs = []
         const outputArcs = []
@@ -315,7 +322,7 @@ class Simulator {
         for (const arc of inputArcs) {
             const place = <PetriPlace>this.currentNet
                     .getGenericPE(arc.placeId)
-            place.mark = marksToUpdate[arc.placeId]
+            place.mark = marksToUpdate.inputsToUpdate[arc.placeId]
         }
 
         this.setTransColor(trans, TRANS_FIRE_COLOR)
@@ -325,8 +332,9 @@ class Simulator {
             this.animateTokens(outputArcs)
         }, FIRE_TRANS_ANIMATION_TIME/2)
         setTimeout(() => {
-            this.logicalNet.updatePlaceMarks(marksToUpdate)
-            this.updatePlaceMarks(marksToUpdate)
+            this.logicalNet.updatePlaceMarks(marksToUpdate.inputsToUpdate)
+            this.logicalNet.updatePlaceMarks(marksToUpdate.outputsToUpdate)
+            this.updatePlaceMarks(marksToUpdate.outputsToUpdate)
             this.disableTrans(trans.id)
         }, FIRE_TRANS_ANIMATION_TIME)
     }

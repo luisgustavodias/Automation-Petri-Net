@@ -84,18 +84,23 @@ class LogicalNet {
         return this.transOrder.filter(transId => this.transState[transId]);
     }
     fireTransResult(transId) {
-        const result = {};
+        const inputsToUpdate = {};
+        const outputsToUpdate = {};
         for (const arc of this.arcsByTrans[transId]) {
             if (arc.arcType === "Input") {
-                result[arc.placeId] = this.placeMarks[arc.placeId]
+                inputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId]
                     - arc.weight;
             }
             if (arc.arcType === "Output") {
-                result[arc.placeId] = this.placeMarks[arc.placeId]
-                    + arc.weight;
+                if (arc.placeId in inputsToUpdate)
+                    outputsToUpdate[arc.placeId] = inputsToUpdate[arc.placeId]
+                        + arc.weight;
+                else
+                    outputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId]
+                        + arc.weight;
             }
         }
-        return result;
+        return { inputsToUpdate: inputsToUpdate, outputsToUpdate: outputsToUpdate };
     }
     updateTransState() {
         for (const transId in this.transState) {
@@ -234,7 +239,7 @@ class Simulator {
         for (const arc of inputArcs) {
             const place = this.currentNet
                 .getGenericPE(arc.placeId);
-            place.mark = marksToUpdate[arc.placeId];
+            place.mark = marksToUpdate.inputsToUpdate[arc.placeId];
         }
         this.setTransColor(trans, TRANS_FIRE_COLOR);
         this.animateTokens(inputArcs);
@@ -242,8 +247,9 @@ class Simulator {
             this.animateTokens(outputArcs);
         }, FIRE_TRANS_ANIMATION_TIME / 2);
         setTimeout(() => {
-            this.logicalNet.updatePlaceMarks(marksToUpdate);
-            this.updatePlaceMarks(marksToUpdate);
+            this.logicalNet.updatePlaceMarks(marksToUpdate.inputsToUpdate);
+            this.logicalNet.updatePlaceMarks(marksToUpdate.outputsToUpdate);
+            this.updatePlaceMarks(marksToUpdate.outputsToUpdate);
             this.disableTrans(trans.id);
         }, FIRE_TRANS_ANIMATION_TIME);
     }
