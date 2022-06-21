@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewbox="0 0 32 32">
+<g transform="translate(16 16)">
+    <circle cx="0" cy="0" r="15" 
+        stroke-width="2" fill="white" stroke="blue" />
+    <g>
+        <circle cx="4" cy="4" r="3" />
+        <circle cx="-4" cy="4" r="3" />
+        <circle cx="0" cy="-4" r="3" />
+    </g>
+</g>
+</svg>
