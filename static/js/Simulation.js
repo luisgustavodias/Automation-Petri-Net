@@ -1,157 +1,21 @@
 import { InputWindow } from "./InputWindow.js";
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js";
+import { LogicalNet } from "./LogigalNet.js";
 const FIRE_TRANS_ANIMATION_TIME = 1500;
-const STEP_INTERVAL_TIME = 250;
+const FIRE_TRANS_INTERVAL = 200;
+const SIM_CYCLE_INTERVAL = 0.01;
+const STEP_INTERVAL = 10;
 const TRANS_ENABLE_COLOR = '#04c200';
 const TRANS_FIRE_COLOR = 'red';
-class LogicalTrans {
-    data;
-    inputsArcs;
-    outputsArcs;
-    testArcs;
-    inhibitorArcs;
-    delay;
-    // private readonly priority: number
-    timeToEnable;
-    guardFunc;
-    constructor(data, netInputs) {
-        this.data = data;
-        try {
-            this.delay = parseFloat(data.delay);
-        }
-        catch (e) {
-            throw "Can't convert delay to float.";
-        }
-        // try {
-        //     this.priority = parseFloat(data.priority)
-        // } catch(e) {
-        //     throw "Can't convert priority to float."
-        // }
-        try {
-            this.guardFunc = this.createGuardFunc(data.guard, [...netInputs.keys()]);
-            this.guardFunc(...netInputs.values());
-        }
-        catch (e) {
-        }
-    }
-    get id() {
-        return this.data.id;
-    }
-    createGuardFunc(guard, inputNames) {
-        const decodedGuard = guard
-            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
-            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
-            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!');
-        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`);
-    }
-}
-class LogicalNet {
-    placeMarks;
-    placeTypes;
-    arcsByTrans;
-    transOrder;
-    transState;
-    transGuards;
-    transGuardFuncs;
-    inputValues; //InputValues
-    constructor(netData, inputValues) {
-        this.placeMarks = {};
-        this.placeTypes = {};
-        netData.places.forEach((place) => {
-            this.placeMarks[place.id] = parseInt(place.initialMark);
-            this.placeTypes[place.id] = place.placeType;
-        });
-        this.inputValues = new Map();
-        for (const inputName in inputValues) {
-            this.inputValues.set(inputName, inputValues[inputName]);
-        }
-        // trasitions.sort((a, b) => a.priority - b.priority)
-        this.transOrder = [];
-        this.transGuardFuncs = {};
-        netData.transitions.forEach((trans) => {
-            this.transOrder.push(trans.id);
-            if (trans.guard) {
-                this.transGuardFuncs[trans.id] = this.createGuardFunc(trans.guard, [...this.inputValues.keys()]);
-            }
-            else {
-                this.transGuardFuncs[trans.id] = (...args) => true;
-            }
-        });
-        this.arcsByTrans = {};
-        netData.arcs.forEach(arc => {
-            if (!(arc.transId in this.arcsByTrans))
-                this.arcsByTrans[arc.transId] = [];
-            this.arcsByTrans[arc.transId].push({
-                placeId: arc.placeId,
-                arcType: arc.arcType,
-                weight: parseInt(arc.weight)
-            });
-        });
-        this.transState = Object.fromEntries(netData.transitions.map(trans => [trans.id, false]));
-    }
-    createGuardFunc(guard, inputNames) {
-        const decodedGuard = guard
-            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
-            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
-            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!');
-        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`);
-    }
-    updateInputValues(inputValues) {
-        for (const inputName in inputValues) {
-            this.inputValues.set(inputName, inputValues[inputName]);
-        }
-    }
-    checkTrans(transId) {
-        for (const arc of this.arcsByTrans[transId]) {
-            if (arc.arcType === "Input" || arc.arcType === "Test") {
-                if (this.placeMarks[arc.placeId] < arc.weight)
-                    return false;
-            }
-            else if (arc.arcType === "Inhibitor") {
-                if (this.placeMarks[arc.placeId] >= arc.weight)
-                    return false;
-            }
-            else if (arc.arcType === "Output" &&
-                this.placeTypes[arc.placeId] === "BOOL") {
-                if (this.placeMarks[arc.placeId] === 1)
-                    return false;
-            }
-        }
-        if (!this.transGuardFuncs[transId](...this.inputValues.values()))
-            return false;
-        return true;
-    }
-    getEnabledTransitions() {
-        return this.transOrder.filter(transId => this.transState[transId]);
-    }
-    fireTransResult(transId) {
-        const inputsToUpdate = {};
-        const outputsToUpdate = {};
-        for (const arc of this.arcsByTrans[transId]) {
-            if (arc.arcType === "Input") {
-                inputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId]
-                    - arc.weight;
-            }
-            if (arc.arcType === "Output") {
-                if (arc.placeId in inputsToUpdate)
-                    outputsToUpdate[arc.placeId] = inputsToUpdate[arc.placeId]
-                        + arc.weight;
-                else
-                    outputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId]
-                        + arc.weight;
-            }
-        }
-        return { inputsToUpdate: inputsToUpdate, outputsToUpdate: outputsToUpdate };
-    }
-    updateTransState() {
-        for (const transId in this.transState) {
-            this.transState[transId] = this.checkTrans(transId);
-        }
-    }
-    updatePlaceMarks(marksToUpdate) {
-        Object.assign(this.placeMarks, marksToUpdate);
-    }
-}
+var SimState;
+(function (SimState) {
+    SimState[SimState["Running"] = 0] = "Running";
+    SimState[SimState["Pausing"] = 1] = "Pausing";
+    SimState[SimState["Paused"] = 2] = "Paused";
+    SimState[SimState["Stepping"] = 3] = "Stepping";
+    SimState[SimState["Stopping"] = 4] = "Stopping";
+    SimState[SimState["Stopped"] = 5] = "Stopped";
+})(SimState || (SimState = {}));
 class TokenAnimation {
     animSteps;
     token;
@@ -199,57 +63,37 @@ class TokenAnimation {
         this.currentStep = null;
     }
 }
-var SimState;
-(function (SimState) {
-    SimState[SimState["Running"] = 0] = "Running";
-    SimState[SimState["Pausing"] = 1] = "Pausing";
-    SimState[SimState["Paused"] = 2] = "Paused";
-    SimState[SimState["Stopping"] = 3] = "Stopping";
-    SimState[SimState["Stopped"] = 4] = "Stopped";
-})(SimState || (SimState = {}));
-class Simulator {
-    currentNet;
-    state;
-    logicalNet;
-    inputWindow;
+class SimulationGraphics {
+    net;
     tokenAnimByArc;
     constructor(net) {
-        this.currentNet = net;
-        this.state = SimState.Stopped;
-        this.logicalNet = null;
-        this.inputWindow = new InputWindow();
+        this.net = net;
+        this.tokenAnimByArc = Object.fromEntries(net.getNetData().arcs.filter(arcData => ['Input', 'Output'].includes(arcData.arcType)).map(arcData => {
+            const arc = net.getGenericPE(arcData.id);
+            return [arc.id, new TokenAnimation(arc.getArcPath())];
+        }));
     }
     updatePlaceMarks(marksToUpdate) {
         for (const placeId in marksToUpdate) {
-            const place = this.currentNet.getGenericPE(placeId);
+            const place = this.net.getGenericPE(placeId);
             place.mark = marksToUpdate[placeId];
         }
     }
     setTransColor(trans, color) {
-        trans.svgElement.children[0].setAttribute('stroke', color);
+        trans.svgElement.children[0].setAttribute('fill', color);
     }
     enableTrans(id) {
-        const trans = this.currentNet.getGenericPE(id);
+        const trans = this.net.getGenericPE(id);
         this.setTransColor(trans, TRANS_ENABLE_COLOR);
     }
     disableTrans(id) {
-        const trans = this.currentNet.getGenericPE(id);
+        const trans = this.net.getGenericPE(id);
         this.setTransColor(trans, 'black');
-    }
-    updateTransitions() {
-        for (const transId in this.logicalNet.transState) {
-            if (this.logicalNet.transState[transId]) {
-                this.enableTrans(transId);
-            }
-            else {
-                this.disableTrans(transId);
-            }
-        }
     }
     animateTokens(arcs) {
         const animDuration = FIRE_TRANS_ANIMATION_TIME / 2;
         let startTime = null;
-        const animations = arcs.map(arc => this.tokenAnimByArc[arc.id]);
+        const animations = arcs.map(arcId => this.tokenAnimByArc[arcId]);
         animations.forEach(anim => anim.start());
         function animFunc(timestamp) {
             if (!startTime) {
@@ -266,53 +110,71 @@ class Simulator {
         }
         requestAnimationFrame(animFunc);
     }
-    fireTrans(transId, marksToUpdate) {
-        const trans = this.currentNet.getGenericPE(transId);
-        const inputArcs = [];
-        const outputArcs = [];
-        for (const arcId of trans.connectedArcs) {
-            const arc = this.currentNet.getGenericPE(arcId);
-            if (arc.arcType === 'Input')
-                inputArcs.push(arc);
-            else if (arc.arcType === 'Output')
-                outputArcs.push(arc);
+    fireTrans(trans) {
+        const transGraphics = this.net
+            .getGenericPE(trans.id);
+        const inputArcIds = [];
+        for (const arc of trans.inputsArcs) {
+            const placeGraphics = this.net
+                .getGenericPE(arc.place.id);
+            placeGraphics.mark -= arc.weight;
+            inputArcIds.push(arc.id);
         }
-        for (const arc of inputArcs) {
-            const place = this.currentNet
-                .getGenericPE(arc.placeId);
-            place.mark = marksToUpdate.inputsToUpdate[arc.placeId];
-        }
-        this.setTransColor(trans, TRANS_FIRE_COLOR);
-        this.animateTokens(inputArcs);
+        this.setTransColor(transGraphics, TRANS_FIRE_COLOR);
+        this.animateTokens(inputArcIds);
         setTimeout(() => {
-            this.animateTokens(outputArcs);
+            this.animateTokens(trans.outputsArcs.map(arc => arc.id));
         }, FIRE_TRANS_ANIMATION_TIME / 2);
         setTimeout(() => {
-            this.logicalNet.updatePlaceMarks(marksToUpdate.inputsToUpdate);
-            this.logicalNet.updatePlaceMarks(marksToUpdate.outputsToUpdate);
-            this.updatePlaceMarks(marksToUpdate.outputsToUpdate);
+            for (const arc of trans.outputsArcs) {
+                const placeGraphics = this.net
+                    .getGenericPE(arc.place.id);
+                placeGraphics.mark += arc.weight;
+            }
             this.disableTrans(trans.id);
         }, FIRE_TRANS_ANIMATION_TIME);
     }
+    displayTime(time) {
+        document.getElementById('simulation-time').innerHTML = time
+            .toFixed(2);
+    }
+    setTransGuardColor(id, color) {
+        const trans = this.net.getGenericPE(id);
+        trans.svgElement.children[3].setAttribute('fill', color);
+    }
+    debugGuard(trans) {
+        this.setTransGuardColor(trans.id, trans.isGuardEnable() ? 'green' : 'red');
+    }
+    debugTrans(trans) {
+        const transGraphics = this.net
+            .getGenericPE(trans.id);
+        if (trans.isEnable())
+            this.setTransColor(transGraphics, 'green');
+        else if (trans.isWaitingDelay())
+            this.setTransColor(transGraphics, 'orange');
+        else
+            this.setTransColor(transGraphics, 'black');
+    }
+}
+class Simulator {
+    graphics;
+    state;
+    logicalNet;
+    inputWindow;
+    constructor() {
+        this.state = SimState.Stopped;
+        this.graphics = null;
+        this.logicalNet = null;
+        this.inputWindow = new InputWindow();
+    }
     restartNet() {
-        for (const placeId in this.logicalNet.placeMarks) {
-            const place = this.currentNet.getGenericPE(placeId);
-            place.mark = parseInt(place.initialMark);
-        }
-        for (const transId in this.logicalNet.arcsByTrans) {
-            this.disableTrans(transId);
-        }
+        this.logicalNet.restart();
+        this.graphics.updatePlaceMarks(this.logicalNet.getPlaceMarks());
     }
     init(net) {
-        this.currentNet = net;
-        this.inputWindow.open(this.currentNet.inputs);
-        const netData = this.currentNet.getNetData();
-        this.logicalNet = new LogicalNet(netData, this.inputWindow.readInputs());
-        this.tokenAnimByArc = Object.fromEntries(netData.arcs.filter(arcData => ['Input', 'Output'].includes(arcData.arcType)).map(arcData => {
-            const arc = net.getGenericPE(arcData.id);
-            return [arc.id, new TokenAnimation(arc.getArcPath())];
-        }));
-        this.logicalNet.updateTransState();
+        this.graphics = new SimulationGraphics(net);
+        this.inputWindow.open(net.inputs);
+        this.logicalNet = new LogicalNet(net.getNetData(), SIM_CYCLE_INTERVAL, () => this.inputWindow.readInputs());
         this.restartNet();
         this.state = SimState.Paused;
     }
@@ -328,38 +190,49 @@ class Simulator {
         this.inputWindow.close();
         document.getElementById('simulating-text')
             .innerHTML = '';
+        document.getElementById('simulation-time')
+            .innerHTML = '';
     }
-    _step = () => {
-        if (this.state !== SimState.Running) {
-            if (this.state === SimState.Stopping)
-                this._stop();
-            if (this.state === SimState.Pausing)
+    update = () => {
+        if (this.state === SimState.Stopping) {
+            this._stop();
+            return;
+        }
+        if (this.state === SimState.Pausing) {
+            this._pause();
+            return;
+        }
+        this.graphics.displayTime(this.logicalNet.getSimulationTime());
+        const stepResult = this.logicalNet.update();
+        let timeout = 0;
+        this.graphics.debugGuard(stepResult.currentTrans);
+        this.graphics.debugTrans(stepResult.currentTrans);
+        if (stepResult.currentTrans.isEnable()) {
+            this.graphics.fireTrans(stepResult.currentTrans);
+            timeout = FIRE_TRANS_ANIMATION_TIME
+                + FIRE_TRANS_INTERVAL;
+        }
+        if (stepResult.isLastTrans) {
+            if (this.state === SimState.Stepping) {
                 this._pause();
-            return;
+                return;
+            }
+            timeout += STEP_INTERVAL;
         }
-        this.logicalNet.updateInputValues(this.inputWindow.readInputs());
-        this.logicalNet.updateTransState();
-        this.updateTransitions();
-        const enabledTransitions = this.logicalNet.getEnabledTransitions();
-        if (!enabledTransitions.length) {
-            setTimeout(this._step, STEP_INTERVAL_TIME);
-            return;
-        }
-        this.fireTrans(enabledTransitions[0], this.logicalNet.fireTransResult(enabledTransitions[0]));
-        setTimeout(this._step, FIRE_TRANS_ANIMATION_TIME
-            + STEP_INTERVAL_TIME);
+        setTimeout(this.update, timeout);
     };
     start(net) {
+        console.log(this.state);
         if (this.state === SimState.Stopped) {
             this.init(net);
             this.state = SimState.Running;
-            this._step();
+            this.update();
             document.getElementById('simulating-text')
                 .innerHTML = 'Simulating...';
         }
         else if (this.state === SimState.Paused) {
             this.state = SimState.Running;
-            this._step();
+            this.update();
             document.getElementById('simulating-text')
                 .innerHTML = 'Simulating...';
         }
@@ -382,14 +255,22 @@ class Simulator {
     }
     step(net) {
         this.start(net);
+        this.state = SimState.Stepping;
+    }
+    debugStep(net) {
+        this.start(net);
         this.state = SimState.Pausing;
     }
 }
-function createSimulator(net, startSimObserver, stopSimObserver) {
-    const simulator = new Simulator(net);
+function createSimulator(startSimObserver, stopSimObserver) {
+    const simulator = new Simulator();
     document.getElementById('step-button').onclick =
         () => {
             simulator.step(startSimObserver());
+        };
+    document.getElementById('debug-button').onclick =
+        () => {
+            simulator.debugStep(startSimObserver());
         };
     document.getElementById('start-button').onclick =
         () => {

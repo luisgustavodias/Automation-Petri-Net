@@ -58,7 +58,7 @@ function exampleNet(net) {
     const arcId8 = net.createArc(placeId5, transId3, "Input");
     net.createArc(placeId1, transId3, "Output");
     net.addArcCorner(arcId6, 0);
-    net.moveArcCorner(arcId6, 0, new Vector(250, 200));
+    net.moveArcCorner(arcId6, 0, new Vector(52, 74));
     net.setGenericPEAttr(placeId1, 'initialMark', '1');
     net.inputs = [
         {
@@ -80,7 +80,8 @@ function exampleNet(net) {
             description: ''
         },
     ];
-    net.setGenericPEAttr(transId1, 'guard', 's1 and s2');
+    net.setGenericPEAttr(transId1, 'guard', 's1 and rt("s2")');
+    net.setGenericPEAttr(transId3, 'delay', '1');
     net.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)');
     net.moveScreen(new Vector(50, 0));
 }
@@ -145,8 +146,6 @@ async function saveNet(net) {
     await file.close();
 }
 function main() {
-    console.log('Creating net');
-    const net = PetriNet.newNet();
     const editor = new Editor();
     const propertyWindow = new PropertyWindow();
     const toolBar = new ToolBar(editor, propertyWindow);
@@ -155,7 +154,7 @@ function main() {
         .onclick = () => {
         inputConfig.open(editor.currentNet.inputs, inputs => { editor.currentNet.inputs = inputs; });
     };
-    const simulator = createSimulator(editor.currentNet, () => {
+    const simulator = createSimulator(() => {
         toolBar.disable();
         return editor.currentNet;
     }, () => { toolBar.enable(); });
@@ -174,6 +173,10 @@ function main() {
         await saveNet(editor.currentNet);
     };
     //testTokenAnimation(net, simulator)
-    //exampleNet(net)
+    console.log('Creating net');
+    const net = PetriNet.newNet();
+    editor.open(net);
+    exampleNet(net);
+    toolBar.enable();
 }
 window.onload = main;

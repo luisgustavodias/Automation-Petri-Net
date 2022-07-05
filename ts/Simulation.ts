@@ -1,263 +1,37 @@
 import { PetriNet } from "./PetriNet.js"
 import { 
-    AGenericPetriElement, 
     PetriPlace, 
     PetriTrans, 
     PetriArc
 } from "./PNElements.js"
-import { ArcType, PEId, PetriNetData, PlaceType, TransData } from "./PNData.js"
-import { InputValues, InputWindow } from "./InputWindow.js"
+import { PEId } from "./PNData.js"
+import { InputWindow } from "./InputWindow.js"
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js"
 import Vector from "./utils/Vector.js"
+import { LogicalNet, LogicalTrans } from "./LogigalNet.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
-const STEP_INTERVAL_TIME = 250
+const FIRE_TRANS_INTERVAL = 200
+const SIM_CYCLE_INTERVAL = 0.01
+const STEP_INTERVAL = 10
 const TRANS_ENABLE_COLOR = '#04c200'
 const TRANS_FIRE_COLOR = 'red'
 
 type PlaceMarks = {[id: string]: number}
-type ArcsByTrans = {[transId: string]: LogicalPetriArc[]}
-type GuardFunc = (...args: number[]) => boolean
-
-interface LogicalPlace {
-    id: PEId
-    placeType: PlaceType
-    initialMark: number
-    mark: number
-}
-
-interface LogicalPetriArc {
-    id: PEId
-    place: LogicalPlace
-    arcType: ArcType
-    weight: number
-}
-
-class LogicalTrans {
-    private readonly id: PEId
-    readonly inputsArcs: LogicalPetriArc[]
-    readonly outputsArcs: LogicalPetriArc[]
-    readonly testArcs: LogicalPetriArc[]
-    readonly inhibitorArcs: LogicalPetriArc[]
-    private readonly delay: number
-    // private readonly priority: number
-    private timeToEnable: number
-    private readonly guardFunc: GuardFunc
-
-    constructor(data: TransData, netInputs: Map<string, number>) {
-        this.id = data.id
-        try {
-            this.delay = parseFloat(data.delay)
-        } catch(e) {
-            throw "Can't convert delay to float."
-        }
-        // try {
-        //     this.priority = parseFloat(data.priority)
-        // } catch(e) {
-        //     throw "Can't convert priority to float."
-        // }
-        try {
-            this.guardFunc = this.createGuardFunc(
-                data.guard, [...netInputs.keys()]
-            )
-            this.guardFunc(...netInputs.values())
-        } catch(e) {
-            'Invalid guard expression'
-        }
-    }
-
-    createGuardFunc(guard: string, inputNames: string[]): GuardFunc {
-        const decodedGuard = guard
-            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
-            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
-            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
-        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`)
-    }
-
-    addArc(arc: LogicalPetriArc) {
-        if (arc.arcType === 'Input')
-            this.inputsArcs.push(arc)
-        if (arc.arcType === 'Output')
-            this.outputsArcs.push(arc)
-        if (arc.arcType === 'Test')
-            this.testArcs.push(arc)
-        if (arc.arcType === 'Inhibitor')
-            this.inhibitorArcs.push(arc)
-    }
-
-    update(dt: number, netInputs: Map<string, number>) {
-        for (const arc of [...this.inputsArcs, ...this.testArcs]) {
-            if (arc.place.mark < arc.weight)
-                return false
-        }
-
-        for (const arc of this.inhibitorArcs) {
-            if (arc.place.mark >= arc.weight)
-                return false
-        }
-
-        for (const arc of this.outputsArcs) {
-            if (arc.place.mark < arc.weight)
-                return false
-        }
-
-        for (const arc of this.arcsByTrans[transId]) {
-            if (arc.arcType === "Input" || arc.arcType === "Test") {
-                if (this.placeMarks[arc.placeId] < arc.weight)
-                    return false
-            } 
-            else if (arc.arcType === "Inhibitor") {
-                if (this.placeMarks[arc.placeId] >= arc.weight)
-                    return false
-            }
-            else if (arc.arcType === "Output" && 
-                    this.placeTypes[arc.placeId] === "BOOL") {
-                if (this.placeMarks[arc.placeId] === 1)
-                    return false
-            } 
-        }
-        
-        if (!this.transGuardFuncs[transId](...this.inputValues.values()))
-            return false
-
-        return true
-    }
-}
-
-class LogicalNet {
-    readonly placeMarks: PlaceMarks
-    readonly placeTypes: {[transId: string]: PlaceType}
-    readonly arcsByTrans: ArcsByTrans
-    readonly transOrder: string[]
-    readonly transState: {[transId: string]: boolean}
-    readonly transGuards: {[transId: string]: string}
-    readonly transGuardFuncs: {[transId: string]: GuardFunc}
-    private readonly inputValues: Map<string, number> //InputValues
-
-    constructor(netData: PetriNetData, inputValues: InputValues) {
-        this.placeMarks = {}
-        this.placeTypes = {}
-        netData.places.forEach((place) => { 
-            this.placeMarks[place.id] = parseInt(place.initialMark) 
-            this.placeTypes[place.id] = place.placeType
-        })
-
-        this.inputValues = new Map()
-        for (const inputName in inputValues) {
-            this.inputValues.set(inputName, inputValues[inputName])
-        }
-
-        // trasitions.sort((a, b) => a.priority - b.priority)
-        this.transOrder = []
-        this.transGuardFuncs = {}
-        netData.transitions.forEach((trans) => { 
-            this.transOrder.push(trans.id)
-            
-            if (trans.guard) {
-                this.transGuardFuncs[trans.id] = this.createGuardFunc(
-                    trans.guard, [...this.inputValues.keys()]
-                )
-            } else {
-                this.transGuardFuncs[trans.id] = (...args) => true
-            }
-        })
-
-        this.arcsByTrans = {}
-        netData.arcs.forEach(arc => {
-            if (!(arc.transId in this.arcsByTrans))
-                this.arcsByTrans[arc.transId] = []
-
-            this.arcsByTrans[arc.transId].push({
-                placeId: arc.placeId,
-                arcType: arc.arcType,
-                weight: parseInt(arc.weight)
-            })
-        })
-
-        this.transState = Object.fromEntries(netData.transitions.map(
-            trans => [trans.id, false]
-        ))
-
-
-    }
-
-    createGuardFunc(guard: string, inputNames: string[]): GuardFunc {
-        const decodedGuard = guard
-            .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
-            .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
-            .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
-        return eval(`(${inputNames.join(',')}) => ${decodedGuard}`)
-    }
-
-    updateInputValues(inputValues: InputValues) {
-        for (const inputName in inputValues) {
-            this.inputValues.set(inputName, inputValues[inputName])
-        }
-    }
-
-    checkTrans(transId: string) {
-        for (const arc of this.arcsByTrans[transId]) {
-            if (arc.arcType === "Input" || arc.arcType === "Test") {
-                if (this.placeMarks[arc.placeId] < arc.weight)
-                    return false
-            } 
-            else if (arc.arcType === "Inhibitor") {
-                if (this.placeMarks[arc.placeId] >= arc.weight)
-                    return false
-            }
-            else if (arc.arcType === "Output" && 
-                    this.placeTypes[arc.placeId] === "BOOL") {
-                if (this.placeMarks[arc.placeId] === 1)
-                    return false
-            } 
-        }
-        
-        if (!this.transGuardFuncs[transId](...this.inputValues.values()))
-            return false
-
-        return true
-    }
-
-    getEnabledTransitions() {
-        return this.transOrder.filter(transId => this.transState[transId])
-    }
-
-    fireTransResult(transId: string): MarksToUpdate {
-        const inputsToUpdate: PlaceMarks = {}
-        const outputsToUpdate: PlaceMarks = {}
-        for (const arc of this.arcsByTrans[transId]) {
-            if (arc.arcType === "Input") {
-                inputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId] 
-                    - arc.weight
-            }
-            if (arc.arcType === "Output") {
-                if (arc.placeId in inputsToUpdate)
-                    outputsToUpdate[arc.placeId] = inputsToUpdate[arc.placeId] 
-                    + arc.weight
-                else
-                    outputsToUpdate[arc.placeId] = this.placeMarks[arc.placeId] 
-                        + arc.weight
-            }
-        }
-        
-        return {inputsToUpdate: inputsToUpdate, outputsToUpdate: outputsToUpdate}
-    }
-
-    updateTransState() {
-        for (const transId in this.transState) {
-            this.transState[transId] = this.checkTrans(transId)
-        }
-    }
-
-    updatePlaceMarks(marksToUpdate: PlaceMarks) {
-        Object.assign(this.placeMarks, marksToUpdate)
-    }
-}
 
 interface TokenAnimStep {
     startPoint: Vector
     velocity: Vector
     endTime: number
+}
+
+enum SimState {
+    Running,
+    Pausing,
+    Paused,
+    Stepping,
+    Stopping,
+    Stopped
 }
 
 class TokenAnimation {
@@ -325,65 +99,47 @@ class TokenAnimation {
     }
 }
 
-enum SimState {
-    Running,
-    Pausing,
-    Paused,
-    Stopping,
-    Stopped
-}
-
-type MarksToUpdate = {inputsToUpdate: PlaceMarks, outputsToUpdate: PlaceMarks}
-
-class Simulator {
-    private currentNet: PetriNet
-    private state: SimState
-    private logicalNet: LogicalNet
-    private inputWindow: InputWindow
-    private tokenAnimByArc: {[arcId: PEId]: TokenAnimation}
+class SimulationGraphics {
+    private readonly net: PetriNet
+    private readonly tokenAnimByArc: {[arcId: PEId]: TokenAnimation}
 
     constructor(net: PetriNet) {
-        this.currentNet = net
-        this.state = SimState.Stopped
-        this.logicalNet = null
-        this.inputWindow = new InputWindow()
+        this.net = net
+        this.tokenAnimByArc = Object.fromEntries(
+            net.getNetData().arcs.filter(
+                arcData => ['Input', 'Output'].includes(arcData.arcType)
+            ).map(arcData => {
+                const arc = <PetriArc>net.getGenericPE(arcData.id)
+                return [arc.id, new TokenAnimation(arc.getArcPath())]
+            }
+        ))
     }
 
-    private updatePlaceMarks(marksToUpdate: PlaceMarks) {
+    updatePlaceMarks(marksToUpdate: PlaceMarks) {
         for (const placeId in marksToUpdate) {
-            const place = <PetriPlace>this.currentNet.getGenericPE(placeId)
+            const place = <PetriPlace>this.net.getGenericPE(placeId)
             place.mark = marksToUpdate[placeId]
         }
     }
 
-    private setTransColor(trans: PetriTrans, color: string) {
-        trans.svgElement.children[0].setAttribute('stroke', color)
+    setTransColor(trans: PetriTrans, color: string) {
+        trans.svgElement.children[0].setAttribute('fill', color)
     }
 
-    private enableTrans(id: string) {
-        const trans = <PetriTrans>this.currentNet.getGenericPE(id)
+    enableTrans(id: string) {
+        const trans = <PetriTrans>this.net.getGenericPE(id)
         this.setTransColor(trans, TRANS_ENABLE_COLOR)
     }
 
-    private disableTrans(id: string) {
-        const trans = <PetriTrans>this.currentNet.getGenericPE(id)
+    disableTrans(id: string) {
+        const trans = <PetriTrans>this.net.getGenericPE(id)
         this.setTransColor(trans, 'black')
     }
 
-    private updateTransitions() {
-        for (const transId in this.logicalNet.transState) {
-            if (this.logicalNet.transState[transId]) {
-                this.enableTrans(transId)
-            } else {
-                this.disableTrans(transId)
-            }
-        }
-    }
-
-    private animateTokens(arcs: PetriArc[]) {
+    private animateTokens(arcs: PEId[]) {
         const animDuration = FIRE_TRANS_ANIMATION_TIME/2
         let startTime = null
-        const animations = arcs.map(arc => this.tokenAnimByArc[arc.id])
+        const animations = arcs.map(arcId => this.tokenAnimByArc[arcId])
         animations.forEach(anim => anim.start())
 
         function animFunc(timestamp: number) {
@@ -404,64 +160,90 @@ class Simulator {
         requestAnimationFrame(animFunc)
     }
 
-    private fireTrans(transId: string, marksToUpdate: MarksToUpdate) {
-        const trans = <PetriTrans>this.currentNet.getGenericPE(transId)
-        const inputArcs = []
-        const outputArcs = []
-        for (const arcId of trans.connectedArcs) {
-            const arc = <PetriArc>this.currentNet.getGenericPE(arcId)
-            if (arc.arcType === 'Input')
-                inputArcs.push(arc)
-            else if (arc.arcType === 'Output') 
-                outputArcs.push(arc)
+    fireTrans(trans: LogicalTrans) {
+        const transGraphics = <PetriTrans>this.net
+            .getGenericPE(trans.id)
+        
+        const inputArcIds = []
+        for (const arc of trans.inputsArcs) {
+            const placeGraphics = <PetriPlace>this.net
+                .getGenericPE(arc.place.id)
+            
+            placeGraphics.mark -= arc.weight
+            inputArcIds.push(arc.id)
         }
         
-        for (const arc of inputArcs) {
-            const place = <PetriPlace>this.currentNet
-                    .getGenericPE(arc.placeId)
-            place.mark = marksToUpdate.inputsToUpdate[arc.placeId]
-        }
-
-        this.setTransColor(trans, TRANS_FIRE_COLOR)
-        this.animateTokens(inputArcs)
+        this.setTransColor(transGraphics, TRANS_FIRE_COLOR)
+        this.animateTokens(inputArcIds)
 
         setTimeout(() => {
-            this.animateTokens(outputArcs)
+            this.animateTokens(trans.outputsArcs.map(arc => arc.id))
         }, FIRE_TRANS_ANIMATION_TIME/2)
         setTimeout(() => {
-            this.logicalNet.updatePlaceMarks(marksToUpdate.inputsToUpdate)
-            this.logicalNet.updatePlaceMarks(marksToUpdate.outputsToUpdate)
-            this.updatePlaceMarks(marksToUpdate.outputsToUpdate)
+            for (const arc of trans.outputsArcs) {
+                const placeGraphics = <PetriPlace>this.net
+                    .getGenericPE(arc.place.id)
+                
+                placeGraphics.mark += arc.weight
+            }
             this.disableTrans(trans.id)
         }, FIRE_TRANS_ANIMATION_TIME)
     }
 
+    displayTime(time: number) {
+        document.getElementById('simulation-time').innerHTML = time
+                .toFixed(2)
+    }
+
+    setTransGuardColor(id: PEId, color: string) {
+        const trans = <PetriTrans>this.net.getGenericPE(id)
+        trans.svgElement.children[3].setAttribute('fill', color)
+    }
+
+    debugGuard(trans: LogicalTrans) {
+        this.setTransGuardColor(
+            trans.id, trans.isGuardEnable() ? 'green' : 'red'
+        )
+    }
+
+    debugTrans(trans: LogicalTrans) {
+        const transGraphics = <PetriTrans>this.net
+            .getGenericPE(trans.id)
+        if (trans.isEnable()) 
+            this.setTransColor(transGraphics, 'green')
+        else if (trans.isWaitingDelay())
+            this.setTransColor(transGraphics, 'orange')
+        else
+            this.setTransColor(transGraphics, 'black')
+    }
+}
+
+class Simulator {
+    private graphics: SimulationGraphics
+    private state: SimState
+    private logicalNet: LogicalNet
+    private inputWindow: InputWindow
+
+    constructor() { 
+        this.state = SimState.Stopped
+        this.graphics = null
+        this.logicalNet = null
+        this.inputWindow = new InputWindow()
+    }
+
     private restartNet() {
-        for (const placeId in this.logicalNet.placeMarks) {
-            const place = <PetriPlace>this.currentNet.getGenericPE(placeId)
-            place.mark = parseInt(place.initialMark)
-        }
-        for (const transId in this.logicalNet.arcsByTrans) {
-            this.disableTrans(transId)
-        }
+        this.logicalNet.restart()
+        this.graphics.updatePlaceMarks(this.logicalNet.getPlaceMarks())
     }
 
     private init(net: PetriNet) {
-        this.currentNet = net
-        this.inputWindow.open(this.currentNet.inputs)
-        const netData = this.currentNet.getNetData()
+        this.graphics = new SimulationGraphics(net);
+        this.inputWindow.open(net.inputs)
         this.logicalNet = new LogicalNet(
-            netData, this.inputWindow.readInputs()
+            net.getNetData(), 
+            SIM_CYCLE_INTERVAL, 
+            () => this.inputWindow.readInputs()
         )
-        this.tokenAnimByArc = Object.fromEntries(
-            netData.arcs.filter(
-                arcData => ['Input', 'Output'].includes(arcData.arcType)
-            ).map(arcData => {
-                const arc = <PetriArc>net.getGenericPE(arcData.id)
-                return [arc.id, new TokenAnimation(arc.getArcPath())]
-            }
-        ))
-        this.logicalNet.updateTransState()
         this.restartNet()
         this.state = SimState.Paused
     }
@@ -479,48 +261,59 @@ class Simulator {
         this.inputWindow.close()
         document.getElementById('simulating-text')
             .innerHTML = ''
+        document.getElementById('simulation-time')
+            .innerHTML = ''
     }
 
-    private _step = () => {
-        if (this.state !== SimState.Running) {
-            if (this.state === SimState.Stopping)
-                this._stop()
-            if (this.state === SimState.Pausing)
-                this._pause()
-
+    private update = () => {
+        if (this.state === SimState.Stopping) {
+            this._stop()
             return
         }
-        
-        this.logicalNet.updateInputValues(this.inputWindow.readInputs())
-        this.logicalNet.updateTransState()
-        this.updateTransitions()
-        const enabledTransitions = this.logicalNet.getEnabledTransitions()
-
-        if (!enabledTransitions.length) {
-            setTimeout(this._step, STEP_INTERVAL_TIME)
+        if (this.state === SimState.Pausing) {
+            this._pause()
             return
-        } 
+        }
 
-        this.fireTrans(
-            enabledTransitions[0],
-            this.logicalNet.fireTransResult(
-                enabledTransitions[0]
-            )
+        this.graphics.displayTime(
+            this.logicalNet.getSimulationTime()
         )
-        setTimeout(this._step, FIRE_TRANS_ANIMATION_TIME 
-            + STEP_INTERVAL_TIME)
+        const stepResult = this.logicalNet.update()
+        let timeout = 0;
+
+        this.graphics.debugGuard(stepResult.currentTrans)
+        this.graphics.debugTrans(stepResult.currentTrans)
+
+        if (stepResult.currentTrans.isEnable()) {
+            this.graphics.fireTrans(
+                stepResult.currentTrans
+            )
+            timeout = FIRE_TRANS_ANIMATION_TIME 
+                + FIRE_TRANS_INTERVAL
+        }
+        
+        if (stepResult.isLastTrans) {
+            if (this.state === SimState.Stepping) {
+                this._pause()
+                return
+            }
+            timeout += STEP_INTERVAL
+        }
+
+        setTimeout(this.update, timeout)
     }
 
     start(net: PetriNet) {
+        console.log(this.state)
         if (this.state === SimState.Stopped) {
             this.init(net)
             this.state = SimState.Running
-            this._step()
+            this.update()
             document.getElementById('simulating-text')
                 .innerHTML = 'Simulating...'
         } else if (this.state === SimState.Paused) {
             this.state = SimState.Running
-            this._step()
+            this.update()
             document.getElementById('simulating-text')
                 .innerHTML = 'Simulating...'
         }
@@ -547,21 +340,30 @@ class Simulator {
 
     step(net: PetriNet) {
         this.start(net)
+        this.state = SimState.Stepping
+    }
+
+    debugStep(net: PetriNet) {
+        this.start(net)
         this.state = SimState.Pausing
     }
 }
 
 function createSimulator(
-    net: PetriNet, 
     startSimObserver: () => PetriNet,
     stopSimObserver: VoidFunction 
 ) {
-    const simulator = new Simulator(net)
+    const simulator = new Simulator()
 
     document.getElementById('step-button').onclick = 
         () => { 
             simulator.step(startSimObserver())
         }
+
+    document.getElementById('debug-button').onclick = 
+    () => { 
+        simulator.debugStep(startSimObserver())
+    }
     
     document.getElementById('start-button').onclick = 
         () => { 

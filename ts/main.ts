@@ -8,7 +8,6 @@ import { PetriNetData } from './PNData.js';
 import { PetriArc } from './PNElements.js';
 import Editor from './Editor.js';
 
-
 function testNetManager(net: PetriNet) {
     const placeId = net.createPlace(new Vector(100, 50))
     const placeId2 = net.createPlace(new Vector(50, 100))
@@ -75,7 +74,7 @@ function exampleNet(net: PetriNet) {
     net.createArc(placeId1, transId3, "Output")
 
     net.addArcCorner(arcId6, 0)
-    net.moveArcCorner(arcId6, 0, new Vector(250, 200))
+    net.moveArcCorner(arcId6, 0, new Vector(52, 74))
 
     net.setGenericPEAttr(placeId1, 'initialMark', '1')
     
@@ -100,7 +99,8 @@ function exampleNet(net: PetriNet) {
         },
     ]
     
-    net.setGenericPEAttr(transId1, 'guard', 's1 and s2')
+    net.setGenericPEAttr(transId1, 'guard', 's1 and rt("s2")')
+    net.setGenericPEAttr(transId3, 'delay', '1')
     net.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)')
 
     net.moveScreen(new Vector(50, 0))
@@ -188,8 +188,6 @@ async function saveNet(net: PetriNet) {
 }
 
 function main() {
-    console.log('Creating net')
-    const net = PetriNet.newNet()
     const editor = new Editor()
     const propertyWindow = new PropertyWindow()
     const toolBar = new ToolBar(editor, propertyWindow)
@@ -202,7 +200,6 @@ function main() {
             ) 
         }
     const simulator = createSimulator(
-        editor.currentNet,
         () => { 
             toolBar.disable()
 
@@ -230,7 +227,11 @@ function main() {
     }
 
     //testTokenAnimation(net, simulator)
-    //exampleNet(net)
+    console.log('Creating net')
+    const net = PetriNet.newNet()
+    editor.open(net)
+    exampleNet(net)
+    toolBar.enable()
 }
 
 window.onload = main
