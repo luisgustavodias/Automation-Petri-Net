@@ -7,6 +7,8 @@ import { InputConfig } from './InputsConfig.js';
 import { PetriNetData } from './PNData.js';
 import { PetriArc } from './PNElements.js';
 import Editor from './Editor.js';
+import { generateCode } from './CodeGenerator.js';
+import { LogicalNet } from './LogigalNet.js';
 
 function testNetManager(net: PetriNet) {
     const placeId = net.createPlace(new Vector(100, 50))
@@ -225,6 +227,26 @@ function main() {
     document.getElementById('save-file-button').onclick = async () => {
         await saveNet(editor.currentNet)
     }
+
+    document.getElementById('gencode-button').onclick = () => {
+        document.getElementById('gencode-modal').style.display = 'block'
+        const ele = <HTMLTextAreaElement>document.getElementById('gencode-out')
+
+        ele.value = generateCode(new LogicalNet(
+            editor.currentNet.getNetData(),
+            0,
+            () => { return {} }
+        ), editor.currentNet.inputs)
+    }
+
+    document.getElementById('gencode-modal-close').onclick = () => {
+        document.getElementById('gencode-modal').style.display = 'none'
+    }
+
+    document.getElementById('gencode-close').onclick = () => {
+        document.getElementById('gencode-modal').style.display = 'none'
+    }
+
 
     //testTokenAnimation(net, simulator)
     console.log('Creating net')

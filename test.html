@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Document</title>
+    <style>
+        body {
+            margin: 0;
+            height: 100%;
+            width: 100vw;
+            height: 100vh;
+        }
+        .container {
+            background-color: blue;
+        }
+        .one {
+            width: 100%;
+            height: 40px;
+            background-color: yellow;
+            margin: 0;
+            padding: 0;
+        }
+        .two {
+            display: flex;
+            flex-direction: row;
+            width: 100%;
+            height: calc(100% - 40px);
+            background-color: red;
+            margin: 0;
+            padding: 0;
+        }
+        .side-bar {
+            height: 100%;
+            width: 200px;
+            resize: horizontal;
+            overflow: auto;
+            background-color: orangered;
+        }
+        .editor {
+            width: 100%;
+            height: 100%;
+            background-color: purple;
+            overflow: hidden;
+        }
+        svg {
+            background-color: green;
+            height: 100%;
+        }
+    </style>
+</head>
+<body>
+    <!-- <div class="container"> -->
+    <div class="one">
+
+    </div>
+    <div class="two">
+        <div class="side-bar"></div>
+        <div class="editor">
+            <svg  xmlns="http://www.w3.org/2000/svg" viewbox="0 0 10 10">
+                <circle cx="5" cy="5" r="3"/>
+            </svg>
+        </div>
+    </div>
+    <!-- </div> -->
+    
+</body>
+</html>

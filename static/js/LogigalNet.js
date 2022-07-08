@@ -51,6 +51,7 @@ class LogicalTrans {
     outputsArcs;
     testArcs;
     inhibitorArcs;
+    guard;
     delay;
     priority;
     timeToEnable;
@@ -71,6 +72,7 @@ class LogicalTrans {
         // } catch(e) {
         //     throw "Can't convert priority to float."
         // }
+        this.guard = data.guard;
         if (data.guard) {
             try {
                 this.guardFunc = this.createGuardFunc(data.guard, [...netInputs.keys()]);

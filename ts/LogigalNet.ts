@@ -66,6 +66,7 @@ class LogicalTrans {
     readonly outputsArcs: LogicalPetriArc[]
     readonly testArcs: LogicalPetriArc[]
     readonly inhibitorArcs: LogicalPetriArc[]
+    readonly guard: string
     readonly delay: number
     readonly priority: number
     private timeToEnable: number
@@ -86,6 +87,7 @@ class LogicalTrans {
         // } catch(e) {
         //     throw "Can't convert priority to float."
         // }
+        this.guard = data.guard
         if (data.guard) {
             try {
                 this.guardFunc = this.createGuardFunc(
