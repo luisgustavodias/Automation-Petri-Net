@@ -34,15 +34,19 @@ function getTransEnableCondition(trans: LogicalTrans) {
     return [
         trans.getArcs().map(getArcEnableCondition)
             .filter(isNotEmptyString).join(' AND '), 
-        getGruardCondition(trans.guard),
-        trans.delay ? `ton_${0}.Q` : ''
-    ].filter(isNotEmptyString).join(' AND ')
+        getGruardCondition(trans.guard)
+    ].filter(isNotEmptyString)
+    .map(condition => `(${condition})`)
+    .join(' AND ') || 'TRUE'
 }
 
 function generateTransCode(trans: LogicalTrans) {
-    return 'IF '
-        + getTransEnableCondition(trans)
+    const transCondition = getTransEnableCondition(trans)
+    return (trans.delay ? `ton_${0}(IN := ${transCondition})\n` : '')
+        + 'IF '
+        + (trans.delay ? `ton_${0}.Q` : transCondition)
         + ' THEN\n'
+        + (trans.delay ? `    ton_${0}.IN := FALSE;\n` : '')
         + trans.inputsArcs.map(
             arc => `    ${arc.place.name} := ${arc.place.name} + ${arc.weight};`
         ).join('\n')
