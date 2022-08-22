@@ -232,11 +232,10 @@ function main() {
         document.getElementById('gencode-modal').style.display = 'block'
         const ele = <HTMLTextAreaElement>document.getElementById('gencode-out')
 
-        ele.value = generateCode(new LogicalNet(
+        ele.value = generateCode(
             editor.currentNet.getNetData(),
-            0,
-            () => { return {} }
-        ), editor.currentNet.inputs)
+             editor.currentNet.inputs
+             )
     }
 
     document.getElementById('gencode-modal-close').onclick = () => {

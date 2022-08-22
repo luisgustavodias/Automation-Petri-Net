@@ -6,7 +6,6 @@ import { createSimulator } from './Simulation.js';
 import { InputConfig } from './InputsConfig.js';
 import Editor from './Editor.js';
 import { generateCode } from './CodeGenerator.js';
-import { LogicalNet } from './LogigalNet.js';
 function testNetManager(net) {
     const placeId = net.createPlace(new Vector(100, 50));
     const placeId2 = net.createPlace(new Vector(50, 100));
@@ -177,7 +176,7 @@ function main() {
     document.getElementById('gencode-button').onclick = () => {
         document.getElementById('gencode-modal').style.display = 'block';
         const ele = document.getElementById('gencode-out');
-        ele.value = generateCode(new LogicalNet(editor.currentNet.getNetData(), 0, () => { return {}; }), editor.currentNet.inputs);
+        ele.value = generateCode(editor.currentNet.getNetData(), editor.currentNet.inputs);
     };
     document.getElementById('gencode-modal-close').onclick = () => {
         document.getElementById('gencode-modal').style.display = 'none';
