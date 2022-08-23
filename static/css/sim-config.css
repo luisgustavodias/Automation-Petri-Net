@@ -1,0 +1,9 @@
+#sim-config-modal form {
+    /* display: flex;
+    flex-direction: column; */
+    padding: 15px;
+}
+
+#sim-config-modal form div {
+    padding: 5px;
+}

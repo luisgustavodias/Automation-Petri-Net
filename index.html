@@ -6,13 +6,14 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Automation Petri Net</title>
-    <link rel="icon" type="image/x-icon" href="/static/icons/favicon.svg">
+    <link rel="icon" type="image/x-icon" href="static/icons/favicon.svg">
     <link rel="stylesheet" href="static/css/main.css">
     <link rel="stylesheet" href="static/css/navbar.css">
     <link rel="stylesheet" href="static/css/toolbar.css">
     <link rel="stylesheet" href="static/css/sidebar.css">
     <link rel="stylesheet" href="static/css/modal.css">
     <link rel="stylesheet" href="static/css/inputs-config-modal.css">
+    <link rel="stylesheet" href="static/css/sim-config.css">
     <link rel="stylesheet" href="static/css/welcome-window.css">
     <style>
         body {
@@ -94,7 +95,7 @@
                 <a id="close-file-button">Close</a>
             </div>
         </div>
-        <!-- <div class="dropdown">
+        <div class="dropdown">
             <button class="dropbtn">Simulation
                 <i class="fa fa-caret-down"></i>
             </button>
@@ -104,7 +105,7 @@
                 <a href="#">Restart</a>
                 <a id="sim-config-button">Configuration</a>
             </div>
-        </div> -->
+        </div>
         <a id="inputs-button">Inputs</a>
         <a id="gencode-button">Generate Code</a>
 
@@ -260,26 +261,38 @@
     <div id="sim-config-modal" class="modal">
         <div class="modal-content">
             <div class="modal-header">
-                <span id="sim-config-close" class="modal-close">&times;</span>
                 <h2>Simulation Configuration</h2>
+                <span class="modal-close">&times;</span>
             </div>
             <div class="modal-body">
-                <h3>Simulation Mode</h3>
-                <select name="sim-mode" id="sim-mode">
-                    <option value="1" selected>Mode 1</option>
-                    <option value="2">Mode 2</option>
-                    <option value="3">Mode 3</option>
-                </select>
-                <p><b>Mode 1:</b>Fire only 1 transition by scan cicle <br>
+                <form id="simConfigForm">
+                    <div>
+                        <label>Simulation Mode: </label>
+                        <select name="simMode" id="simMode">
+                            <option value="Automation" selected>Automation</option>
+                            <option value="Classic">Classic</option>
+                            <option value="VisObj">VisObj</option>
+                        </select>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="arcDebug" id="arcDebug">
+                        <label for="arcDebug">Show arcs state</label>
+                    </div>
+                    <div>
+                        <input type="checkbox" name="guardDebug" id="guardDebug">
+                        <label for="guardDebug">Show trasition guards evaluation</label>
+                    </div>
+                </form>
+                <!-- <p><b>Mode 1:</b>Fire only 1 transition by scan cicle <br>
                     <b>Mode 2:</b>Fire multiple transitions by scan cicle <br>
                     <b>Mode 3:</b>Fire multiple transitions by scan cicle, but only the transitions
                     that started the scan cicle enabled
-                </p>
+                </p> -->
 
-                <h3>Pre Script</h3>
+                <!-- <h3>Pre Script</h3>
                 <p>This piece of code runs at each beagning of a scan cicle</p>
                 <textarea name="pre-script" id="pre-script" cols="120" rows="10"
-                    placeholder="Write your script here"></textarea>
+                    placeholder="Write your script here"></textarea> -->
             </div>
             <div class="modal-footer">
                 <div style="float: right">

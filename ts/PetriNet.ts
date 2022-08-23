@@ -5,7 +5,7 @@ import { AGenericPetriElement, APetriElement, PetriPlace,
     PetriTrans, PetriArc } from "./PNElements.js";
 import { Change, UndoRedoManager } from "./UndoRedoManager.js";
 import { Input } from "./InputsConfig.js";
-import { ArcData, PEId, PetriNetData, PlaceData, TransData, ArcType } from "./PNData.js";
+import { ArcData, PEId, PetriNetData, PlaceData, TransData, ArcType, SimConfig } from "./PNData.js";
 
 export class PetriNet {
     private static readonly GRID_SIZE = 10
@@ -13,7 +13,7 @@ export class PetriNet {
     readonly svgElement: SVGSVGElement
     private elements: { [id: PEId]: AGenericPetriElement }
     inputs: Array<Input>
-    private simMode: number
+    simConfig: SimConfig
     private preScript: string
     private placeNumber: number
     private transNumber: number
@@ -37,7 +37,11 @@ export class PetriNet {
         this.svgElement.setAttribute('viewBox', '0 0 1500 300')
         this.elements = {}
         this.inputs = []
-        this.simMode = 1
+        this.simConfig = {
+            simMode: "Automation",
+            arcDebug: false,
+            guardDebug: false
+        }
         this.preScript = ""
         this.placeNumber = 1
         this.transNumber = 1
@@ -521,7 +525,8 @@ export class PetriNet {
                 width: viewBox.width,
                 heigth: viewBox.height
             },
-            preScript: ""
+            preScript: "",
+            simConfig: this.simConfig
         }
     }
 

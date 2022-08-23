@@ -3,6 +3,13 @@ type PlaceType = "INT" | "BOOL"
 type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
 type InputType = "INT" | "BOOL"
 type PetriElementType = "place" | "trans" | "arc"
+type SimMode = "Automation" | "Classic" | "VisObj"
+
+interface SimConfig {
+    simMode: SimMode
+    arcDebug: boolean
+    guardDebug: boolean
+}
 
 interface IVector {
     x: number,
@@ -100,9 +107,10 @@ interface PetriNetData {
     viewBox: IViewBox
     nextPlaceNumber: number
     nextTransNumber: number
+    simConfig: SimConfig
 }
 
 export { PEId, Input, PlaceType, ArcType, PetriElementType, InputType,
     GenericPEBasicData, PlaceBasicData, TransBasicData,
     ArcBasicData, PlaceData, TransData, ArcData, PetriNetBasicData,
-    PetriNetData }
+    PetriNetData, SimMode, SimConfig }

@@ -6,6 +6,7 @@ import { createSimulator } from './Simulation.js';
 import { InputConfig } from './InputsConfig.js';
 import Editor from './Editor.js';
 import { generateCode } from './CodeGenerator.js';
+import { SimConfigWindow } from './SimConfigWindow.js';
 function testNetManager(net) {
     const placeId = net.createPlace(new Vector(100, 50));
     const placeId2 = net.createPlace(new Vector(50, 100));
@@ -151,9 +152,14 @@ function main() {
     const propertyWindow = new PropertyWindow();
     const toolBar = new ToolBar(editor, propertyWindow);
     const inputConfig = new InputConfig();
+    const simConfigWindow = new SimConfigWindow();
     document.getElementById('inputs-button')
         .onclick = () => {
         inputConfig.open(editor.currentNet.inputs, inputs => { editor.currentNet.inputs = inputs; });
+    };
+    document.getElementById('sim-config-button')
+        .onclick = () => {
+        simConfigWindow.open(editor.currentNet.simConfig, simConfig => { editor.currentNet.simConfig = simConfig; });
     };
     const simulator = createSimulator(() => {
         toolBar.disable();

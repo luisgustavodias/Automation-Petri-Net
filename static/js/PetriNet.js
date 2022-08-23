@@ -8,7 +8,7 @@ export class PetriNet {
     svgElement;
     elements;
     inputs;
-    simMode;
+    simConfig;
     preScript;
     placeNumber;
     transNumber;
@@ -29,7 +29,11 @@ export class PetriNet {
         this.svgElement.setAttribute('viewBox', '0 0 1500 300');
         this.elements = {};
         this.inputs = [];
-        this.simMode = 1;
+        this.simConfig = {
+            simMode: "Automation",
+            arcDebug: false,
+            guardDebug: false
+        };
         this.preScript = "";
         this.placeNumber = 1;
         this.transNumber = 1;
@@ -321,7 +325,8 @@ export class PetriNet {
                 width: viewBox.width,
                 heigth: viewBox.height
             },
-            preScript: ""
+            preScript: "",
+            simConfig: this.simConfig
         };
     }
     static loadNet(data) {
