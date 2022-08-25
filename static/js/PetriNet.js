@@ -60,6 +60,9 @@ export class PetriNet {
     getGenericPE(id) {
         return this.elements[id];
     }
+    getAllGenericPEs() {
+        return Object.values(this.elements);
+    }
     getGenericPEType(id) {
         return this.elements[id].PEType;
     }
@@ -341,6 +344,8 @@ export class PetriNet {
             net.addGenericPE(this.loadArc(arcData, net), false);
         });
         net.inputs = data.inputs;
+        if (data.simConfig)
+            net.simConfig = data.simConfig;
         const viewBox = net.svgElement.viewBox.baseVal;
         Object.assign(viewBox, data.viewBox);
         console.log(net);

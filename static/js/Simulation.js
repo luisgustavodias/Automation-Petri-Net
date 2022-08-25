@@ -1,10 +1,11 @@
+import { PetriPlace, PetriTrans, PetriArc } from "./PNElements.js";
 import { InputWindow } from "./InputWindow.js";
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js";
 import { LogicalNet } from "./LogigalNet.js";
 const FIRE_TRANS_ANIMATION_TIME = 1500;
 const FIRE_TRANS_INTERVAL = 200;
 const SIM_CYCLE_INTERVAL = 0.01;
-const STEP_INTERVAL = 10;
+const STEP_INTERVAL = 200;
 const TRANS_ENABLE_COLOR = '#04c200';
 const TRANS_FIRE_COLOR = 'red';
 var SimState;
@@ -142,6 +143,10 @@ class SimulationGraphics {
         const trans = this.net.getGenericPE(id);
         trans.svgElement.children[3].setAttribute('fill', color);
     }
+    debugArc(arc) {
+        const arcGraphics = this.net.getGenericPE(arc.id);
+        arcGraphics.setArcColor(arc.isEnable() ? 'green' : 'red');
+    }
     debugGuard(trans) {
         this.setTransGuardColor(trans.id, trans.isGuardEnable() ? 'green' : 'red');
     }
@@ -155,11 +160,25 @@ class SimulationGraphics {
         else
             this.setTransColor(transGraphics, 'black');
     }
+    restartNet() {
+        for (const element of this.net.getAllGenericPEs()) {
+            if (element instanceof PetriPlace) {
+                element.mark = parseInt(element.initialMark || "0");
+            }
+            else if (element instanceof PetriTrans) {
+                this.setTransColor(element, "black");
+            }
+            else if (element instanceof PetriArc) {
+                element.setArcColor('black');
+            }
+        }
+    }
 }
 class Simulator {
     graphics;
     state;
     logicalNet;
+    simConfig;
     inputWindow;
     constructor() {
         this.state = SimState.Stopped;
@@ -169,12 +188,13 @@ class Simulator {
     }
     restartNet() {
         this.logicalNet.restart();
-        this.graphics.updatePlaceMarks(this.logicalNet.getPlaceMarks());
+        this.graphics.restartNet();
     }
     init(net) {
         this.graphics = new SimulationGraphics(net);
         this.inputWindow.open(net.inputs);
         this.logicalNet = new LogicalNet(net.getNetData(), SIM_CYCLE_INTERVAL, () => this.inputWindow.readInputs());
+        this.simConfig = net.simConfig;
         this.restartNet();
         this.state = SimState.Paused;
     }
@@ -193,19 +213,36 @@ class Simulator {
         document.getElementById('simulation-time')
             .innerHTML = '';
     }
-    update = () => {
-        if (this.state === SimState.Stopping) {
-            this._stop();
-            return;
+    classic_mode_update = () => {
+        if (this.simConfig.arcDebug) {
+            for (const arc of Object.values(this.logicalNet.arcs))
+                this.graphics.debugArc(arc);
         }
-        if (this.state === SimState.Pausing) {
+        if (this.simConfig.guardDebug) {
+            for (const trans of this.logicalNet.transInOrder)
+                this.graphics.debugGuard(trans);
+        }
+        for (const trans of this.logicalNet.transInOrder)
+            this.graphics.debugTrans(trans);
+        this.graphics.displayTime(this.logicalNet.getSimulationTime());
+        let timeout = STEP_INTERVAL;
+        if (this.logicalNet.transitionsToFire.length)
+            timeout += FIRE_TRANS_ANIMATION_TIME;
+        for (const trans of this.logicalNet.transitionsToFire)
+            this.graphics.fireTrans(trans);
+        this.logicalNet.step();
+        if (this.state === SimState.Stepping) {
             this._pause();
             return;
         }
-        this.graphics.displayTime(this.logicalNet.getSimulationTime());
+        setTimeout(this.update, timeout);
+    };
+    automation_mode_update() {
         const stepResult = this.logicalNet.update();
         let timeout = 0;
-        this.graphics.debugGuard(stepResult.currentTrans);
+        if (this.simConfig.guardDebug) {
+            this.graphics.debugGuard(stepResult.currentTrans);
+        }
         this.graphics.debugTrans(stepResult.currentTrans);
         if (stepResult.currentTrans.isEnable()) {
             this.graphics.fireTrans(stepResult.currentTrans);
@@ -220,9 +257,23 @@ class Simulator {
             timeout += STEP_INTERVAL;
         }
         setTimeout(this.update, timeout);
+    }
+    update = () => {
+        if (this.state === SimState.Stopping) {
+            this._stop();
+            return;
+        }
+        if (this.state === SimState.Pausing) {
+            this._pause();
+            return;
+        }
+        this.graphics.displayTime(this.logicalNet.getSimulationTime());
+        if (this.simConfig.simMode === "Automation")
+            this.automation_mode_update();
+        else if (this.simConfig.simMode === "Classic")
+            this.classic_mode_update();
     };
     start(net) {
-        console.log(this.state);
         if (this.state === SimState.Stopped) {
             this.init(net);
             this.state = SimState.Running;

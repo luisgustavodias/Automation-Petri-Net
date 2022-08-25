@@ -4,16 +4,16 @@ import {
     PetriTrans, 
     PetriArc
 } from "./PNElements.js"
-import { PEId } from "./PNData.js"
+import { PEId, SimConfig } from "./PNData.js"
 import { InputWindow } from "./InputWindow.js"
 import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js"
 import Vector from "./utils/Vector.js"
-import { LogicalNet, LogicalTrans } from "./LogigalNet.js"
+import { LogicalNet, LogicalPetriArc, LogicalTrans } from "./LogigalNet.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
 const FIRE_TRANS_INTERVAL = 200
 const SIM_CYCLE_INTERVAL = 0.01
-const STEP_INTERVAL = 10
+const STEP_INTERVAL = 200
 const TRANS_ENABLE_COLOR = '#04c200'
 const TRANS_FIRE_COLOR = 'red'
 
@@ -98,6 +98,7 @@ class TokenAnimation {
         this.currentStep = null
     }
 }
+
 
 class SimulationGraphics {
     private readonly net: PetriNet
@@ -200,6 +201,14 @@ class SimulationGraphics {
         trans.svgElement.children[3].setAttribute('fill', color)
     }
 
+    debugArc(arc: LogicalPetriArc) {
+        const arcGraphics = <PetriArc>this.net.getGenericPE(arc.id)
+
+        arcGraphics.setArcColor(
+            arc.isEnable() ? 'green' : 'red'
+        )
+    }
+
     debugGuard(trans: LogicalTrans) {
         this.setTransGuardColor(
             trans.id, trans.isGuardEnable() ? 'green' : 'red'
@@ -216,12 +225,25 @@ class SimulationGraphics {
         else
             this.setTransColor(transGraphics, 'black')
     }
+
+    restartNet() {
+        for (const element of this.net.getAllGenericPEs()) {
+            if (element instanceof PetriPlace) {
+                element.mark = parseInt(element.initialMark || "0")
+            } else if (element instanceof PetriTrans) {
+                this.setTransColor(element, "black")
+            } else if (element instanceof PetriArc) {
+                element.setArcColor('black')
+            }
+        }
+    }
 }
 
 class Simulator {
     private graphics: SimulationGraphics
     private state: SimState
     private logicalNet: LogicalNet
+    private simConfig: SimConfig
     private inputWindow: InputWindow
 
     constructor() { 
@@ -233,7 +255,7 @@ class Simulator {
 
     private restartNet() {
         this.logicalNet.restart()
-        this.graphics.updatePlaceMarks(this.logicalNet.getPlaceMarks())
+        this.graphics.restartNet()
     }
 
     private init(net: PetriNet) {
@@ -244,6 +266,7 @@ class Simulator {
             SIM_CYCLE_INTERVAL, 
             () => this.inputWindow.readInputs()
         )
+        this.simConfig = net.simConfig
         this.restartNet()
         this.state = SimState.Paused
     }
@@ -265,23 +288,46 @@ class Simulator {
             .innerHTML = ''
     }
 
-    private update = () => {
-        if (this.state === SimState.Stopping) {
-            this._stop()
-            return
+    private classic_mode_update = () => {
+        if (this.simConfig.arcDebug) {
+            for (const arc of Object.values(this.logicalNet.arcs))
+                this.graphics.debugArc(arc)
         }
-        if (this.state === SimState.Pausing) {
+        
+        if (this.simConfig.guardDebug) {
+            for (const trans of this.logicalNet.transInOrder) 
+                this.graphics.debugGuard(trans)
+        }
+
+        for (const trans of this.logicalNet.transInOrder) 
+            this.graphics.debugTrans(trans)
+
+        this.graphics.displayTime(this.logicalNet.getSimulationTime())
+
+        let timeout = STEP_INTERVAL
+        if (this.logicalNet.transitionsToFire.length) 
+            timeout += FIRE_TRANS_ANIMATION_TIME
+
+        for (const trans of this.logicalNet.transitionsToFire)
+            this.graphics.fireTrans(trans)
+
+        this.logicalNet.step()
+
+        if (this.state === SimState.Stepping) {
             this._pause()
             return
         }
 
-        this.graphics.displayTime(
-            this.logicalNet.getSimulationTime()
-        )
+        setTimeout(this.update, timeout)
+    }
+
+    private automation_mode_update() {
         const stepResult = this.logicalNet.update()
         let timeout = 0;
 
-        this.graphics.debugGuard(stepResult.currentTrans)
+        if (this.simConfig.guardDebug) {
+            this.graphics.debugGuard(stepResult.currentTrans)
+        }
         this.graphics.debugTrans(stepResult.currentTrans)
 
         if (stepResult.currentTrans.isEnable()) {
@@ -303,8 +349,27 @@ class Simulator {
         setTimeout(this.update, timeout)
     }
 
+    private update = () => {
+        if (this.state === SimState.Stopping) {
+            this._stop()
+            return
+        }
+        if (this.state === SimState.Pausing) {
+            this._pause()
+            return
+        }
+
+        this.graphics.displayTime(
+            this.logicalNet.getSimulationTime()
+        )
+
+        if (this.simConfig.simMode === "Automation")
+            this.automation_mode_update()
+        else if (this.simConfig.simMode === "Classic")
+            this.classic_mode_update()
+    }
+
     start(net: PetriNet) {
-        console.log(this.state)
         if (this.state === SimState.Stopped) {
             this.init(net)
             this.state = SimState.Running

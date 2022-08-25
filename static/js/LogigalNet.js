@@ -168,6 +168,7 @@ class LogicalNet {
     arcs;
     transitions;
     transInOrder;
+    transitionsToFire;
     readInputs;
     previousInputValues;
     contextFunctions;
@@ -205,6 +206,7 @@ class LogicalNet {
         // )
         this.currentTransIndex = 0;
         this.simulationTime = 0;
+        this.transitionsToFire = [];
     }
     getSimulationTime() {
         return this.simulationTime;
@@ -226,6 +228,7 @@ class LogicalNet {
             this.transitions[transId].restart();
         this.currentTransIndex = 0;
         this.simulationTime = 0;
+        this.transitionsToFire = [];
     }
     update() {
         if (this.currentTransIndex >= this.transInOrder.length)
@@ -244,6 +247,19 @@ class LogicalNet {
             currentTrans: trans,
             isLastTrans: isLastTrans
         };
+    }
+    step() {
+        for (const trans of this.transitionsToFire)
+            trans.fire();
+        this.transitionsToFire = [];
+        this.updateInputValues();
+        for (const trans of this.transInOrder) {
+            trans.update(this.cycleInterval, this.inputValues, this.contextFunctions.rt, this.contextFunctions.ft);
+            if (trans.isEnable() && !this.transitionsToFire.length) {
+                this.transitionsToFire.push(trans);
+            }
+        }
+        this.simulationTime += this.cycleInterval;
     }
 }
 export { LogicalPlace, LogicalTrans, LogicalPetriArc, LogicalNet };

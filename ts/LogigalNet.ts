@@ -208,6 +208,7 @@ class LogicalNet {
     readonly arcs: { [id: PEId]: LogicalPetriArc }
     readonly transitions: { [id: PEId]: LogicalTrans }
     readonly transInOrder: LogicalTrans[]
+    transitionsToFire: LogicalTrans[]
     private readInputs: () => InputValues
     private readonly previousInputValues: Map<string, number>
     private contextFunctions: { 
@@ -261,6 +262,7 @@ class LogicalNet {
 
         this.currentTransIndex = 0
         this.simulationTime = 0
+        this.transitionsToFire = []
     }
 
     getSimulationTime() {
@@ -290,6 +292,7 @@ class LogicalNet {
             this.transitions[transId].restart()
         this.currentTransIndex = 0
         this.simulationTime = 0
+        this.transitionsToFire = []
     }
 
     update(): StepResult {
@@ -322,6 +325,29 @@ class LogicalNet {
             currentTrans: trans,
             isLastTrans: isLastTrans
         }
+    }
+
+    step() {
+        for (const trans of this.transitionsToFire)
+            trans.fire()
+        
+        this.transitionsToFire = []
+
+        this.updateInputValues()
+
+        for (const trans of this.transInOrder) {
+            trans.update(
+                this.cycleInterval, 
+                this.inputValues, 
+                this.contextFunctions.rt, 
+                this.contextFunctions.ft
+            )
+            if (trans.isEnable() && !this.transitionsToFire.length) {
+                this.transitionsToFire.push(trans)
+            }
+        }
+
+        this.simulationTime += this.cycleInterval
     }
 }
 

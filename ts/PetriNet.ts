@@ -72,6 +72,10 @@ export class PetriNet {
         return this.elements[id]
     }
 
+    getAllGenericPEs() {
+        return Object.values(this.elements)
+    }
+
     getGenericPEType(id: PEId) {
         return this.elements[id].PEType
     }
@@ -544,6 +548,8 @@ export class PetriNet {
         })
 
         net.inputs = data.inputs
+        if (data.simConfig)
+            net.simConfig = data.simConfig
 
         const viewBox = net.svgElement.viewBox.baseVal
         Object.assign(viewBox, data.viewBox)
