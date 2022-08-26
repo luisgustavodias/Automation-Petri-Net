@@ -74,7 +74,7 @@ class LogicalTrans {
     private _isEnable: boolean
     private readonly guardFunc: GuardFunc
 
-    constructor(data: TransData, netInputs: Map<string, number>) {
+    constructor(data: TransData, netInputNames: string[]) {
         this._isEnable = false
         this.id = data.id
         try {
@@ -91,7 +91,7 @@ class LogicalTrans {
         if (data.guard) {
             try {
                 this.guardFunc = this.createGuardFunc(
-                    data.guard, [...netInputs.keys()]
+                data.guard, netInputNames
                 )
             } catch(e) {
                 'Invalid guard expression'
@@ -137,22 +137,25 @@ class LogicalTrans {
         this._isEnable = false
     }
 
-    private checkArcs() {
-        for (const arc of [...this.inputsArcs, ...this.testArcs]) {
-            if (arc.place.mark < arc.weight)
+    checkArcs() {
+        // for (const arc of [...this.inputsArcs, ...this.testArcs]) {
+        //     if (arc.place.mark < arc.weight)
+        //         return false
+        // }
+
+        // for (const arc of this.inhibitorArcs) {
+        //     if (arc.place.mark >= arc.weight)
+        //         return false
+        // }
+
+        // for (const arc of this.outputsArcs) {
+        //     if (arc.place.placeType === 'BOOL' && arc.place.mark === 1)
+        //         return false
+        // }
+        for (const arc of this.getArcs()) {
+            if (!arc.isEnable())
                 return false
         }
-
-        for (const arc of this.inhibitorArcs) {
-            if (arc.place.mark >= arc.weight)
-                return false
-        }
-
-        for (const arc of this.outputsArcs) {
-            if (arc.place.placeType === 'BOOL' && arc.place.mark === 1)
-                return false
-        }
-
         return true
     }
 
@@ -163,10 +166,10 @@ class LogicalTrans {
         ft: (varName: string) => boolean
     ) {
         this._isEnable = false
+        this._isGuardEnable = true
         this._isGuardEnable = this.guardFunc(
             ...netInputs.values(), rt, ft
         )
-
         if (this.checkArcs() && this._isGuardEnable) {
             if (this.timeToEnable > 0)
                 this.timeToEnable -= dt
@@ -203,32 +206,12 @@ class LogicalTrans {
 
 
 class LogicalNet {
-    readonly inputValues: Map<string, number>
     readonly places: { [id: PEId]: LogicalPlace }
     readonly arcs: { [id: PEId]: LogicalPetriArc }
     readonly transitions: { [id: PEId]: LogicalTrans }
     readonly transInOrder: LogicalTrans[]
-    transitionsToFire: LogicalTrans[]
-    private readInputs: () => InputValues
-    private readonly previousInputValues: Map<string, number>
-    private contextFunctions: { 
-        rt: (varName: string) => boolean,
-        ft: (varName: string) => boolean
-    }
-    private readonly cycleInterval: number
-    private currentTransIndex: number
-    private simulationTime: number
 
-    constructor(netData: PetriNetData, cycleInterval: number, readInputs: () => InputValues) {
-        this.inputValues = new Map()
-        this.previousInputValues = new Map()
-        this.cycleInterval = cycleInterval
-        this.readInputs = readInputs
-        for (const [inputName, inputValue] of Object.entries(readInputs())) {
-            this.inputValues.set(inputName, inputValue)
-            this.previousInputValues.set(inputName, inputValue)
-        }
-
+    constructor(netData: PetriNetData, netInputNames) {
         this.places = Object.fromEntries(netData.places.map(
             placeData => [placeData.id, new LogicalPlace(placeData)]
         ))
@@ -241,7 +224,7 @@ class LogicalNet {
         this.transitions = Object.fromEntries(netData.transitions.map(
             transData => [
                 transData.id, 
-                new LogicalTrans(transData, this.inputValues)
+                new LogicalTrans(transData, netInputNames)
             ]
         ))
 
@@ -250,104 +233,6 @@ class LogicalNet {
         })
 
         this.transInOrder = Object.values(this.transitions)
-
-        this.contextFunctions = {
-            rt: (varName) => this.inputValues.get(varName) && !this.previousInputValues.get(varName),
-            ft: (varName) => this.previousInputValues.get(varName) && !this.inputValues.get(varName),
-        }
-
-        // this.transInOrder.sort(
-        //     (a, b) => a.priority - b.priority
-        // )
-
-        this.currentTransIndex = 0
-        this.simulationTime = 0
-        this.transitionsToFire = []
-    }
-
-    getSimulationTime() {
-        return this.simulationTime
-    }
-
-    getPlaceMarks() {
-        return Object.fromEntries(Object.values(this.places).map (
-            place => [place.id, place.mark]
-        ))
-    }
-
-    updateInputValues() {
-        const inputs = this.readInputs()
-        for (const [inputName, inputValue] of Object.entries(inputs)) {
-            this.previousInputValues.set(
-                inputName, this.inputValues.get(inputName)
-            )
-            this.inputValues.set(inputName, inputValue)
-        }
-    }
-
-    restart() {
-        for (const placeId in this.places)
-            this.places[placeId].restart()
-        for (const transId in this.transitions)
-            this.transitions[transId].restart()
-        this.currentTransIndex = 0
-        this.simulationTime = 0
-        this.transitionsToFire = []
-    }
-
-    update(): StepResult {
-        if (this.currentTransIndex >= this.transInOrder.length)
-            this.currentTransIndex = 0
-        
-        if (this.currentTransIndex == 0)
-            this.updateInputValues()
-        
-        
-        const trans = this.transInOrder[this.currentTransIndex++]
-        
-        trans.update(
-            this.cycleInterval, 
-            this.inputValues, 
-            this.contextFunctions.rt, 
-            this.contextFunctions.ft
-        )
-
-        const isLastTrans = this.currentTransIndex 
-                === this.transInOrder.length
-            
-        if (isLastTrans)
-            this.simulationTime += this.cycleInterval
-
-        if (trans.isEnable()) 
-            trans.fire()
-        
-        return {
-            currentTrans: trans,
-            isLastTrans: isLastTrans
-        }
-    }
-
-    step() {
-        for (const trans of this.transitionsToFire)
-            trans.fire()
-        
-        this.transitionsToFire = []
-
-        this.updateInputValues()
-
-        for (const trans of this.transInOrder) {
-            trans.update(
-                this.cycleInterval, 
-                this.inputValues, 
-                this.contextFunctions.rt, 
-                this.contextFunctions.ft
-            )
-            if (trans.isEnable() && !this.transitionsToFire.length) {
-                this.transitionsToFire.push(trans)
-            }
-        }
-
-        this.simulationTime += this.cycleInterval
     }
 }
 

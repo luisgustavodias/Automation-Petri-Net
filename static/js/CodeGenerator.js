@@ -84,7 +84,7 @@ function processTimers(net) {
 }
 function generateCode(netData, netInputs) {
     const timerNames = processTimers(netData);
-    const net = new LogicalNet(netData, 0, () => ({}));
+    const net = new LogicalNet(netData, Object.keys(netInputs));
     return initializeVariables(net, netInputs, timerNames)
         + '\n\nPROGRAM\n'
         + net.transInOrder

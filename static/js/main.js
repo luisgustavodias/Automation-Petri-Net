@@ -2,7 +2,7 @@ import { PetriNet } from './PetriNet.js';
 import Vector from './utils/Vector.js';
 import ToolBar from './ToolBar.js';
 import { PropertyWindow } from './PropertyWindow.js';
-import { createSimulator } from './Simulation.js';
+import { createSimulator } from './Simulator.js';
 import { InputConfig } from './InputsConfig.js';
 import Editor from './Editor.js';
 import { generateCode } from './CodeGenerator.js';
@@ -86,6 +86,7 @@ function exampleNet(net) {
     net.setGenericPEAttr(transId3, 'delay', '1');
     net.setGenericPEAttr(transId3, 'guard', 's1 AND (s2 OR NOT s3)');
     net.moveScreen(new Vector(50, 0));
+    net.simConfig.simMode = "Classic";
 }
 function testArc(net) {
     const p1 = net.createPlace(new Vector(20, 50));
@@ -191,10 +192,10 @@ function main() {
         document.getElementById('gencode-modal').style.display = 'none';
     };
     //testTokenAnimation(net, simulator)
-    console.log('Creating net');
-    const net = PetriNet.newNet();
-    editor.open(net);
-    exampleNet(net);
-    toolBar.enable();
+    // const net = PetriNet.newNet()
+    // editor.open(PetriNet.loadNet(JSON.parse('{"name":"Untiteled_Net","places":[{"id":"0.23546612309173565","elementType":"place","name":"p1","placeType":"INT","initialMark":"1","position":{"x":96.72544080604534,"y":90.68010075566751},"textsPosition":{"name":{"x":6.5,"y":-8},"placeType":{"x":7,"y":8.5}}},{"id":"0.6928806067957687","elementType":"place","name":"p2","placeType":"INT","initialMark":"0","position":{"x":97.48110831234257,"y":157.9345088161209},"textsPosition":{"name":{"x":6.5,"y":-8},"placeType":{"x":7,"y":8.5}}},{"id":"0.26686873039132397","elementType":"place","name":"p3","placeType":"INT","initialMark":"3","position":{"x":179.8488664987406,"y":65.74307304785894},"textsPosition":{"name":{"x":6.5,"y":-8},"placeType":{"x":7,"y":8.5}}},{"id":"0.1168050198675703","elementType":"place","name":"p4","placeType":"INT","initialMark":"0","position":{"x":181.36020151133502,"y":122.41813602015112},"textsPosition":{"name":{"x":6.5,"y":-8},"placeType":{"x":7,"y":8.5}}},{"id":"0.07704603159106727","elementType":"place","name":"p5","placeType":"INT","initialMark":"0","position":{"x":240.3022670025189,"y":154.15617128463478},"textsPosition":{"name":{"x":6.5,"y":-8},"placeType":{"x":7,"y":8.5}}}],"transitions":[{"id":"0.8734836963630777","elementType":"trans","name":"t1","delay":"","guard":"","position":{"x":180.6045340050378,"y":94.45843828715365},"textsPosition":{"name":{"x":6,"y":-5.5},"delay":{"x":6,"y":5.5},"guard":{"x":-6,"y":-5.5}}},{"id":"0.7700647844862283","elementType":"trans","name":"t2","delay":"","guard":"","position":{"x":97.48110831234257,"y":123.17380352644837},"textsPosition":{"name":{"x":6,"y":-5.5},"delay":{"x":6,"y":5.5},"guard":{"x":-6,"y":-5.5}}},{"id":"0.28299157995456437","elementType":"trans","name":"t3","delay":"","guard":"","position":{"x":179.84886649874056,"y":157.1788413098237},"textsPosition":{"name":{"x":6,"y":-5.5},"delay":{"x":6,"y":5.5},"guard":{"x":-6,"y":-5.5}}},{"id":"0.6241296250622337","elementType":"trans","name":"t4","delay":"","guard":"","position":{"x":251.63727959697735,"y":64.98740554156171},"textsPosition":{"name":{"x":6,"y":-5.5},"delay":{"x":6,"y":5.5},"guard":{"x":-6,"y":-5.5}}},{"id":"0.11546481176281209","elementType":"trans","name":"t5","delay":"","guard":"","position":{"x":53.65239294710328,"y":123.17380352644837},"textsPosition":{"name":{"x":6,"y":-5.5},"delay":{"x":6,"y":5.5},"guard":{"x":-6,"y":-5.5}}}],"arcs":[{"id":"0.008282048094214733","elementType":"arc","placeId":"0.26686873039132397","transId":"0.8734836963630777","arcType":"Input","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.8944631981573488","elementType":"arc","placeId":"0.1168050198675703","transId":"0.8734836963630777","arcType":"Output","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.4301610630831594","elementType":"arc","placeId":"0.23546612309173565","transId":"0.7700647844862283","arcType":"Input","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.5360759514596809","elementType":"arc","placeId":"0.6928806067957687","transId":"0.7700647844862283","arcType":"Output","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.6844354011483644","elementType":"arc","placeId":"0.1168050198675703","transId":"0.7700647844862283","arcType":"Test","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.441749213920982","elementType":"arc","placeId":"0.26686873039132397","transId":"0.6241296250622337","arcType":"Output","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.2645610186350378","elementType":"arc","placeId":"0.1168050198675703","transId":"0.28299157995456437","arcType":"Input","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.6433664067290918","elementType":"arc","placeId":"0.07704603159106727","transId":"0.28299157995456437","arcType":"Output","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.6955975690419893","elementType":"arc","placeId":"0.07704603159106727","transId":"0.6241296250622337","arcType":"Input","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.7723118561186313","elementType":"arc","placeId":"0.23546612309173565","transId":"0.11546481176281209","arcType":"Output","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.36103815042170506","elementType":"arc","placeId":"0.6928806067957687","transId":"0.11546481176281209","arcType":"Input","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[]},{"id":"0.050978968310090744","elementType":"arc","placeId":"0.23546612309173565","transId":"0.6241296250622337","arcType":"Test","weight":"1","textsPosition":{"weight":{"x":0,"y":0}},"corners":[{"x":95.27669924436071,"y":27.76132104932873},{"x":252.3190801007698,"y":29.094962421502935}]}],"inputs":[],"grid":false,"nextPlaceNumber":1,"nextTransNumber":1,"viewBox":{"x":0,"y":0,"width":1500,"heigth":300},"preScript":"","simConfig":{"simMode":"VisObj","arcDebug":true,"guardDebug":true}}')))
+    // // exampleNet(net)
+    // toolBar.enable()
+    // simulator.start(editor.currentNet)
 }
 window.onload = main;

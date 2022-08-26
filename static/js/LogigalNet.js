@@ -58,7 +58,7 @@ class LogicalTrans {
     _isGuardEnable;
     _isEnable;
     guardFunc;
-    constructor(data, netInputs) {
+    constructor(data, netInputNames) {
         this._isEnable = false;
         this.id = data.id;
         try {
@@ -75,7 +75,7 @@ class LogicalTrans {
         this.guard = data.guard;
         if (data.guard) {
             try {
-                this.guardFunc = this.createGuardFunc(data.guard, [...netInputs.keys()]);
+                this.guardFunc = this.createGuardFunc(data.guard, netInputNames);
             }
             catch (e) {
                 'Invalid guard expression';
@@ -117,22 +117,27 @@ class LogicalTrans {
         this._isEnable = false;
     }
     checkArcs() {
-        for (const arc of [...this.inputsArcs, ...this.testArcs]) {
-            if (arc.place.mark < arc.weight)
-                return false;
-        }
-        for (const arc of this.inhibitorArcs) {
-            if (arc.place.mark >= arc.weight)
-                return false;
-        }
-        for (const arc of this.outputsArcs) {
-            if (arc.place.placeType === 'BOOL' && arc.place.mark === 1)
+        // for (const arc of [...this.inputsArcs, ...this.testArcs]) {
+        //     if (arc.place.mark < arc.weight)
+        //         return false
+        // }
+        // for (const arc of this.inhibitorArcs) {
+        //     if (arc.place.mark >= arc.weight)
+        //         return false
+        // }
+        // for (const arc of this.outputsArcs) {
+        //     if (arc.place.placeType === 'BOOL' && arc.place.mark === 1)
+        //         return false
+        // }
+        for (const arc of this.getArcs()) {
+            if (!arc.isEnable())
                 return false;
         }
         return true;
     }
     update(dt, netInputs, rt, ft) {
         this._isEnable = false;
+        this._isGuardEnable = true;
         this._isGuardEnable = this.guardFunc(...netInputs.values(), rt, ft);
         if (this.checkArcs() && this._isGuardEnable) {
             if (this.timeToEnable > 0)
@@ -163,27 +168,11 @@ class LogicalTrans {
     }
 }
 class LogicalNet {
-    inputValues;
     places;
     arcs;
     transitions;
     transInOrder;
-    transitionsToFire;
-    readInputs;
-    previousInputValues;
-    contextFunctions;
-    cycleInterval;
-    currentTransIndex;
-    simulationTime;
-    constructor(netData, cycleInterval, readInputs) {
-        this.inputValues = new Map();
-        this.previousInputValues = new Map();
-        this.cycleInterval = cycleInterval;
-        this.readInputs = readInputs;
-        for (const [inputName, inputValue] of Object.entries(readInputs())) {
-            this.inputValues.set(inputName, inputValue);
-            this.previousInputValues.set(inputName, inputValue);
-        }
+    constructor(netData, netInputNames) {
         this.places = Object.fromEntries(netData.places.map(placeData => [placeData.id, new LogicalPlace(placeData)]));
         this.arcs = Object.fromEntries(netData.arcs.map(arcData => [
             arcData.id,
@@ -191,75 +180,12 @@ class LogicalNet {
         ]));
         this.transitions = Object.fromEntries(netData.transitions.map(transData => [
             transData.id,
-            new LogicalTrans(transData, this.inputValues)
+            new LogicalTrans(transData, netInputNames)
         ]));
         netData.arcs.forEach(arcData => {
             this.transitions[arcData.transId].addArc(this.arcs[arcData.id]);
         });
         this.transInOrder = Object.values(this.transitions);
-        this.contextFunctions = {
-            rt: (varName) => this.inputValues.get(varName) && !this.previousInputValues.get(varName),
-            ft: (varName) => this.previousInputValues.get(varName) && !this.inputValues.get(varName),
-        };
-        // this.transInOrder.sort(
-        //     (a, b) => a.priority - b.priority
-        // )
-        this.currentTransIndex = 0;
-        this.simulationTime = 0;
-        this.transitionsToFire = [];
-    }
-    getSimulationTime() {
-        return this.simulationTime;
-    }
-    getPlaceMarks() {
-        return Object.fromEntries(Object.values(this.places).map(place => [place.id, place.mark]));
-    }
-    updateInputValues() {
-        const inputs = this.readInputs();
-        for (const [inputName, inputValue] of Object.entries(inputs)) {
-            this.previousInputValues.set(inputName, this.inputValues.get(inputName));
-            this.inputValues.set(inputName, inputValue);
-        }
-    }
-    restart() {
-        for (const placeId in this.places)
-            this.places[placeId].restart();
-        for (const transId in this.transitions)
-            this.transitions[transId].restart();
-        this.currentTransIndex = 0;
-        this.simulationTime = 0;
-        this.transitionsToFire = [];
-    }
-    update() {
-        if (this.currentTransIndex >= this.transInOrder.length)
-            this.currentTransIndex = 0;
-        if (this.currentTransIndex == 0)
-            this.updateInputValues();
-        const trans = this.transInOrder[this.currentTransIndex++];
-        trans.update(this.cycleInterval, this.inputValues, this.contextFunctions.rt, this.contextFunctions.ft);
-        const isLastTrans = this.currentTransIndex
-            === this.transInOrder.length;
-        if (isLastTrans)
-            this.simulationTime += this.cycleInterval;
-        if (trans.isEnable())
-            trans.fire();
-        return {
-            currentTrans: trans,
-            isLastTrans: isLastTrans
-        };
-    }
-    step() {
-        for (const trans of this.transitionsToFire)
-            trans.fire();
-        this.transitionsToFire = [];
-        this.updateInputValues();
-        for (const trans of this.transInOrder) {
-            trans.update(this.cycleInterval, this.inputValues, this.contextFunctions.rt, this.contextFunctions.ft);
-            if (trans.isEnable() && !this.transitionsToFire.length) {
-                this.transitionsToFire.push(trans);
-            }
-        }
-        this.simulationTime += this.cycleInterval;
     }
 }
 export { LogicalPlace, LogicalTrans, LogicalPetriArc, LogicalNet };
