@@ -172,6 +172,7 @@ class LogicalNet {
     arcs;
     transitions;
     transInOrder;
+    simConfig;
     constructor(netData, netInputNames) {
         this.places = Object.fromEntries(netData.places.map(placeData => [placeData.id, new LogicalPlace(placeData)]));
         this.arcs = Object.fromEntries(netData.arcs.map(arcData => [
@@ -186,6 +187,7 @@ class LogicalNet {
             this.transitions[arcData.transId].addArc(this.arcs[arcData.id]);
         });
         this.transInOrder = Object.values(this.transitions);
+        this.simConfig = netData.simConfig;
     }
 }
 export { LogicalPlace, LogicalTrans, LogicalPetriArc, LogicalNet };

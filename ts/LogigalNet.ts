@@ -1,5 +1,5 @@
 import { InputValues } from "./InputWindow"
-import { ArcData, ArcType, PEId, PetriNetData, PlaceData, PlaceType, TransData } from "./PNData"
+import { ArcData, ArcType, PEId, PetriNetData, PlaceData, PlaceType, SimConfig, TransData } from "./PNData"
 
 type GuardFunc = (...args: any[]) => boolean
 
@@ -210,6 +210,7 @@ class LogicalNet {
     readonly arcs: { [id: PEId]: LogicalPetriArc }
     readonly transitions: { [id: PEId]: LogicalTrans }
     readonly transInOrder: LogicalTrans[]
+    readonly simConfig: SimConfig
 
     constructor(netData: PetriNetData, netInputNames) {
         this.places = Object.fromEntries(netData.places.map(
@@ -233,6 +234,7 @@ class LogicalNet {
         })
 
         this.transInOrder = Object.values(this.transitions)
+        this.simConfig = netData.simConfig
     }
 }
 

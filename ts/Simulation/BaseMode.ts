@@ -49,10 +49,10 @@ export abstract class SimulationBaseMode {
 
     exit() {
         this.restartPlaces()
-        Object.keys(this.net.transitions)
-            .forEach(transId => this.graphics.disableTrans(transId))
-        Object.keys(this.net.arcs)
-            .forEach(arcId => this.graphics.resetArcColor(arcId))
+        Object.values(this.net.transitions)
+            .forEach(this.graphics.disableTrans)
+        Object.values(this.net.arcs)
+            .forEach(this.graphics.resetArcColor)
     }
 
     updateInputValues() {

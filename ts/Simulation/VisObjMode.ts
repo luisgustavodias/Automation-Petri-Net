@@ -6,7 +6,6 @@ export class SimulationVisObjMode extends SimulationBaseMode {
     private enebledTransitions: LogicalTrans[] = []
 
     async update() {
-        this.updateInputValues()
         const animations: Promise<void>[] = []
 
         for (const trans of this.enebledTransitions) {
@@ -19,14 +18,19 @@ export class SimulationVisObjMode extends SimulationBaseMode {
         await Promise.all(animations)
 
         this.enebledTransitions = []
+        this.updateInputValues()
 
         for (const trans of this.net.transInOrder) {
             this.updateTrans(trans)
             this.graphics.debugTrans(trans)
-            if (trans.isEnable()) {
+            if (this.net.simConfig.guardDebug)
+                this.graphics.debugGuard(trans)
+            if (trans.isEnable())
                 this.enebledTransitions.push(trans)
-            }
         }
+
+        if (this.net.simConfig.arcDebug)
+            Object.values(this.net.arcs).forEach(this.graphics.debugArc)
 
         this.updateSimTime()
         await delay(50)

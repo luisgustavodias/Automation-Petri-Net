@@ -111,35 +111,35 @@ export class SimulationGraphics {
         ))
     }
 
-    updatePlaceMark(placeId: PEId, mark: number) {
+    updatePlaceMark = (placeId: PEId, mark: number) => {
         const place = <PetriPlace>this.net.getGenericPE(placeId)
         place.mark = mark
     }
 
-    updatePlaceMarks(marksToUpdate: PlaceMarks) {
+    updatePlaceMarks = (marksToUpdate: PlaceMarks) => {
         for (const placeId in marksToUpdate) {
             const place = <PetriPlace>this.net.getGenericPE(placeId)
             place.mark = marksToUpdate[placeId]
         }
     }
 
-    resetArcColor(arcId) {
-        const arc = <PetriArc>this.net.getGenericPE(arcId)
-        arc.setArcColor('black')
+    resetArcColor = (arc: LogicalPetriArc) => {
+        const arcGraphics = <PetriArc>this.net.getGenericPE(arc.id)
+        arcGraphics.setArcColor('black')
     }
 
-    setTransColor(trans: PetriTrans, color: string) {
+    setTransColor = (trans: PetriTrans, color: string) => {
         trans.svgElement.children[0].setAttribute('fill', color)
     }
 
-    enableTrans(id: string) {
+    enableTrans = (id: string) => {
         const trans = <PetriTrans>this.net.getGenericPE(id)
         this.setTransColor(trans, TRANS_ENABLE_COLOR)
     }
 
-    disableTrans(id: string) {
-        const trans = <PetriTrans>this.net.getGenericPE(id)
-        this.setTransColor(trans, 'black')
+    disableTrans = (trans: LogicalTrans) => {
+        const transGraphics = <PetriTrans>this.net.getGenericPE(trans.id)
+        this.setTransColor(transGraphics, 'black')
     }
 
     private async animateTokens(arcs: LogicalPetriArc[]) {
@@ -189,20 +189,20 @@ export class SimulationGraphics {
             
             placeGraphics.mark += arc.weight
         }
-        this.disableTrans(trans.id)
+        this.disableTrans(trans)
     }
 
-    displayTime(time: number) {
+    displayTime = (time: number) => {
         document.getElementById('simulation-time').innerHTML = time
                 .toFixed(2)
     }
 
-    setTransGuardColor(id: PEId, color: string) {
+    setTransGuardColor = (id: PEId, color: string) => {
         const trans = <PetriTrans>this.net.getGenericPE(id)
         trans.svgElement.children[3].setAttribute('fill', color)
     }
 
-    debugArc(arc: LogicalPetriArc) {
+    debugArc = (arc: LogicalPetriArc) => {
         const arcGraphics = <PetriArc>this.net.getGenericPE(arc.id)
 
         arcGraphics.setArcColor(
@@ -210,13 +210,13 @@ export class SimulationGraphics {
         )
     }
 
-    debugGuard(trans: LogicalTrans) {
+    debugGuard = (trans: LogicalTrans) => {
         this.setTransGuardColor(
             trans.id, trans.isGuardEnable() ? 'green' : 'red'
         )
     }
 
-    debugTrans(trans: LogicalTrans) {
+    debugTrans = (trans: LogicalTrans) => {
         const transGraphics = <PetriTrans>this.net
             .getGenericPE(trans.id)
         if (trans.isEnable()) 
@@ -227,7 +227,7 @@ export class SimulationGraphics {
             this.setTransColor(transGraphics, 'black')
     }
 
-    restartNet() {
+    restartNet = () => {
         for (const element of this.net.getAllGenericPEs()) {
             if (element instanceof PetriPlace) {
                 element.mark = parseInt(element.initialMark || "0")

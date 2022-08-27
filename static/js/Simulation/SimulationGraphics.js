@@ -68,31 +68,31 @@ export class SimulationGraphics {
             return [arc.id, new TokenAnimation(arc.getArcPath())];
         }));
     }
-    updatePlaceMark(placeId, mark) {
+    updatePlaceMark = (placeId, mark) => {
         const place = this.net.getGenericPE(placeId);
         place.mark = mark;
-    }
-    updatePlaceMarks(marksToUpdate) {
+    };
+    updatePlaceMarks = (marksToUpdate) => {
         for (const placeId in marksToUpdate) {
             const place = this.net.getGenericPE(placeId);
             place.mark = marksToUpdate[placeId];
         }
-    }
-    resetArcColor(arcId) {
-        const arc = this.net.getGenericPE(arcId);
-        arc.setArcColor('black');
-    }
-    setTransColor(trans, color) {
+    };
+    resetArcColor = (arc) => {
+        const arcGraphics = this.net.getGenericPE(arc.id);
+        arcGraphics.setArcColor('black');
+    };
+    setTransColor = (trans, color) => {
         trans.svgElement.children[0].setAttribute('fill', color);
-    }
-    enableTrans(id) {
+    };
+    enableTrans = (id) => {
         const trans = this.net.getGenericPE(id);
         this.setTransColor(trans, TRANS_ENABLE_COLOR);
-    }
-    disableTrans(id) {
-        const trans = this.net.getGenericPE(id);
-        this.setTransColor(trans, 'black');
-    }
+    };
+    disableTrans = (trans) => {
+        const transGraphics = this.net.getGenericPE(trans.id);
+        this.setTransColor(transGraphics, 'black');
+    };
     async animateTokens(arcs) {
         const animDuration = FIRE_TRANS_ANIMATION_TIME / 2;
         let startTime = null;
@@ -130,24 +130,24 @@ export class SimulationGraphics {
                 .getGenericPE(arc.place.id);
             placeGraphics.mark += arc.weight;
         }
-        this.disableTrans(trans.id);
+        this.disableTrans(trans);
     }
-    displayTime(time) {
+    displayTime = (time) => {
         document.getElementById('simulation-time').innerHTML = time
             .toFixed(2);
-    }
-    setTransGuardColor(id, color) {
+    };
+    setTransGuardColor = (id, color) => {
         const trans = this.net.getGenericPE(id);
         trans.svgElement.children[3].setAttribute('fill', color);
-    }
-    debugArc(arc) {
+    };
+    debugArc = (arc) => {
         const arcGraphics = this.net.getGenericPE(arc.id);
         arcGraphics.setArcColor(arc.isEnable() ? 'green' : 'red');
-    }
-    debugGuard(trans) {
+    };
+    debugGuard = (trans) => {
         this.setTransGuardColor(trans.id, trans.isGuardEnable() ? 'green' : 'red');
-    }
-    debugTrans(trans) {
+    };
+    debugTrans = (trans) => {
         const transGraphics = this.net
             .getGenericPE(trans.id);
         if (trans.isEnable())
@@ -156,8 +156,8 @@ export class SimulationGraphics {
             this.setTransColor(transGraphics, 'orange');
         else
             this.setTransColor(transGraphics, 'black');
-    }
-    restartNet() {
+    };
+    restartNet = () => {
         for (const element of this.net.getAllGenericPEs()) {
             if (element instanceof PetriPlace) {
                 element.mark = parseInt(element.initialMark || "0");
@@ -169,5 +169,5 @@ export class SimulationGraphics {
                 element.setArcColor('black');
             }
         }
-    }
+    };
 }
