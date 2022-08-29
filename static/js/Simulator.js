@@ -1,7 +1,6 @@
-import { InputWindow } from "./InputWindow.js";
 import { LogicalNet } from "./LogigalNet.js";
 import { SimulationClassicMode } from "./Simulation/ClassicMode.js";
-import { SimulationGraphics } from "./Simulation/SimulationGraphics.js";
+import { SimulationGraphics } from "./PetriNetGraphics/SimulationGraphics.js";
 import { SimulationAutomationMode } from "./Simulation/AutomationMode.js";
 import { SimulationVisObjMode } from "./Simulation/VisObjMode.js";
 const FIRE_TRANS_ANIMATION_TIME = 1500;
@@ -26,30 +25,29 @@ const simulationModes = {
 };
 class Simulator {
     simulation;
-    state;
     inputWindow;
-    constructor() {
-        this.simulation = null;
-        this.state = SimState.Stopped;
-        this.inputWindow = new InputWindow();
-    }
-    init(net) {
+    state;
+    constructor(net, inputWindow) {
+        this.inputWindow = inputWindow;
         this.inputWindow.open(net.inputs);
         this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData(), Object.keys(this.inputWindow.readInputs())), new SimulationGraphics(net), () => this.inputWindow.readInputs());
+        this.state = SimState.Paused;
+    }
+    setSimText(text) {
+        const simText = document
+            .getElementById('simulating-text');
+        simText.innerHTML = text;
     }
     _pause() {
         this.state = SimState.Paused;
-        document.getElementById('simulating-text')
-            .innerHTML = 'Paused';
+        this.setSimText("Paused");
     }
     _stop() {
         this.simulation.exit();
         this.state = SimState.Stopped;
         this.inputWindow.close();
-        document.getElementById('simulating-text')
-            .innerHTML = '';
-        document.getElementById('simulation-time')
-            .innerHTML = '';
+        this.setSimText("");
+        document.getElementById('simulation-time').innerHTML = '';
     }
     update = () => {
         if (this.state === SimState.Stopping) {
@@ -62,23 +60,16 @@ class Simulator {
         }
         this.simulation.update().then(this.update);
     };
-    start(net) {
-        if (this.state !== SimState.Stopped && this.state !== SimState.Paused)
+    start() {
+        if (this.state !== SimState.Paused)
             return;
-        if (this.state === SimState.Stopped)
-            this.init(net);
         this.state = SimState.Running;
         this.update();
-        document.getElementById('simulating-text')
-            .innerHTML = 'Simulating...';
+        this.setSimText("Simulating...");
     }
     pause() {
         if (this.state === SimState.Running)
             this.state = SimState.Pausing;
-    }
-    restart(net) {
-        if (this.state !== SimState.Stopped)
-            this.init(net);
     }
     stop() {
         if (this.state !== SimState.Stopped) {
@@ -88,40 +79,13 @@ class Simulator {
                 this.state = SimState.Stopping;
         }
     }
-    step(net) {
-        this.start(net);
+    step() {
+        this.start();
         this.state = SimState.Stepping;
     }
-    debugStep(net) {
-        this.start(net);
+    debugStep() {
+        this.start();
         this.state = SimState.Pausing;
     }
 }
-function createSimulator(startSimObserver, stopSimObserver) {
-    const simulator = new Simulator();
-    document.getElementById('step-button').onclick =
-        () => {
-            simulator.step(startSimObserver());
-        };
-    // document.getElementById('debug-button').onclick = 
-    // () => { 
-    //     simulator.debugStep(startSimObserver())
-    // }
-    document.getElementById('start-button').onclick =
-        () => {
-            simulator.start(startSimObserver());
-        };
-    document.getElementById('pause-button').onclick =
-        () => { simulator.pause(); };
-    document.getElementById('restart-button').onclick =
-        () => {
-            simulator.restart(startSimObserver());
-        };
-    document.getElementById('stop-button').onclick =
-        () => {
-            simulator.stop();
-            stopSimObserver();
-        };
-    return simulator;
-}
-export { Simulator, createSimulator };
+export { Simulator };

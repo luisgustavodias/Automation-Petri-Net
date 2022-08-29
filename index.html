@@ -88,11 +88,11 @@
                 <i class="fa fa-caret-down"></i>
             </button>
             <div class="dropdown-content">
-                <a id="new-file-button">New</a>
-                <a id="load-file-button">Load</a>
-                <a id="save-file-button">Save</a>
-                <!-- <a id="save-as-button">Save as</a> -->
-                <a id="close-file-button">Close</a>
+                <a id="nav-btn-new-file">New</a>
+                <a id="nav-btn-load-file">Load</a>
+                <a id="nav-btn-save-file">Save</a>
+                <!-- <a idnav-btn-="save-as">Save as</a> -->
+                <a id="nav-btn-close-file">Close</a>
             </div>
         </div>
         <div class="dropdown">
@@ -103,11 +103,11 @@
                 <a href="#">Run</a>
                 <a href="#">Step</a>
                 <a href="#">Restart</a>
-                <a id="sim-config-button">Configuration</a>
+                <a id="nav-btn-sim-config">Configuration</a>
             </div>
         </div>
-        <a id="inputs-button">Inputs</a>
-        <a id="gencode-button">Generate Code</a>
+        <a id="nav-btn-inputs-config">Inputs</a>
+        <a id="nav-btn-gencode">Generate Code</a>
 
         <span id="alpha-version" >Alpha Version</span>
     </div>
@@ -132,7 +132,7 @@
 
         <div class="tool-bar-separation"></div>
 
-        <svg id="restart-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 38 38">
+        <svg id="sim-btn-restart" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 38 38">
             <g transform="translate(6 6)">
                 <path
                     d="M20,12c0,4.411-3.589,8-8,8s-8-3.589-8-8c0-2.52,1.174-4.768,3-6.235V3.353C4.016,5.085,2,8.309,2,12c0,5.514,4.486,10,10,10s10-4.486,10-10S17.514,2,12,2v2C16.411,4,20,7.589,20,12z"
@@ -142,18 +142,18 @@
 
         </svg>
 
-        <svg id="start-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 26 26">
+        <svg id="sim-btn-start" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 26 26">
             <path d="M -6 -6 L 5 0 L -6 6, L -6 6" transform="translate(13 13)" />
         </svg>
 
-        <svg id="step-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 34 34">
+        <svg id="sim-btn-step" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 34 34">
             <g transform="translate(12 17)">
                 <path d="M -6 -6 L 5 0 L -6 6, L -6 6" />
                 <rect x="6" y="-6" width="4" height="12" />
                 <rect x="12" y="-6" width="4" height="12" />
             </g>
         </svg>
-        <!-- <svg id="debug-button" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 34 34">
+        <!-- <svg id="sim-btn-debug" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 34 34">
             <g transform="translate(12 17)">
                 <path d="M -6 -6 L 5 0 L -6 6, L -6 6" />
                 <rect x="6" y="-6" width="4" height="12" />
@@ -164,12 +164,12 @@
             </g>
         </svg> -->
 
-        <svg id="pause-button" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <svg id="sim-btn-pause" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
             <rect x=25 y=25 width=20 height="50" />
             <rect x=55 y=25 width=20 height="50" />
         </svg>
 
-        <svg id="stop-button" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+        <svg id="sim-btn-stop" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
             <rect x=25 y=25 width=50 height="50" />
         </svg>
 
@@ -367,10 +367,10 @@
             <h5>A Petri Net editor, simulator and code generator for automation</h5>
 
             <h4>Start</h4>
-            <a onclick="document.getElementById('new-file-button').click()">
+            <a onclick="document.getElementById('nav-btn-new-file').click()">
                 New File
             </a>
-            <a onclick="document.getElementById('load-file-button').click()">
+            <a onclick="document.getElementById('nav-btn-load-file').click()">
                 Open File
             </a>
 

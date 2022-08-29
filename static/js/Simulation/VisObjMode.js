@@ -1,5 +1,5 @@
+import { delay } from "../utils/utils.js";
 import { SimulationBaseMode } from "./BaseMode.js";
-import { delay } from "./SimulationGraphics.js";
 export class SimulationVisObjMode extends SimulationBaseMode {
     enebledTransitions = [];
     async update() {

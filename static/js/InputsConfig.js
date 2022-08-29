@@ -13,7 +13,8 @@ const inputRowModel = document
 function addInput(input) {
     const cloneNode = document.importNode(inputRowModel.content, true);
     const data = cloneNode.querySelectorAll("td");
-    for (const attr in input) {
+    let attr;
+    for (attr in input) {
         const td = data[inputDataMapper[attr]];
         const inpElement = td.children[0];
         inpElement.value = input[attr];
@@ -80,6 +81,8 @@ class InputConfig {
         modal.style.display = "none";
     }
     save() {
+        if (!this.saveObserver)
+            throw "No saveObserver";
         this.saveObserver(getInputs());
         this.close();
     }

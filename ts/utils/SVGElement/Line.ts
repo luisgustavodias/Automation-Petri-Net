@@ -3,8 +3,8 @@ import Vector from "../Vector.js";
 
 export function getLineStartPoint(line: SVGLineElement) {
     return new Vector(
-        parseFloat(line.getAttribute('x1')),
-        parseFloat(line.getAttribute('y1'))
+        parseFloat(<string>line.getAttribute('x1')),
+        parseFloat(<string>line.getAttribute('y1'))
     )
 }
 
@@ -15,8 +15,8 @@ export function setLineStartPoint(line: SVGLineElement, point: Vector) {
 
 export function getLineEndPoint(line: SVGLineElement) {
     return new Vector(
-        parseFloat(line.getAttribute('x2')),
-        parseFloat(line.getAttribute('y2'))
+        parseFloat(<string>line.getAttribute('x2')),
+        parseFloat(<string>line.getAttribute('y2'))
     )
 }
 

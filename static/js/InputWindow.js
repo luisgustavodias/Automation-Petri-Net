@@ -1,9 +1,9 @@
-const inputsTableBody = document.querySelector("#inputs-window tbody");
+const inputsTableBody = document
+    .querySelector("#inputs-window tbody");
 class AGenericInput {
     element;
     name;
     constructor(inputType, inputName) {
-        inputsTableBody;
         const row = document.createElement('tr');
         const td1 = document.createElement('td');
         const td2 = document.createElement('td');
@@ -45,7 +45,8 @@ class InputWindow {
         this.inputs = [];
     }
     open(inputs) {
-        document.getElementById('inputs-window').style.display = 'block';
+        document.getElementById('inputs-window')
+            .style.display = 'block';
         inputsTableBody.innerHTML = '';
         this.inputs = [];
         for (const input of inputs) {
@@ -53,7 +54,8 @@ class InputWindow {
         }
     }
     close() {
-        document.getElementById('inputs-window').style.display = 'none';
+        document.getElementById('inputs-window')
+            .style.display = 'none';
     }
     readInputs() {
         return Object.fromEntries(this.inputs.map(input => [input.name, input.read()]));

@@ -24,6 +24,7 @@ class LogicalPlace {
         } catch(e) {
             throw "Can't convert initialMark to Integer."
         }
+        this.mark = this.initialMark
     }
 
     restart() {
@@ -68,11 +69,11 @@ class LogicalTrans {
     readonly inhibitorArcs: LogicalPetriArc[]
     readonly guard: string
     readonly delay: number
-    readonly priority: number
+    // readonly priority: number
+    private readonly guardFunc: GuardFunc
     private timeToEnable: number
     private _isGuardEnable: boolean
     private _isEnable: boolean
-    private readonly guardFunc: GuardFunc
 
     constructor(data: TransData, netInputNames: string[]) {
         this._isEnable = false
@@ -91,10 +92,10 @@ class LogicalTrans {
         if (data.guard) {
             try {
                 this.guardFunc = this.createGuardFunc(
-                data.guard, netInputNames
+                    data.guard, netInputNames
                 )
             } catch(e) {
-                'Invalid guard expression'
+                throw 'Invalid guard expression'
             }
         } else {
             this.guardFunc = (...args) => true
@@ -104,6 +105,9 @@ class LogicalTrans {
         this.outputsArcs = []
         this.testArcs = []
         this.inhibitorArcs = []
+
+        this.timeToEnable = this.delay
+        this._isGuardEnable = false
     }
 
     private createGuardFunc(guard: string, inputNames: string[]): GuardFunc {
@@ -212,7 +216,7 @@ class LogicalNet {
     readonly transInOrder: LogicalTrans[]
     readonly simConfig: SimConfig
 
-    constructor(netData: PetriNetData, netInputNames) {
+    constructor(netData: PetriNetData, netInputNames: string[]) {
         this.places = Object.fromEntries(netData.places.map(
             placeData => [placeData.id, new LogicalPlace(placeData)]
         ))

@@ -3,8 +3,8 @@ import { createSVGElement, SVGElementAttrs } from "./base.js";
 
 function getRectPos(rect: SVGRectElement) {
     return new Vector(
-        parseInt(rect.getAttribute('x')),
-        parseInt(rect.getAttribute('y'))
+        parseInt(<string>rect.getAttribute('x')),
+        parseInt(<string>rect.getAttribute('y'))
     )
 }
 
@@ -18,7 +18,7 @@ function setRectCenter(rect: SVGRectElement, pos: Vector) {
 }
 
 function getRectWidth(rect: SVGRectElement) {
-    return parseInt(rect.getAttribute('width'))
+    return parseInt(<string>rect.getAttribute('width'))
 }
 
 function setRectWidth(rect: SVGRectElement, width: number) {
@@ -26,7 +26,7 @@ function setRectWidth(rect: SVGRectElement, width: number) {
 }
 
 function getRectHeight(rect: SVGRectElement) {
-    return parseInt(rect.getAttribute('height'))
+    return parseInt(<string>rect.getAttribute('height'))
 }
 
 function setRectHeight(rect: SVGRectElement, height: number) {

@@ -1,7 +1,7 @@
 import { SimulationBaseMode } from "./BaseMode.js";
-import { delay } from "./SimulationGraphics.js";
+import { delay } from "../utils/utils.js";
 export class SimulationClassicMode extends SimulationBaseMode {
-    transitionToFire;
+    transitionToFire = null;
     async update() {
         if (this.transitionToFire) {
             this.transitionToFire.fire();

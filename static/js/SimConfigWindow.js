@@ -10,6 +10,7 @@ export class SimConfigWindow {
             arcDebug: document.getElementById('arcDebug'),
             guardDebug: document.getElementById('guardDebug')
         };
+        this.saveObserver = null;
         this.modal.querySelector('.modal-close')
             .onclick = () => { this.close(); };
         this.modal.querySelector('#sim-config-cancel')
@@ -28,6 +29,8 @@ export class SimConfigWindow {
         this.modal.style.display = "none";
     }
     saveConfig() {
+        if (!this.saveObserver)
+            throw "No saveObserver";
         this.saveObserver(this.getConfig());
         this.close();
     }

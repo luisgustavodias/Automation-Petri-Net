@@ -2,14 +2,14 @@ import { Input } from "./InputsConfig.js"
 
 type InputValues = { [inputName: string]: number }
 
-const inputsTableBody = document.querySelector("#inputs-window tbody")
+const inputsTableBody = <HTMLTableElement>document
+    .querySelector("#inputs-window tbody")
 
 abstract class AGenericInput {
     protected readonly element: HTMLInputElement
     readonly name: string
 
     constructor(inputType: string, inputName: string) {
-        inputsTableBody
         const row = document.createElement('tr')
         const td1 = document.createElement('td')
         const td2 = document.createElement('td')
@@ -66,7 +66,8 @@ class InputWindow {
     }
 
     open(inputs: Input[]) {
-        document.getElementById('inputs-window').style.display = 'block'
+        (<HTMLElement>document.getElementById('inputs-window'))
+            .style.display = 'block'
 
         inputsTableBody.innerHTML = ''
         
@@ -79,7 +80,8 @@ class InputWindow {
     }
 
     close() {
-        document.getElementById('inputs-window').style.display = 'none'
+        (<HTMLElement>document.getElementById('inputs-window'))
+            .style.display = 'none'
     }
 
     readInputs() {

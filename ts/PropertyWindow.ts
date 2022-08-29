@@ -6,10 +6,10 @@ class ElementPropertyWindow {
     private idPrefix: string
     private _attrNames: string[]
     private propertyWindow: HTMLElement
-    private changeObserver: ChangeObserver
+    private changeObserver: ChangeObserver | null
 
     constructor(PEType: string, attrNames: string[]) {
-        this.propertyWindow = document.getElementById('pw-' + PEType)
+        this.propertyWindow = <HTMLElement>document.getElementById('pw-' + PEType)
         this.idPrefix = "pw-" + PEType
         this._attrNames = attrNames
         this.changeObserver = null
@@ -22,6 +22,9 @@ class ElementPropertyWindow {
     }
 
     change(attrName: string) {
+        if (!this.changeObserver)
+            throw "No changeObserver"
+
         this.changeObserver(
             attrName,
             this.getInputElement(attrName).value
@@ -38,30 +41,29 @@ class ElementPropertyWindow {
     }
 
     close() {
-        // this.changeObserver = null
         this.propertyWindow.style.display = "none";
     }
 }
 
-const attrNames = {
+const attrNamesByType = {
     place: ["name", "placeType", "initialMark"],
     trans: ["name", "delay", "guard"],
     arc: ["arcType", "weight"]
 }
 
 class PropertyWindow {
-    private currentEPW: ElementPropertyWindow
+    private currentEPW: ElementPropertyWindow | null
     private elePropWindows: {[PEType: string]: ElementPropertyWindow}
 
     constructor() {
         this.currentEPW = null
         this.elePropWindows = {}
-        for(const PEType in attrNames) {
+        for(const [PEType, attrNames] of Object.entries(attrNamesByType)) {
             const ePW = new ElementPropertyWindow(
                 PEType,
-                attrNames[PEType]
+                attrNames
             )
-            for(const attrName of attrNames[PEType]) {
+            for(const attrName of attrNames) {
                 let inputElement = ePW.getInputElement(attrName)
                 inputElement.addEventListener('change', evt => { 
                     ePW.change(attrName) 

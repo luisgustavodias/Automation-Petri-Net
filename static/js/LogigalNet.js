@@ -14,6 +14,7 @@ class LogicalPlace {
         catch (e) {
             throw "Can't convert initialMark to Integer.";
         }
+        this.mark = this.initialMark;
     }
     restart() {
         this.mark = this.initialMark;
@@ -53,11 +54,11 @@ class LogicalTrans {
     inhibitorArcs;
     guard;
     delay;
-    priority;
+    // readonly priority: number
+    guardFunc;
     timeToEnable;
     _isGuardEnable;
     _isEnable;
-    guardFunc;
     constructor(data, netInputNames) {
         this._isEnable = false;
         this.id = data.id;
@@ -78,7 +79,7 @@ class LogicalTrans {
                 this.guardFunc = this.createGuardFunc(data.guard, netInputNames);
             }
             catch (e) {
-                'Invalid guard expression';
+                throw 'Invalid guard expression';
             }
         }
         else {
@@ -88,6 +89,8 @@ class LogicalTrans {
         this.outputsArcs = [];
         this.testArcs = [];
         this.inhibitorArcs = [];
+        this.timeToEnable = this.delay;
+        this._isGuardEnable = false;
     }
     createGuardFunc(guard, inputNames) {
         const decodedGuard = guard

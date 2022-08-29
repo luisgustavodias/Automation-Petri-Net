@@ -1,11 +1,71 @@
-import Vector from "./utils/Vector.js"
-// import { v4 as uuidv4 } from 'uuid';
-// import { v4 as uuidv4 } from '../node_modules/uuid/wrapper.mjs';
+import Vector from "../utils/Vector.js"
 import { AGenericPetriElement, APetriElement, PetriPlace, 
-    PetriTrans, PetriArc } from "./PNElements.js";
-import { Change, UndoRedoManager } from "./UndoRedoManager.js";
-import { Input } from "./InputsConfig.js";
-import { ArcData, PEId, PetriNetData, PlaceData, TransData, ArcType, SimConfig } from "./PNData.js";
+    PetriTrans, PetriArc } from "./PetriNetElements.js";
+import { ArcData, PEId, PetriNetData, PlaceData, TransData, ArcType, SimConfig, Input } from "../PNData.js";
+
+interface Change {
+    undo: () => void
+    redo: () => void
+}
+
+
+class UndoRedoManager {
+    private undoList: Change[]
+    private redoList: Change[]
+
+    constructor() {
+        this.undoList = []
+        this.redoList = []
+    }
+
+    registryChange(change: Change) {
+        this.undoList.push(change)
+        this.redoList = []
+    }
+
+    undo() {
+        const lastChange = this.undoList.pop()
+
+        if (lastChange) {
+            lastChange.undo()
+            this.redoList.push(lastChange)
+            return true
+        }
+
+        return false
+    }
+
+    redo() {
+        const lastChange = this.redoList.pop()
+
+        if (lastChange) {
+            lastChange.redo()
+            this.undoList.push(lastChange)
+            return true
+        }
+
+        return false
+    }
+}
+
+function createSVGNet() {
+    const svgElement = document.createElementNS(
+        'http://www.w3.org/2000/svg', 'svg'
+    )
+    svgElement.innerHTML = `<rect id="svg-background" 
+        x="-5000" y="-5000" 
+        width="10000" height="10000" fill="white"/>
+    <g id="elements">
+        <g id="arcs"></g>
+        <g id="pe"></g>
+    </g>
+    <g id="IEs"></g>`
+    svgElement.style.height = '100%'
+    svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
+    svgElement.setAttribute('viewBox', '0 0 1500 300')
+
+    return svgElement
+}
 
 export class PetriNet {
     private static readonly GRID_SIZE = 10
@@ -21,20 +81,7 @@ export class PetriNet {
     private _grid: boolean
     
     private constructor() {
-        this.svgElement = document.createElementNS(
-            'http://www.w3.org/2000/svg', 'svg'
-        )
-        this.svgElement.innerHTML = `<rect id="svg-background" 
-            x="-5000" y="-5000" 
-            width="10000" height="10000" fill="white"/>
-        <g id="elements">
-            <g id="arcs"></g>
-            <g id="pe"></g>
-        </g>
-        <g id="IEs"></g>`
-        this.svgElement.style.height = '100%'
-        this.svgElement.setAttribute('xmlns', 'http://www.w3.org/2000/svg')
-        this.svgElement.setAttribute('viewBox', '0 0 1500 300')
+        this.svgElement = createSVGNet()
         this.elements = {}
         this.inputs = []
         this.simConfig = {
@@ -50,7 +97,7 @@ export class PetriNet {
     }
 
     private generateId() {
-        return String(Math.random())
+        return window.crypto.randomUUID()
     }
 
     get grid() { 
@@ -59,10 +106,10 @@ export class PetriNet {
 
     set grid(val: boolean) {
         if (val) {
-            document.getElementById('svg-background')
+            (<HTMLElement>document.getElementById('svg-background'))
                 .setAttribute('fill', 'url(#grid-pattern)')
         } else {
-            document.getElementById('svg-background')
+            (<HTMLElement>document.getElementById('svg-background'))
                 .setAttribute('fill', 'white')
         }
         this._grid = val
@@ -70,10 +117,6 @@ export class PetriNet {
 
     getGenericPE(id: PEId) {
         return this.elements[id]
-    }
-
-    getAllGenericPEs() {
-        return Object.values(this.elements)
     }
 
     getGenericPEType(id: PEId) {
@@ -100,7 +143,7 @@ export class PetriNet {
     }
 
     getMousePosition(evt: MouseEvent, ignoreGrid: boolean = true) {
-        const CTM = this.svgElement.getScreenCTM();
+        const CTM = <DOMMatrix>this.svgElement.getScreenCTM();
         const pos = new Vector(
             (evt.clientX - CTM.e) / CTM.a,
             (evt.clientY - CTM.f) / CTM.d
@@ -125,13 +168,13 @@ export class PetriNet {
                 throw "Invalid placeId or transId"
             }
 
+            (<HTMLElement>this.svgElement.querySelector('#arcs'))
+                .appendChild(genericPE.svgElement)
+
             place.connectArc(arc.id)
             trans.connectArc(arc.id)
             arc.updatePlacePos()
             arc.updateTransPos()
-
-            this.svgElement.querySelector('#arcs')
-                .appendChild(genericPE.svgElement)
         } else {
             let petriElement = <APetriElement>genericPE;
 
@@ -139,7 +182,7 @@ export class PetriNet {
                 throw "Can't add a place or trans with connected arcs"
             }
 
-            this.svgElement.querySelector('#pe')
+            (<HTMLElement>this.svgElement.querySelector('#pe'))
                 .appendChild(genericPE.svgElement)
         }
 
@@ -188,7 +231,7 @@ export class PetriNet {
         val: string, 
         registryChange: boolean = true) 
     {
-        const ele = this.elements[id]
+        const ele: any = this.elements[id]
         const previousValue = ele[attrName]
         ele[attrName] = val
 
@@ -205,14 +248,14 @@ export class PetriNet {
     }
 
     private moveGenegic(
-        currentPos, 
-        displacement, 
-        initialPos, 
+        currentPos: Vector, 
+        displacement: Vector, 
+        initialPos: Vector, 
         setPos: (pos: Vector) => void,
-        registryChange, 
-        ignoreGrid
+        registryChange: boolean, 
+        ignoreGrid: boolean
     ) {
-        const _initialPos = initialPos ? initialPos : currentPos.position;
+        const _initialPos = initialPos ? initialPos : currentPos;
         
         let targetPos = _initialPos.add(displacement)
 
@@ -236,7 +279,7 @@ export class PetriNet {
         displacement: Vector, 
         registryChange: boolean = true,
         ignoreGrid: boolean = false,
-        initialPos: Vector = null
+        initialPos: Vector | null = null
     ) {
         const genericPE = this.elements[id]
 
@@ -296,7 +339,7 @@ export class PetriNet {
         displacement: Vector, 
         registryChange: boolean = true,
         ignoreGrid: boolean = false,
-        initialPos: Vector = null
+        initialPos: Vector | null = null
     ) {
         const arc = <PetriArc>this.elements[arcId]
 
@@ -338,7 +381,7 @@ export class PetriNet {
         attrName: string, 
         displacement: Vector, 
         registryChange: boolean = true,
-        initialPos: Vector = null
+        initialPos: Vector | null = null
     ) {
         const genericPE = <AGenericPetriElement>this.elements[id]
 
@@ -414,7 +457,7 @@ export class PetriNet {
     }
 
     addIE(element: SVGAElement) {
-        document.getElementById('IEs').appendChild(element)
+        (<HTMLElement>document.getElementById('IEs')).appendChild(element)
     }
 
     moveScreen(displacement: Vector) {
@@ -442,10 +485,8 @@ export class PetriNet {
             data.position.y
         )
 
-        for (const attrName in data.textsPosition) {
-            place.setPETextPosition(
-                attrName, data.textsPosition[attrName]
-            )
+        for (const [attrName, pos] of Object.entries(data.textsPosition)) {
+            place.setPETextPosition(attrName, pos)
         }
     
         return place
@@ -462,10 +503,8 @@ export class PetriNet {
             data.position.y
         )
 
-        for (const attrName in data.textsPosition) {
-            trans.setPETextPosition(
-                attrName, data.textsPosition[attrName]
-            )
+        for (const [attrName, pos] of Object.entries(data.textsPosition)) {
+            trans.setPETextPosition(attrName, pos)
         }
     
         return trans
@@ -487,10 +526,8 @@ export class PetriNet {
             }
         }
 
-        for (const attrName in data.textsPosition) {
-            arc.setPETextPosition(
-                attrName, data.textsPosition[attrName]
-            )
+        for (const [attrName, pos] of Object.entries(data.textsPosition)) {
+            arc.setPETextPosition(attrName, pos)
         }
 
         return arc

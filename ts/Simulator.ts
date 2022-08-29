@@ -1,10 +1,10 @@
-import { PetriNet } from "./PetriNet.js"
+import { PetriNet } from "./PetriNetGraphics/PetriNet.js"
 import { SimConfig } from "./PNData.js"
 import { InputWindow } from "./InputWindow.js"
 import { LogicalNet } from "./LogigalNet.js"
 import { SimulationBaseMode } from "./Simulation/BaseMode.js"
 import { SimulationClassicMode } from "./Simulation/ClassicMode.js"
-import { SimulationGraphics } from "./Simulation/SimulationGraphics.js"
+import { SimulationGraphics } from "./PetriNetGraphics/SimulationGraphics.js"
 import { SimulationAutomationMode } from "./Simulation/AutomationMode.js"
 import { SimulationVisObjMode } from "./Simulation/VisObjMode.js"
 
@@ -31,19 +31,13 @@ const simulationModes = {
 }
 
 class Simulator {
-    private simulation: SimulationBaseMode
+    private readonly simulation: SimulationBaseMode
+    private readonly inputWindow: InputWindow
     private state: SimState
-    private inputWindow: InputWindow
 
-    constructor() { 
-        this.simulation = null
-        this.state = SimState.Stopped
-        this.inputWindow = new InputWindow()
-    }
-
-    private init(net: PetriNet) {
+    constructor(net: PetriNet, inputWindow: InputWindow) { 
+        this.inputWindow = inputWindow
         this.inputWindow.open(net.inputs)
-        
         this.simulation = new simulationModes[net.simConfig.simMode](
             new LogicalNet(
                 net.getNetData(), 
@@ -52,22 +46,26 @@ class Simulator {
             new SimulationGraphics(net),
             () => this.inputWindow.readInputs()
         )
+        this.state = SimState.Paused
+    }
+
+    private setSimText(text: string) {
+        const simText = <HTMLElement>document
+            .getElementById('simulating-text')
+        simText.innerHTML = text
     }
 
     private _pause() {
         this.state = SimState.Paused
-        document.getElementById('simulating-text')
-            .innerHTML = 'Paused'
+        this.setSimText("Paused")
     }
 
     private _stop() {
         this.simulation.exit()
         this.state = SimState.Stopped
         this.inputWindow.close()
-        document.getElementById('simulating-text')
-            .innerHTML = ''
-        document.getElementById('simulation-time')
-            .innerHTML = ''
+        this.setSimText("");
+        (<HTMLElement>document.getElementById('simulation-time')).innerHTML = ''
     }
 
     private update = () => {
@@ -83,27 +81,19 @@ class Simulator {
         this.simulation.update().then(this.update)
     }
 
-    start(net: PetriNet) {
-        if (this.state !== SimState.Stopped && this.state !== SimState.Paused)
+    start() {
+        if (this.state !== SimState.Paused)
             return
-
-        if (this.state === SimState.Stopped )
-            this.init(net)
         
         this.state = SimState.Running
         this.update()
-        document.getElementById('simulating-text')
-            .innerHTML = 'Simulating...'
+
+        this.setSimText("Simulating...")
     }
 
     pause() {
         if (this.state === SimState.Running)
             this.state = SimState.Pausing
-    }
-
-    restart(net: PetriNet) {
-        if (this.state !== SimState.Stopped)
-            this.init(net)
     }
 
     stop() {
@@ -115,53 +105,15 @@ class Simulator {
         }
     }
 
-    step(net: PetriNet) {
-        this.start(net)
+    step() {
+        this.start()
         this.state = SimState.Stepping
     }
 
-    debugStep(net: PetriNet) {
-        this.start(net)
+    debugStep() {
+        this.start()
         this.state = SimState.Pausing
     }
 }
 
-function createSimulator(
-    startSimObserver: () => PetriNet,
-    stopSimObserver: VoidFunction 
-) {
-    const simulator = new Simulator()
-
-    document.getElementById('step-button').onclick = 
-        () => { 
-            simulator.step(startSimObserver())
-        }
-
-    // document.getElementById('debug-button').onclick = 
-    // () => { 
-    //     simulator.debugStep(startSimObserver())
-    // }
-    
-    document.getElementById('start-button').onclick = 
-        () => { 
-            simulator.start(startSimObserver())
-        }
-
-    document.getElementById('pause-button').onclick = 
-        () => { simulator.pause() }
-
-    document.getElementById('restart-button').onclick = 
-        () => { 
-            simulator.restart(startSimObserver())
-        }
-
-    document.getElementById('stop-button').onclick = 
-        () => { 
-            simulator.stop()
-            stopSimObserver()
-        }
-
-    return simulator
-}
-
-export { Simulator, createSimulator }
+export { Simulator }

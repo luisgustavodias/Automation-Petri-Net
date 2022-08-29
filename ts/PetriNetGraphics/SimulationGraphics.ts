@@ -1,13 +1,14 @@
-import { PetriNet } from "../PetriNet.js"
+import { PetriNet } from "./PetriNet.js"
 import { 
     PetriPlace, 
     PetriTrans, 
     PetriArc
-} from "../PNElements.js"
+} from "./PetriNetElements.js"
 import { PEId } from "../PNData.js"
 import { createCircle, setCircleCenter } from "../utils/SVGElement/Circle.js"
 import Vector from "../utils/Vector.js"
 import { LogicalNet, LogicalPetriArc, LogicalTrans } from "../LogigalNet.js"
+import { delay } from "../utils/utils.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
 const FIRE_TRANS_INTERVAL = 200
@@ -22,12 +23,6 @@ interface TokenAnimStep {
     startPoint: Vector
     velocity: Vector
     endTime: number
-}
-
-export async function delay(ms: number) {
-    return new Promise(resolve => {
-        setTimeout(() => { resolve(undefined) }, ms)
-    })
 }
 
 class TokenAnimation {
@@ -63,18 +58,20 @@ class TokenAnimation {
         }
 
         this.token = createCircle(this.animSteps[0].startPoint, 2)
-        this.currentStep = null
+        this.currentStep = -1
     }
 
     start() {
-        this.currentStep = 0
-        document.getElementById('IEs').appendChild(this.token)  
+        this.currentStep = 0;
+
+        (<HTMLElement>document.getElementById('IEs'))
+            .appendChild(this.token)  
         setCircleCenter(this.token, this.animSteps[0].startPoint)    
     }
 
     update(t: number) {
-        if (t > this.animSteps[this.currentStep].endTime)
-            this.currentStep++
+        // if (t > this.animSteps[this.currentStep].endTime)
+        //     this.currentStep++
 
         const currentStep = this.animSteps[this.currentStep]
         let stepTime
@@ -91,7 +88,7 @@ class TokenAnimation {
 
     stop() {
         this.token.remove()
-        this.currentStep = null
+        this.currentStep = -1
     }
 }
 
@@ -144,7 +141,7 @@ export class SimulationGraphics {
 
     private async animateTokens(arcs: LogicalPetriArc[]) {
         const animDuration = FIRE_TRANS_ANIMATION_TIME/2
-        let startTime = null
+        let startTime: number | null = null
         const animations = arcs.map(arc => this.tokenAnimByArc[arc.id])
         animations.forEach(anim => anim.start())
 
@@ -193,8 +190,8 @@ export class SimulationGraphics {
     }
 
     displayTime = (time: number) => {
-        document.getElementById('simulation-time').innerHTML = time
-                .toFixed(2)
+        (<HTMLElement>document.getElementById('simulation-time'))
+            .innerHTML = time.toFixed(2)
     }
 
     setTransGuardColor = (id: PEId, color: string) => {
@@ -225,17 +222,5 @@ export class SimulationGraphics {
             this.setTransColor(transGraphics, 'orange')
         else
             this.setTransColor(transGraphics, 'black')
-    }
-
-    restartNet = () => {
-        for (const element of this.net.getAllGenericPEs()) {
-            if (element instanceof PetriPlace) {
-                element.mark = parseInt(element.initialMark || "0")
-            } else if (element instanceof PetriTrans) {
-                this.setTransColor(element, "black")
-            } else if (element instanceof PetriArc) {
-                element.setArcColor('black')
-            }
-        }
     }
 }

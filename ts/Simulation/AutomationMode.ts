@@ -1,6 +1,5 @@
-import { LogicalTrans } from "../LogigalNet";
 import { SimulationBaseMode } from "./BaseMode.js";
-import { delay } from "./SimulationGraphics.js";
+import { delay } from "../utils/utils.js";
 
 export class SimulationAutomationMode extends SimulationBaseMode {
     async update() {

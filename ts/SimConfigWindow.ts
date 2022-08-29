@@ -7,7 +7,7 @@ export class SimConfigWindow {
         arcDebug: HTMLInputElement
         guardDebug: HTMLInputElement
     }
-    private saveObserver: (config: SimConfig) => void
+    private saveObserver: ((config: SimConfig) => void) | null
     
     constructor() {
         this.modal = document.
@@ -18,12 +18,13 @@ export class SimConfigWindow {
             arcDebug: <HTMLInputElement>document.getElementById('arcDebug'),
             guardDebug: <HTMLInputElement>document.getElementById('guardDebug')
         }
+        this.saveObserver = null;
 
-        this.modal.querySelector<HTMLSpanElement>('.modal-close')
+        (<HTMLElement>this.modal.querySelector('.modal-close'))
             .onclick = () => { this.close() }
-        this.modal.querySelector<HTMLSpanElement>('#sim-config-cancel')
+        (<HTMLElement>this.modal.querySelector('#sim-config-cancel'))
             .onclick = () => { this.close() }
-        this.modal.querySelector<HTMLSpanElement>('#sim-config-save')
+        (<HTMLElement>this.modal.querySelector('#sim-config-save'))
             .onclick = () => { this.saveConfig() }
     }
 
@@ -40,6 +41,9 @@ export class SimConfigWindow {
     }
 
     saveConfig() {
+        if (!this.saveObserver)
+            throw "No saveObserver"
+
         this.saveObserver(this.getConfig())
         this.close()
     }

@@ -14,8 +14,8 @@ const inputDataMapper = {
     initialValue: 3,
     description: 4
 }
-const modal = document.getElementById("inputs-modal")
-const tbody = document.getElementById("inputs-config")
+const modal = <HTMLElement>document.getElementById("inputs-modal")
+const tbody = <HTMLElement>document.getElementById("inputs-config")
 const selectAllRadioButton = <HTMLInputElement>document
     .querySelector("#inputs-modal th input")
 const inputRowModel = <HTMLTemplateElement>document
@@ -25,7 +25,8 @@ const inputRowModel = <HTMLTemplateElement>document
 function addInput(input: Input) {
     const cloneNode = document.importNode(inputRowModel.content, true);
     const data = cloneNode.querySelectorAll("td");
-    for (const attr in input) {
+    let attr: keyof Input
+    for (attr in input) {
         const td = data[inputDataMapper[attr]]
         const inpElement = <HTMLFormElement>td.children[0]
         inpElement.value = input[attr]
@@ -68,33 +69,33 @@ function getInput(row: HTMLTableRowElement): Input {
 }
 
 function getInputs() {
-    return [...tbody.children].map(getInput)
+    return [...(<HTMLCollectionOf<HTMLTableRowElement>>tbody.children)].map(getInput)
 }
 
 type SaveObserver = (inputs: Input[]) => void
 
 class InputConfig {
-    saveObserver: SaveObserver
+    saveObserver: SaveObserver | null
 
     constructor() {
-        this.saveObserver = null
+        this.saveObserver = null;
         
-        document.getElementById('new-input-button')
+        (<HTMLElement>document.getElementById('new-input-button'))
             .onclick = () => addInput({
                 name: 'new_input',
                 type: 'BOOL',
                 initialValue: 'false',
                 description: ''
-            })
-        document.getElementById('remove-inputs-button')
+            });
+        (<HTMLElement>document.getElementById('remove-inputs-button'))
             .onclick = removeInputs
-        selectAllRadioButton.onclick = toggleSelectionAll
-        document.getElementById('inputs-modal-close')
-            .onclick = this.close
-        document.getElementById('inputs-config-cancel')
-            .onclick = this.close
-        document.getElementById('inputs-config-save')
-            .onclick = () => this.save()
+        selectAllRadioButton.onclick = toggleSelectionAll;
+        (<HTMLElement>document.getElementById('inputs-modal-close'))
+            .onclick = this.close;
+        (<HTMLElement>document.getElementById('inputs-config-cancel'))
+            .onclick = this.close;
+        (<HTMLElement>document.getElementById('inputs-config-save'))
+            .onclick = () => this.save();
     }
 
     open(inputs: Input[], saveObserver: SaveObserver) {
@@ -111,6 +112,9 @@ class InputConfig {
     }
 
     save() {
+        if (!this.saveObserver) 
+            throw "No saveObserver"
+
         this.saveObserver(getInputs())
         this.close()
     }

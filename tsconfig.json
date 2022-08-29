@@ -2,9 +2,10 @@
     "compilerOptions": {
         "module": "es2022",
         "target": "esnext",
-        "noImplicitUseStrict": true,
         "watch": true,
-        "outDir": "static/js"
+        "strict": true,
+        "outDir": "static/js",
+        "forceConsistentCasingInFileNames": true
     },
     "include": ["ts/**/*"]
 }

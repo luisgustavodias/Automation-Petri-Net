@@ -13,6 +13,8 @@ class ElementPropertyWindow {
         return document.getElementById(this.idPrefix + '-' + attrName);
     }
     change(attrName) {
+        if (!this.changeObserver)
+            throw "No changeObserver";
         this.changeObserver(attrName, this.getInputElement(attrName).value);
     }
     open(changeObserver, data) {
@@ -24,11 +26,10 @@ class ElementPropertyWindow {
         }
     }
     close() {
-        // this.changeObserver = null
         this.propertyWindow.style.display = "none";
     }
 }
-const attrNames = {
+const attrNamesByType = {
     place: ["name", "placeType", "initialMark"],
     trans: ["name", "delay", "guard"],
     arc: ["arcType", "weight"]
@@ -39,9 +40,9 @@ class PropertyWindow {
     constructor() {
         this.currentEPW = null;
         this.elePropWindows = {};
-        for (const PEType in attrNames) {
-            const ePW = new ElementPropertyWindow(PEType, attrNames[PEType]);
-            for (const attrName of attrNames[PEType]) {
+        for (const [PEType, attrNames] of Object.entries(attrNamesByType)) {
+            const ePW = new ElementPropertyWindow(PEType, attrNames);
+            for (const attrName of attrNames) {
                 let inputElement = ePW.getInputElement(attrName);
                 inputElement.addEventListener('change', evt => {
                     ePW.change(attrName);

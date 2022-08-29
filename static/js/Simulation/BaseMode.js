@@ -18,20 +18,16 @@ export class SimulationBaseMode {
             this.previousInputValues.set(inputName, inputValue);
         }
         this.contextFunctions = {
-            rt: (varName) => this.inputValues.get(varName) && !this.previousInputValues.get(varName),
-            ft: (varName) => this.previousInputValues.get(varName) && !this.inputValues.get(varName),
+            rt: (varName) => (this.inputValues.get(varName) && !this.previousInputValues.get(varName)),
+            ft: (varName) => (this.previousInputValues.get(varName) && !this.inputValues.get(varName)),
         };
-        this.restartPlaces();
         this.simTime = 0;
     }
-    restartPlaces() {
-        for (const placeId in this.net.places) {
-            this.net.places[placeId].restart();
-            this.graphics.updatePlaceMark(placeId, this.net.places[placeId].mark);
-        }
-    }
     exit() {
-        this.restartPlaces();
+        for (const place of Object.values(this.net.places)) {
+            place.restart();
+            this.graphics.updatePlaceMark(place.id, place.mark);
+        }
         Object.values(this.net.transitions)
             .forEach(this.graphics.disableTrans);
         Object.values(this.net.arcs)

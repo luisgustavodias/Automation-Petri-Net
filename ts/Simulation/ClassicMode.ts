@@ -1,9 +1,9 @@
 import { LogicalTrans } from "../LogigalNet";
 import { SimulationBaseMode } from "./BaseMode.js";
-import { delay } from "./SimulationGraphics.js";
+import { delay } from "../utils/utils.js";
 
 export class SimulationClassicMode extends SimulationBaseMode {
-    private transitionToFire: LogicalTrans | null;
+    private transitionToFire: LogicalTrans | null = null;
 
     async update() {
         if (this.transitionToFire) {

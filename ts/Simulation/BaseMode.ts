@@ -1,6 +1,6 @@
 import { InputValues } from "../InputWindow"
 import { LogicalNet, LogicalTrans } from "../LogigalNet"
-import { SimulationGraphics } from "./SimulationGraphics"
+import { SimulationGraphics } from "../PetriNetGraphics/SimulationGraphics"
 
 const CYCLE_INTERVAL = 0.01
 
@@ -32,23 +32,18 @@ export abstract class SimulationBaseMode {
         }
 
         this.contextFunctions = {
-            rt: (varName) => this.inputValues.get(varName) && !this.previousInputValues.get(varName),
-            ft: (varName) => this.previousInputValues.get(varName) && !this.inputValues.get(varName),
+            rt: (varName) => <boolean>(this.inputValues.get(varName) && !this.previousInputValues.get(varName)),
+            ft: (varName) => <boolean>(this.previousInputValues.get(varName) && !this.inputValues.get(varName)),
         }
 
-        this.restartPlaces()
         this.simTime = 0
     }
 
-    private restartPlaces() {
-        for (const placeId in this.net.places) {
-            this.net.places[placeId].restart()
-            this.graphics.updatePlaceMark(placeId, this.net.places[placeId].mark)
-        }
-    }
-
     exit() {
-        this.restartPlaces()
+        for (const place of Object.values(this.net.places)) {
+            place.restart()
+            this.graphics.updatePlaceMark(place.id, place.mark)
+        }
         Object.values(this.net.transitions)
             .forEach(this.graphics.disableTrans)
         Object.values(this.net.arcs)
@@ -59,7 +54,7 @@ export abstract class SimulationBaseMode {
         const inputs = this.readInputs()
         for (const [inputName, inputValue] of Object.entries(inputs)) {
             this.previousInputValues.set(
-                inputName, this.inputValues.get(inputName)
+                inputName, <number>this.inputValues.get(inputName)
             )
             this.inputValues.set(inputName, inputValue)
         }

@@ -1,18 +1,13 @@
-import Vector from "./utils/Vector.js";
-import {
-    getLineEndPoint, getLineStartPoint,
-    getLineMidPoint, setLineStartPoint, getLineDirection, createLine
-} from './utils/SVGElement/Line.js';
-import { CurvedArrow } from "./utils/Arrow.js";
-import { createCircle, setCircleCenter } from "./utils/SVGElement/Circle.js";
-import { ArcData, PEId, PlaceData, PlaceType, TransData, ArcType } from "./PNData.js";
-import { createRect } from "./utils/SVGElement/Rectangle.js";
-import { createGroup, createText } from "./utils/SVGElement/others.js";
-import { createSVGElement } from "./utils/SVGElement/base.js";
+import Vector from "../utils/Vector.js";
+import { CurvedArrow } from "../utils/Arrow.js";
+import { createCircle } from "../utils/SVGElement/Circle.js";
+import { ArcData, PEId, PlaceData, PlaceType, TransData, ArcType } from "../PNData.js";
+import { createRect } from "../utils/SVGElement/Rectangle.js";
+import { createGroup, createText } from "../utils/SVGElement/others.js";
 
 abstract class AGenericPetriElement {
     readonly svgElement: SVGGElement
-    readonly PEType: string
+    readonly PEType: string = ""
     protected selected: boolean
 
     constructor (id: PEId, modelId: string) {
@@ -32,8 +27,9 @@ abstract class AGenericPetriElement {
 
     abstract deselect(): void
 
-    protected getPETextElement(attrName: string): SVGAElement {
-        return this.svgElement.querySelector(`[PEText="${attrName}"]`)
+    protected getPETextElement(attrName: string) {
+        return <SVGAElement>this.svgElement
+            .querySelector(`[PEText="${attrName}"]`)
     }
 
     protected getPEText(attrName: string) {
@@ -56,7 +52,7 @@ abstract class AGenericPetriElement {
         transform.setTranslate(pos.x, pos.y)
     }
 
-    abstract getData()
+    abstract getData(): any
 }
 
 abstract class APetriElement extends AGenericPetriElement {
@@ -85,7 +81,7 @@ abstract class APetriElement extends AGenericPetriElement {
         transform.setTranslate(coord.x, coord.y);
     }
 
-    abstract getConnectionPoint(u: Vector)
+    abstract getConnectionPoint(u: Vector): Vector
 
     select() {
         this.selected = true
@@ -443,6 +439,7 @@ class PetriArc extends AGenericPetriElement {
             }
         ))
         
+        this._arcType = arctype
         this.arcType = arctype
     }
 

@@ -1,11 +1,11 @@
-import Vector from "./utils/Vector.js";
-import { CurvedArrow } from "./utils/Arrow.js";
-import { createCircle } from "./utils/SVGElement/Circle.js";
-import { createRect } from "./utils/SVGElement/Rectangle.js";
-import { createGroup, createText } from "./utils/SVGElement/others.js";
+import Vector from "../utils/Vector.js";
+import { CurvedArrow } from "../utils/Arrow.js";
+import { createCircle } from "../utils/SVGElement/Circle.js";
+import { createRect } from "../utils/SVGElement/Rectangle.js";
+import { createGroup, createText } from "../utils/SVGElement/others.js";
 class AGenericPetriElement {
     svgElement;
-    PEType;
+    PEType = "";
     selected;
     constructor(id, modelId) {
         this.svgElement = createGroup({ id: id });
@@ -18,7 +18,8 @@ class AGenericPetriElement {
         return this.selected;
     }
     getPETextElement(attrName) {
-        return this.svgElement.querySelector(`[PEText="${attrName}"]`);
+        return this.svgElement
+            .querySelector(`[PEText="${attrName}"]`);
     }
     getPEText(attrName) {
         return this.getPETextElement(attrName).innerHTML;
@@ -343,6 +344,7 @@ class PetriArc extends AGenericPetriElement {
             visibility: 'hidden',
             PEParent: id
         }));
+        this._arcType = arctype;
         this.arcType = arctype;
     }
     get weightElement() {
