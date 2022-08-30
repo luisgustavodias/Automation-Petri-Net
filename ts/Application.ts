@@ -279,25 +279,6 @@ export class Application {
                 const mousePos = this.editor.net.getMousePosition(evt);
         
                 this.editor.net.zoom(mousePos, scale)
-            },
-            keydown: (evt: KeyboardEvent) => {
-                if (!this.editor) return
-        
-                if ((<HTMLElement>evt.target).tagName !== "BODY")
-                    return
-
-                if (evt.key === 'Shift') {
-                    this.editor.net.grid = !this.editor.net.grid
-                }
-                if (this.simulator) return
-
-                if (evt.key === 'z' && evt.ctrlKey) {
-                    this.editor.net.undo()
-                }
-                else if (evt.key === 'y' && evt.ctrlKey) {
-                    this.editor.net.redo()
-                } else 
-                    this.editor.currentTool.onKeyDown(evt)
             }
         }
 
@@ -306,5 +287,26 @@ export class Application {
         for (const [event, handler] of Object.entries(handlers)) {
             ele.addEventListener(event, <(evt: any) => void>handler)
         }
+
+        document.body.addEventListener('keydown', (evt: KeyboardEvent) => {
+            if (!this.editor) return
+            console.log()
+            if ((<HTMLElement>evt.target).tagName !== "BODY")
+                return
+
+            if (evt.key === 'Shift') {
+                console.log(this.editor.net.grid)
+                this.editor.net.grid = !this.editor.net.grid
+            }
+            if (this.simulator) return
+
+            if (evt.key === 'z' && evt.ctrlKey) {
+                this.editor.net.undo()
+            }
+            else if (evt.key === 'y' && evt.ctrlKey) {
+                this.editor.net.redo()
+            } else 
+                this.editor.currentTool.onKeyDown(evt)
+        })
     }
 }

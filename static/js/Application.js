@@ -235,30 +235,32 @@ export class Application {
                 const scale = Math.min(Math.max(.9, 1 + .01 * evt.deltaY), 1.1);
                 const mousePos = this.editor.net.getMousePosition(evt);
                 this.editor.net.zoom(mousePos, scale);
-            },
-            keydown: (evt) => {
-                if (!this.editor)
-                    return;
-                if (evt.target.tagName !== "BODY")
-                    return;
-                if (evt.key === 'Shift') {
-                    this.editor.net.grid = !this.editor.net.grid;
-                }
-                if (this.simulator)
-                    return;
-                if (evt.key === 'z' && evt.ctrlKey) {
-                    this.editor.net.undo();
-                }
-                else if (evt.key === 'y' && evt.ctrlKey) {
-                    this.editor.net.redo();
-                }
-                else
-                    this.editor.currentTool.onKeyDown(evt);
             }
         };
         const ele = document.getElementById("svg-div");
         for (const [event, handler] of Object.entries(handlers)) {
             ele.addEventListener(event, handler);
         }
+        document.body.addEventListener('keydown', (evt) => {
+            if (!this.editor)
+                return;
+            console.log();
+            if (evt.target.tagName !== "BODY")
+                return;
+            if (evt.key === 'Shift') {
+                console.log(this.editor.net.grid);
+                this.editor.net.grid = !this.editor.net.grid;
+            }
+            if (this.simulator)
+                return;
+            if (evt.key === 'z' && evt.ctrlKey) {
+                this.editor.net.undo();
+            }
+            else if (evt.key === 'y' && evt.ctrlKey) {
+                this.editor.net.redo();
+            }
+            else
+                this.editor.currentTool.onKeyDown(evt);
+        });
     }
 }
