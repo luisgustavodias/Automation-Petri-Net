@@ -1,8 +1,8 @@
-import { LogicalNet } from "./LogigalNet.js";
-import { SimulationClassicMode } from "./Simulation/ClassicMode.js";
-import { SimulationGraphics } from "./PetriNetGraphics/SimulationGraphics.js";
-import { SimulationAutomationMode } from "./Simulation/AutomationMode.js";
-import { SimulationVisObjMode } from "./Simulation/VisObjMode.js";
+import { LogicalNet } from "../LogicalNet.js";
+import { SimulationClassicMode } from "../Simulation/ClassicMode.js";
+import { SimulationGraphics } from "../PetriNetGraphics/SimulationGraphics.js";
+import { SimulationAutomationMode } from "../Simulation/AutomationMode.js";
+import { SimulationVisObjMode } from "../Simulation/VisObjMode.js";
 const FIRE_TRANS_ANIMATION_TIME = 1500;
 const FIRE_TRANS_INTERVAL = 200;
 const SIM_CYCLE_INTERVAL = 0.01;

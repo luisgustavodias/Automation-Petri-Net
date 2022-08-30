@@ -1,12 +1,11 @@
-import { PetriNet } from "./PetriNetGraphics/PetriNet.js"
-import { SimConfig } from "./PNData.js"
-import { InputWindow } from "./InputWindow.js"
-import { LogicalNet } from "./LogigalNet.js"
-import { SimulationBaseMode } from "./Simulation/BaseMode.js"
-import { SimulationClassicMode } from "./Simulation/ClassicMode.js"
-import { SimulationGraphics } from "./PetriNetGraphics/SimulationGraphics.js"
-import { SimulationAutomationMode } from "./Simulation/AutomationMode.js"
-import { SimulationVisObjMode } from "./Simulation/VisObjMode.js"
+import { PetriNet } from "../PetriNetGraphics/PetriNet.js"
+import { InputWindow } from "./InputsWindow.js"
+import { LogicalNet } from "../LogicalNet.js"
+import { SimulationBaseMode } from "../Simulation/BaseMode.js"
+import { SimulationClassicMode } from "../Simulation/ClassicMode.js"
+import { SimulationGraphics } from "../PetriNetGraphics/SimulationGraphics.js"
+import { SimulationAutomationMode } from "../Simulation/AutomationMode.js"
+import { SimulationVisObjMode } from "../Simulation/VisObjMode.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
 const FIRE_TRANS_INTERVAL = 200

@@ -1,6 +1,4 @@
-import { Input } from "./InputsConfig.js"
-
-type InputValues = { [inputName: string]: number }
+import { Input } from "../PNData.js"
 
 const inputsTableBody = <HTMLTableElement>document
     .querySelector("#inputs-window tbody")
@@ -92,4 +90,4 @@ class InputWindow {
 }
 
 
-export {InputValues, InputWindow}
+export {InputWindow}

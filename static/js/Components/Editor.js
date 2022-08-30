@@ -1,5 +1,5 @@
-import { createLine, setLineEndPoint, setLineStartPoint } from "./utils/SVGElement/Line.js";
-import Vector from "./utils/Vector.js";
+import { createLine, setLineEndPoint, setLineStartPoint } from "../utils/SVGElement/Line.js";
+import Vector from "../utils/Vector.js";
 const SVG_BG_ID = 'svg-background';
 class GenericTool {
     constructor() { }

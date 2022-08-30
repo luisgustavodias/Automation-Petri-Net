@@ -1,4 +1,4 @@
-import { SimConfig, SimMode } from "./PNData"
+import { SimConfig, SimMode } from "../PNData"
 
 export class SimConfigWindow {
     private readonly modal: HTMLDivElement

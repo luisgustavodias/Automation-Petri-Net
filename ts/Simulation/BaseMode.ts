@@ -1,6 +1,6 @@
-import { InputValues } from "../InputWindow"
-import { LogicalNet, LogicalTrans } from "../LogigalNet"
+import { LogicalNet, LogicalTrans } from "../LogicalNet"
 import { SimulationGraphics } from "../PetriNetGraphics/SimulationGraphics"
+import { InputValues } from "../PNData"
 
 const CYCLE_INTERVAL = 0.01
 

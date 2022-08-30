@@ -1,4 +1,4 @@
-import { LogicalTrans } from "../LogigalNet.js";
+import { LogicalTrans } from "../LogicalNet.js";
 import { delay } from "../utils/utils.js";
 import { SimulationBaseMode } from "./BaseMode.js";
 

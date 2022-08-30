@@ -4,6 +4,7 @@ type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
 type InputType = "INT" | "BOOL"
 type PetriElementType = "place" | "trans" | "arc"
 type SimMode = "Automation" | "Classic" | "VisObj"
+type InputValues = { [inputName: string]: number}
 
 interface SimConfig {
     simMode: SimMode
@@ -110,7 +111,7 @@ interface PetriNetData {
     simConfig: SimConfig
 }
 
-export { PEId, Input, PlaceType, ArcType, PetriElementType, InputType,
+export { PEId, Input, InputValues, PlaceType, ArcType, PetriElementType, InputType,
     GenericPEBasicData, PlaceBasicData, TransBasicData,
     ArcBasicData, PlaceData, TransData, ArcData, PetriNetBasicData,
     PetriNetData, SimMode, SimConfig }

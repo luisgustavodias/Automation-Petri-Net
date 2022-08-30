@@ -1,4 +1,3 @@
-import { InputValues } from "./InputWindow"
 import { ArcData, ArcType, PEId, PetriNetData, PlaceData, PlaceType, SimConfig, TransData } from "./PNData"
 
 type GuardFunc = (...args: any[]) => boolean

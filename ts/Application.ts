@@ -1,12 +1,12 @@
 import { generateCode } from "./CodeGenerator.js";
-import Editor from "./Editor.js";
-import { InputConfig } from "./InputsConfig.js";
-import { InputWindow } from "./InputWindow.js";
+import Editor from "./Components/Editor.js";
+import { InputConfig } from "./Components/InputsConfigWindow.js";
+import { InputWindow } from "./Components/InputsWindow.js";
 import { PetriNet } from "./PetriNetGraphics/PetriNet.js";
-import { PropertyWindow } from "./PropertyWindow.js";
-import { SimConfigWindow } from "./SimConfigWindow.js";
-import { Simulator } from "./Simulator.js";
-import ToolBar from "./ToolBar.js";
+import { PropertyWindow } from "./Components/PropertyWindow.js";
+import { SimConfigWindow } from "./Components/SimConfigWindow.js";
+import { Simulator } from "./Components/Simulator.js";
+import ToolBar from "./Components/ToolBar.js";
 import Vector from "./utils/Vector.js";
 
 const FILE_PICKER_OPTIONS = {

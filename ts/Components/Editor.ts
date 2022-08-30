@@ -1,9 +1,9 @@
-import { PetriNet } from "./PetriNetGraphics/PetriNet.js";
-import { AGenericPetriElement } from "./PetriNetGraphics/PetriNetElements.js";
-import { PEId } from "./PNData.js";
+import { PetriNet } from "../PetriNetGraphics/PetriNet.js";
+import { AGenericPetriElement } from "../PetriNetGraphics/PetriNetElements.js";
+import { PEId } from "../PNData.js";
 import { PropertyWindow } from "./PropertyWindow.js";
-import { createLine, setLineEndPoint, setLineStartPoint } from "./utils/SVGElement/Line.js";
-import Vector from "./utils/Vector.js";
+import { createLine, setLineEndPoint, setLineStartPoint } from "../utils/SVGElement/Line.js";
+import Vector from "../utils/Vector.js";
 
 const SVG_BG_ID = 'svg-background'
 

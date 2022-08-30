@@ -1,4 +1,4 @@
-import { LogicalPlace, LogicalTrans, LogicalPetriArc, LogicalNet } from "./LogigalNet.js";
+import { LogicalPlace, LogicalTrans, LogicalPetriArc, LogicalNet } from "./LogicalNet.js";
 import { Input, PEId, PetriNetData } from "./PNData";
 
 type TimerNames = {[id:PEId]: string}

@@ -1,4 +1,4 @@
-import { LogicalNet } from "./LogigalNet.js";
+import { LogicalNet } from "./LogicalNet.js";
 const isNotEmptyString = (s) => s !== '';
 function getArcEnableCondition(arc) {
     if (['Input', 'Test'].includes(arc.arcType)) {

@@ -7,7 +7,7 @@ import {
 import { PEId } from "../PNData.js"
 import { createCircle, setCircleCenter } from "../utils/SVGElement/Circle.js"
 import Vector from "../utils/Vector.js"
-import { LogicalNet, LogicalPetriArc, LogicalTrans } from "../LogigalNet.js"
+import { LogicalNet, LogicalPetriArc, LogicalTrans } from "../LogicalNet.js"
 import { delay } from "../utils/utils.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
