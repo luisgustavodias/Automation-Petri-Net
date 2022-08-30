@@ -200,8 +200,7 @@ class MouseTool extends GenericTool {
         const mousePos = this.net.getMousePosition(evt)
 
         if (!this.selectedPEId 
-                || !this.dragMouseInitialPos
-                || !this.dragInitialPos)
+                || !this.dragMouseInitialPos)
             throw "Dragging Error"
 
         if (this.cornerIdx !== null) {

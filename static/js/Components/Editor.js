@@ -143,8 +143,7 @@ class MouseTool extends GenericTool {
     drag(evt, registryChange = false) {
         const mousePos = this.net.getMousePosition(evt);
         if (!this.selectedPEId
-            || !this.dragMouseInitialPos
-            || !this.dragInitialPos)
+            || !this.dragMouseInitialPos)
             throw "Dragging Error";
         if (this.cornerIdx !== null) {
             this.dragInitialPos = this.net.moveArcCorner(this.selectedPEId, this.cornerIdx, mousePos.sub(this.dragMouseInitialPos), registryChange, false, this.dragInitialPos);
