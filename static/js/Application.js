@@ -29,7 +29,7 @@ async function loadNet() {
 async function saveNet(net) {
     let fileHandle;
     //@ts-ignore
-    [fileHandle] = await window.showSaveFilePicker(FILE_PICKER_OPTIONS);
+    fileHandle = await window.showSaveFilePicker(FILE_PICKER_OPTIONS);
     const file = await fileHandle.createWritable();
     await file.write(JSON.stringify(net.getNetData()));
     await file.close();
@@ -146,6 +146,7 @@ export class Application {
     }
     bindSimulationButtons() {
         const createSimulator = () => {
+            this.editor.currentTool.onChangeTool();
             return new Simulator(this.editor.net, this.inputWindow);
         };
         const handlers = {
@@ -173,6 +174,7 @@ export class Application {
                 if (!this.simulator)
                     return;
                 this.simulator.stop();
+                this.simulator = null;
             },
         };
         for (const [cmd, handler] of Object.entries(handlers)) {
@@ -262,5 +264,8 @@ export class Application {
             else
                 this.editor.currentTool.onKeyDown(evt);
         });
+        document.addEventListener("contextmenu", function (evt) {
+            evt.preventDefault();
+        }, false);
     }
 }

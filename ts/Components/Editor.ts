@@ -313,10 +313,10 @@ function createTools(net: PetriNet, propertyWindow: PropertyWindow) {
     return {
         'mouse-tool': new MouseTool(net, propertyWindow),
         'place-tool': new PetriElementTool(
-            evt => { net.createPlace(net.getMousePosition(evt)) }
+            evt => { net.createPlace(net.getMousePosition(evt, false)) }
         ),
         'trans-tool': new PetriElementTool(
-            evt => { net.createTrans(net.getMousePosition(evt)) }
+            evt => { net.createTrans(net.getMousePosition(evt, false)) }
         ),
         'arc-tool': new ArcTool(net)
     }
@@ -352,6 +352,7 @@ class Editor {
 
     selectTool(toolName: string) {
         if (toolName in this.tools) {
+            this.currentTool.onChangeTool()
             this._currentToolName = toolName
             this._currentTool = this.tools[toolName]
         } else {

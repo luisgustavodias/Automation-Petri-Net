@@ -35,7 +35,7 @@ async function loadNet() {
 async function saveNet(net: PetriNet) { 
     let fileHandle
     //@ts-ignore
-    [fileHandle] = await window.showSaveFilePicker(FILE_PICKER_OPTIONS)
+    fileHandle = await window.showSaveFilePicker(FILE_PICKER_OPTIONS)
     const file = await fileHandle.createWritable()
     
     await file.write(JSON.stringify(net.getNetData()))
@@ -182,6 +182,7 @@ export class Application {
 
     private bindSimulationButtons() {
         const createSimulator = () => {
+            this.editor!.currentTool.onChangeTool()
             return new Simulator(
                 this.editor!.net,
                 this.inputWindow
@@ -210,6 +211,7 @@ export class Application {
             stop: () => {
                 if (!this.simulator) return
                 this.simulator.stop()
+                this.simulator = null
             },
         }
 
@@ -308,5 +310,9 @@ export class Application {
             } else 
                 this.editor.currentTool.onKeyDown(evt)
         })
+
+        document.addEventListener("contextmenu", function (evt) {
+            evt.preventDefault();
+        }, false);
     }
 }
