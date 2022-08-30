@@ -91,7 +91,10 @@ export class Application {
                 this.editor = null
             },
             "nav-btn-load-file": async () => {
-                this.editor = new Editor(await loadNet(), this.propertyWindow)
+                const net = await loadNet()
+                if (this.editor)
+                    this.editor.close()
+                this.editor = new Editor(net, this.propertyWindow)
             },
             "nav-btn-save-file": async () => {
                 if (!this.editor) return
