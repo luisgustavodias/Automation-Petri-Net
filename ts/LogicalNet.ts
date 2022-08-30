@@ -2,11 +2,6 @@ import { ArcData, ArcType, PEId, PetriNetData, PlaceData, PlaceType, SimConfig, 
 
 type GuardFunc = (...args: any[]) => boolean
 
-interface StepResult {
-    currentTrans: LogicalTrans,
-    isLastTrans: boolean,
-}
-
 class LogicalPlace {
     readonly id: PEId
     readonly name: string
@@ -68,13 +63,12 @@ class LogicalTrans {
     readonly inhibitorArcs: LogicalPetriArc[]
     readonly guard: string
     readonly delay: number
-    // readonly priority: number
     private readonly guardFunc: GuardFunc
     private timeToEnable: number
     private _isGuardEnable: boolean
     private _isEnable: boolean
 
-    constructor(data: TransData, netInputNames: string[]) {
+    constructor(data: TransData, netInputNames: string[], arcs: LogicalPetriArc[]) {
         this._isEnable = false
         this.id = data.id
         try {
@@ -82,11 +76,6 @@ class LogicalTrans {
         } catch(e) {
             throw "Can't convert delay to float."
         }
-        // try {
-        //     this.priority = parseFloat(data.priority)
-        // } catch(e) {
-        //     throw "Can't convert priority to float."
-        // }
         this.guard = data.guard
         if (data.guard) {
             try {
@@ -100,10 +89,10 @@ class LogicalTrans {
             this.guardFunc = (...args) => true
         }
 
-        this.inputsArcs = []
-        this.outputsArcs = []
-        this.testArcs = []
-        this.inhibitorArcs = []
+        this.inputsArcs = arcs.filter(arc => arc.arcType === 'Input')
+        this.outputsArcs = arcs.filter(arc => arc.arcType === 'Output')
+        this.testArcs = arcs.filter(arc => arc.arcType === 'Test')
+        this.inhibitorArcs = arcs.filter(arc => arc.arcType === 'Inhibitor')
 
         this.timeToEnable = this.delay
         this._isGuardEnable = false
@@ -115,17 +104,6 @@ class LogicalTrans {
             .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
             .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
         return eval(`(${inputNames.join(',')}, rt, ft) => ${decodedGuard}`)
-    }
-
-    addArc(arc: LogicalPetriArc) {
-        if (arc.arcType === 'Input')
-            this.inputsArcs.push(arc)
-        if (arc.arcType === 'Output')
-            this.outputsArcs.push(arc)
-        if (arc.arcType === 'Test')
-            this.testArcs.push(arc)
-        if (arc.arcType === 'Inhibitor')
-            this.inhibitorArcs.push(arc)
     }
 
     getArcs() {
@@ -141,20 +119,6 @@ class LogicalTrans {
     }
 
     checkArcs() {
-        // for (const arc of [...this.inputsArcs, ...this.testArcs]) {
-        //     if (arc.place.mark < arc.weight)
-        //         return false
-        // }
-
-        // for (const arc of this.inhibitorArcs) {
-        //     if (arc.place.mark >= arc.weight)
-        //         return false
-        // }
-
-        // for (const arc of this.outputsArcs) {
-        //     if (arc.place.placeType === 'BOOL' && arc.place.mark === 1)
-        //         return false
-        // }
         for (const arc of this.getArcs()) {
             if (!arc.isEnable())
                 return false
@@ -228,13 +192,16 @@ class LogicalNet {
         this.transitions = Object.fromEntries(netData.transitions.map(
             transData => [
                 transData.id, 
-                new LogicalTrans(transData, netInputNames)
+                new LogicalTrans(
+                    transData, 
+                    netInputNames,
+                    netData.arcs
+                        .filter(arcData => arcData.transId === transData.id)
+                        .map(arcData => this.arcs[arcData.id])
+                )
+                
             ]
         ))
-
-        netData.arcs.forEach(arcData => {
-            this.transitions[arcData.transId].addArc(this.arcs[arcData.id])
-        })
 
         this.transInOrder = Object.values(this.transitions)
         this.simConfig = netData.simConfig

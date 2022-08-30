@@ -54,12 +54,11 @@ class LogicalTrans {
     inhibitorArcs;
     guard;
     delay;
-    // readonly priority: number
     guardFunc;
     timeToEnable;
     _isGuardEnable;
     _isEnable;
-    constructor(data, netInputNames) {
+    constructor(data, netInputNames, arcs) {
         this._isEnable = false;
         this.id = data.id;
         try {
@@ -68,11 +67,6 @@ class LogicalTrans {
         catch (e) {
             throw "Can't convert delay to float.";
         }
-        // try {
-        //     this.priority = parseFloat(data.priority)
-        // } catch(e) {
-        //     throw "Can't convert priority to float."
-        // }
         this.guard = data.guard;
         if (data.guard) {
             try {
@@ -85,10 +79,10 @@ class LogicalTrans {
         else {
             this.guardFunc = (...args) => true;
         }
-        this.inputsArcs = [];
-        this.outputsArcs = [];
-        this.testArcs = [];
-        this.inhibitorArcs = [];
+        this.inputsArcs = arcs.filter(arc => arc.arcType === 'Input');
+        this.outputsArcs = arcs.filter(arc => arc.arcType === 'Output');
+        this.testArcs = arcs.filter(arc => arc.arcType === 'Test');
+        this.inhibitorArcs = arcs.filter(arc => arc.arcType === 'Inhibitor');
         this.timeToEnable = this.delay;
         this._isGuardEnable = false;
     }
@@ -98,16 +92,6 @@ class LogicalTrans {
             .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
             .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!');
         return eval(`(${inputNames.join(',')}, rt, ft) => ${decodedGuard}`);
-    }
-    addArc(arc) {
-        if (arc.arcType === 'Input')
-            this.inputsArcs.push(arc);
-        if (arc.arcType === 'Output')
-            this.outputsArcs.push(arc);
-        if (arc.arcType === 'Test')
-            this.testArcs.push(arc);
-        if (arc.arcType === 'Inhibitor')
-            this.inhibitorArcs.push(arc);
     }
     getArcs() {
         return [...this.inputsArcs,
@@ -120,18 +104,6 @@ class LogicalTrans {
         this._isEnable = false;
     }
     checkArcs() {
-        // for (const arc of [...this.inputsArcs, ...this.testArcs]) {
-        //     if (arc.place.mark < arc.weight)
-        //         return false
-        // }
-        // for (const arc of this.inhibitorArcs) {
-        //     if (arc.place.mark >= arc.weight)
-        //         return false
-        // }
-        // for (const arc of this.outputsArcs) {
-        //     if (arc.place.placeType === 'BOOL' && arc.place.mark === 1)
-        //         return false
-        // }
         for (const arc of this.getArcs()) {
             if (!arc.isEnable())
                 return false;
@@ -184,11 +156,10 @@ class LogicalNet {
         ]));
         this.transitions = Object.fromEntries(netData.transitions.map(transData => [
             transData.id,
-            new LogicalTrans(transData, netInputNames)
+            new LogicalTrans(transData, netInputNames, netData.arcs
+                .filter(arcData => arcData.transId === transData.id)
+                .map(arcData => this.arcs[arcData.id]))
         ]));
-        netData.arcs.forEach(arcData => {
-            this.transitions[arcData.transId].addArc(this.arcs[arcData.id]);
-        });
         this.transInOrder = Object.values(this.transitions);
         this.simConfig = netData.simConfig;
     }
