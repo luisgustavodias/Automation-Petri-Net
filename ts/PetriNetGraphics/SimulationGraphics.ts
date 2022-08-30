@@ -70,8 +70,8 @@ class TokenAnimation {
     }
 
     update(t: number) {
-        // if (t > this.animSteps[this.currentStep].endTime)
-        //     this.currentStep++
+        if (t > this.animSteps[this.currentStep].endTime)
+            this.currentStep++
 
         const currentStep = this.animSteps[this.currentStep]
         let stepTime

@@ -39,8 +39,8 @@ class TokenAnimation {
         setCircleCenter(this.token, this.animSteps[0].startPoint);
     }
     update(t) {
-        // if (t > this.animSteps[this.currentStep].endTime)
-        //     this.currentStep++
+        if (t > this.animSteps[this.currentStep].endTime)
+            this.currentStep++;
         const currentStep = this.animSteps[this.currentStep];
         let stepTime;
         if (this.currentStep === 0)
