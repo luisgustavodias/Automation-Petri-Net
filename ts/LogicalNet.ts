@@ -47,7 +47,7 @@ class LogicalPetriArc {
         if (this.arcType === 'Input' || this.arcType === 'Test')
             return this.weight <= this.place.mark
         if (this.arcType === 'Inhibitor')
-            return this.weight >= this.place.mark
+            return this.weight > this.place.mark
         if (this.place.placeType === 'BOOL')
             return !this.place.mark
 
