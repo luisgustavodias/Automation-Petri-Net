@@ -30,7 +30,7 @@ class Simulator {
     constructor(net, inputWindow) {
         this.inputWindow = inputWindow;
         this.inputWindow.open(net.inputs);
-        this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData(), Object.keys(this.inputWindow.readInputs())), new SimulationGraphics(net), () => this.inputWindow.readInputs());
+        this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData()), new SimulationGraphics(net), () => this.inputWindow.readInputs());
         this.state = SimState.Paused;
     }
     setSimText(text) {

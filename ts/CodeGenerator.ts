@@ -121,11 +121,11 @@ function processTimers(net: PetriNetData) {
     return timerNames
 }
 
-function generateCode(netData: PetriNetData, netInputs: Input[]) {
+function generateCode(netData: PetriNetData) {
     const timerNames = processTimers(netData)
-    const net = new LogicalNet(netData, Object.keys(netInputs))
+    const net = new LogicalNet(netData)
 
-    return initializeVariables(net, netInputs, timerNames)
+    return initializeVariables(net, netData.inputs, timerNames)
         + '\n\nPROGRAM\n'
         + net.transInOrder
             .map(trans => generateTransCode(trans, timerNames[trans.id]))

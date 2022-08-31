@@ -133,7 +133,7 @@ export class Application {
                 genCodeModal.style.display = 'block';
                 const ele = document
                     .getElementById('gencode-out');
-                ele.value = generateCode(this.editor.net.getNetData(), this.editor.net.inputs);
+                ele.value = generateCode(this.editor.net.getNetData());
             },
             "gencode-modal-close": () => {
                 genCodeModal.style.display = 'none';

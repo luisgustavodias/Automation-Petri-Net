@@ -163,8 +163,7 @@ export class Application {
                     .getElementById('gencode-out')
         
                 ele.value = generateCode(
-                    this.editor.net.getNetData(),
-                    this.editor.net.inputs
+                    this.editor.net.getNetData()
                 )
             },
             "gencode-modal-close": () => {

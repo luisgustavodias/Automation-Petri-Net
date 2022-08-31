@@ -148,7 +148,8 @@ class LogicalNet {
     transitions;
     transInOrder;
     simConfig;
-    constructor(netData, netInputNames) {
+    constructor(netData) {
+        const netInputNames = netData.inputs.map(inp => inp.name);
         this.places = Object.fromEntries(netData.places.map(placeData => [placeData.id, new LogicalPlace(placeData)]));
         this.arcs = Object.fromEntries(netData.arcs.map(arcData => [
             arcData.id,

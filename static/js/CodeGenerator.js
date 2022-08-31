@@ -82,10 +82,10 @@ function processTimers(net) {
     }
     return timerNames;
 }
-function generateCode(netData, netInputs) {
+function generateCode(netData) {
     const timerNames = processTimers(netData);
-    const net = new LogicalNet(netData, Object.keys(netInputs));
-    return initializeVariables(net, netInputs, timerNames)
+    const net = new LogicalNet(netData);
+    return initializeVariables(net, netData.inputs, timerNames)
         + '\n\nPROGRAM\n'
         + net.transInOrder
             .map(trans => generateTransCode(trans, timerNames[trans.id]))

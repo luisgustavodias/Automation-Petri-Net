@@ -179,7 +179,8 @@ class LogicalNet {
     readonly transInOrder: LogicalTrans[]
     readonly simConfig: SimConfig
 
-    constructor(netData: PetriNetData, netInputNames: string[]) {
+    constructor(netData: PetriNetData) {
+        const netInputNames = netData.inputs.map(inp => inp.name)
         this.places = Object.fromEntries(netData.places.map(
             placeData => [placeData.id, new LogicalPlace(placeData)]
         ))

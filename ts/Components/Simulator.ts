@@ -39,9 +39,8 @@ class Simulator {
         this.inputWindow.open(net.inputs)
         this.simulation = new simulationModes[net.simConfig.simMode](
             new LogicalNet(
-                net.getNetData(), 
-                Object.keys(this.inputWindow.readInputs()
-            )),
+                net.getNetData()
+            ),
             new SimulationGraphics(net),
             () => this.inputWindow.readInputs()
         )
