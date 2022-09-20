@@ -88,6 +88,11 @@ export class Application {
                     return;
                 await saveNet(this.editor.net);
             },
+            "nav-btn-toggle-grid": () => {
+                if (!this.editor)
+                    return;
+                this.editor.net.grid = !this.editor.net.grid;
+            },
             "nav-btn-sim-config": async () => {
                 if (!this.editor)
                     return;
@@ -252,10 +257,6 @@ export class Application {
             console.log();
             if (evt.target.tagName !== "BODY")
                 return;
-            if (evt.key === 'Shift') {
-                console.log(this.editor.net.grid);
-                this.editor.net.grid = !this.editor.net.grid;
-            }
             if (this.simulator)
                 return;
             if (evt.key === 'z' && evt.ctrlKey) {
