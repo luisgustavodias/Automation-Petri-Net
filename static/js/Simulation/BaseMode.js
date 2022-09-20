@@ -30,6 +30,8 @@ export class SimulationBaseMode {
         }
         Object.values(this.net.transitions)
             .forEach(this.graphics.disableTrans);
+        Object.values(this.net.transitions)
+            .forEach(this.graphics.disableTrans);
         Object.values(this.net.arcs)
             .forEach(this.graphics.resetArcColor);
     }
@@ -49,5 +51,8 @@ export class SimulationBaseMode {
     }
     getSimTime() {
         return this.simTime;
+    }
+    incToken(placeId) {
+        this.graphics.updatePlaceMark(placeId, ++this.net.places[placeId].mark);
     }
 }

@@ -23,14 +23,33 @@ const simulationModes = {
     "Automation": SimulationAutomationMode,
     "VisObj": SimulationVisObjMode,
 };
+class SimulationEventHandler {
+    net;
+    simulation;
+    constructor(net, simulation) {
+        this.net = net;
+        this.simulation = simulation;
+    }
+    mousedown(evt) {
+        const parentId = evt.target.getAttribute('PEParent');
+        if (!parentId)
+            return;
+        const ele = this.net.getGenericPE(parentId);
+        if (ele.PEType != "place")
+            return;
+        this.simulation.incToken(ele.id);
+    }
+}
 class Simulator {
     simulation;
     inputWindow;
+    eventHandler;
     state;
     constructor(net, inputWindow) {
         this.inputWindow = inputWindow;
         this.inputWindow.open(net.inputs);
         this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData()), new SimulationGraphics(net), () => this.inputWindow.readInputs());
+        this.eventHandler = new SimulationEventHandler(net, this.simulation);
         this.state = SimState.Paused;
     }
     setSimText(text) {

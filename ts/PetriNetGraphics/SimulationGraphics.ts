@@ -223,4 +223,8 @@ export class SimulationGraphics {
         else
             this.setTransColor(transGraphics, 'black')
     }
+
+    resetDebugTrans = (trans: LogicalTrans) => {
+        
+    }
 }

@@ -205,7 +205,10 @@ export class Application {
                     movingScreenOffset = this.editor.net
                         .getMousePosition(evt, true);
                 }
-                else if (!this.simulator) {
+                else if (this.simulator) {
+                    this.simulator.eventHandler.mousedown(evt);
+                }
+                else {
                     this.editor.currentTool.onMouseDown(evt);
                 }
             },

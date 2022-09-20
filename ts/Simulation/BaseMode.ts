@@ -1,6 +1,6 @@
 import { LogicalNet, LogicalTrans } from "../LogicalNet"
 import { SimulationGraphics } from "../PetriNetGraphics/SimulationGraphics"
-import { InputValues } from "../PNData"
+import { InputValues, PEId } from "../PNData"
 
 const CYCLE_INTERVAL = 0.01
 
@@ -46,6 +46,8 @@ export abstract class SimulationBaseMode {
         }
         Object.values(this.net.transitions)
             .forEach(this.graphics.disableTrans)
+        Object.values(this.net.transitions)
+            .forEach(this.graphics.disableTrans)
         Object.values(this.net.arcs)
             .forEach(this.graphics.resetArcColor)
     }
@@ -76,6 +78,10 @@ export abstract class SimulationBaseMode {
 
     getSimTime() {
         return this.simTime
+    }
+
+    incToken(placeId: PEId) {
+        this.graphics.updatePlaceMark(placeId, ++this.net.places[placeId].mark)
     }
 
     abstract update(): Promise<void>

@@ -29,9 +29,32 @@ const simulationModes = {
     "VisObj": SimulationVisObjMode,
 }
 
+class SimulationEventHandler {
+    private readonly net: PetriNet
+    private readonly simulation: SimulationBaseMode
+
+    constructor(net: PetriNet, simulation: SimulationBaseMode) {
+        this.net = net
+        this.simulation = simulation
+    }
+
+    mousedown(evt: MouseEvent) {
+        const parentId = (<SVGAElement>evt.target).getAttribute('PEParent')
+
+        if (!parentId) return
+
+        const ele = this.net.getGenericPE(parentId)
+
+        if (ele.PEType != "place") return
+
+        this.simulation.incToken(ele.id)
+    }
+}
+
 class Simulator {
     private readonly simulation: SimulationBaseMode
     private readonly inputWindow: InputWindow
+    readonly eventHandler: SimulationEventHandler
     private state: SimState
 
     constructor(net: PetriNet, inputWindow: InputWindow) { 
@@ -44,6 +67,7 @@ class Simulator {
             new SimulationGraphics(net),
             () => this.inputWindow.readInputs()
         )
+        this.eventHandler = new SimulationEventHandler(net, this.simulation)
         this.state = SimState.Paused
     }
 
