@@ -80,8 +80,13 @@ export abstract class SimulationBaseMode {
         return this.simTime
     }
 
-    incToken(placeId: PEId) {
-        this.graphics.updatePlaceMark(placeId, ++this.net.places[placeId].mark)
+    getPlaceMark(placeId: PEId) {
+        return this.net.places[placeId].mark
+    }
+
+    setPlaceMark(placeId: PEId, val: number) {
+        this.net.places[placeId].mark = val
+        this.graphics.updatePlaceMark(placeId, val)
     }
 
     abstract update(): Promise<void>

@@ -52,7 +52,11 @@ export class SimulationBaseMode {
     getSimTime() {
         return this.simTime;
     }
-    incToken(placeId) {
-        this.graphics.updatePlaceMark(placeId, ++this.net.places[placeId].mark);
+    getPlaceMark(placeId) {
+        return this.net.places[placeId].mark;
+    }
+    setPlaceMark(placeId, val) {
+        this.net.places[placeId].mark = val;
+        this.graphics.updatePlaceMark(placeId, val);
     }
 }

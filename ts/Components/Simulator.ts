@@ -29,13 +29,51 @@ const simulationModes = {
     "VisObj": SimulationVisObjMode,
 }
 
+class SimSetMarkWindow {
+    private readonly modal: HTMLElement
+    private readonly input: HTMLInputElement
+    private saveObserver: (val: number) => void
+    
+    constructor() {
+        this.modal = <HTMLElement>document.getElementById("sim-set-mark-modal")
+        this.input = <HTMLInputElement>document.getElementById("sim-set-mark-input")
+        this.saveObserver = _ => {}
+
+        this.input.onkeydown = evt => {
+            if (evt.key === 'Enter') {
+                this.save()
+            }
+        }
+        (<HTMLElement>document.getElementById("sim-set-mark-save")).onclick = _ => this.save();
+        (<HTMLElement>document.getElementById("sim-set-mark-cancel")).onclick = _ => this.close();
+    }
+
+    open(val: number, saveObserver: (val: number) => void) {
+        this.modal.style.display = "flex"
+        this.input.value = String(val)
+        this.input.focus()
+        this.saveObserver = saveObserver
+    }
+
+    private close() {
+        this.modal.style.display = "none"
+    }
+
+    private save() {
+        this.saveObserver(parseInt(this.input.value))
+        this.close()
+    }
+}
+
 class SimulationEventHandler {
     private readonly net: PetriNet
     private readonly simulation: SimulationBaseMode
+    private readonly setMarkWindow: SimSetMarkWindow
 
     constructor(net: PetriNet, simulation: SimulationBaseMode) {
         this.net = net
         this.simulation = simulation
+        this.setMarkWindow = new SimSetMarkWindow()
     }
 
     mousedown(evt: MouseEvent) {
@@ -47,7 +85,17 @@ class SimulationEventHandler {
 
         if (ele.PEType != "place") return
 
-        this.simulation.incToken(ele.id)
+        const mark = this.simulation.getPlaceMark(ele.id)
+
+        if (evt.shiftKey) {
+            this.setMarkWindow.open(
+                mark,
+                val => this.simulation.setPlaceMark(ele.id, val)
+            )
+            return
+        }
+
+        this.simulation.setPlaceMark(ele.id, mark + 1)
     }
 }
 
