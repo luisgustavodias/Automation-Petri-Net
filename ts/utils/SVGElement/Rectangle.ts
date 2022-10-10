@@ -29,6 +29,11 @@ function getRectHeight(rect: SVGRectElement) {
     return parseInt(<string>rect.getAttribute('height'))
 }
 
+function setRectSize(rect: SVGRectElement, width: number, height: number) {
+    setRectWidth(rect, width)
+    setRectHeight(rect, height)
+}
+
 function setRectHeight(rect: SVGRectElement, height: number) {
     rect.setAttribute('height', String(height))
 }
@@ -51,4 +56,5 @@ function createRect(
     return rect
 }
 
-export { getRectPos, getRectHeight, getRectWidth, setRectHeight, setRectWidth, setRectPos, setRectCenter, createRect }
+export { getRectPos, getRectHeight, getRectWidth, getRectSizeAsVector, setRectHeight, 
+    setRectWidth, setRectSize, setRectPos, setRectCenter, createRect }

@@ -1,5 +1,6 @@
 import { createLine, setLineEndPoint, setLineStartPoint } from "../utils/SVGElement/Line.js";
 import Vector from "../utils/Vector.js";
+import { createRect, getRectPos, getRectSizeAsVector, setRectPos, setRectSize } from "../utils/SVGElement/Rectangle.js";
 const SVG_BG_ID = 'svg-background';
 class GenericTool {
     constructor() { }
@@ -102,121 +103,144 @@ class ArcTool extends GenericTool {
 }
 class MouseTool extends GenericTool {
     net;
-    selectedPEId;
-    dragging;
+    selectedPEs;
+    dragHandler;
     dragInitialPos;
-    dragMouseInitialPos;
-    cornerIdx;
-    peTextName;
+    selectionRectangle;
     propertyWindow;
     // dragManager: DragManager
     constructor(net, propertyWindow) {
         super();
         this.net = net;
-        this.selectedPEId = null;
-        this.dragging = false;
-        this.cornerIdx = null;
-        this.peTextName = null;
-        this.dragInitialPos = null;
-        this.dragMouseInitialPos = null;
+        this.selectedPEs = [];
+        this.dragHandler = null;
+        this.dragInitialPos = new Vector(0, 0);
+        this.selectionRectangle = null;
         this.propertyWindow = propertyWindow;
     }
     selectPE(id) {
-        if (this.selectedPEId) {
-            throw 'Need to deselect one element to select other';
+        if (!this.selectedPEs.length) {
+            this.propertyWindow.open(this.net.getGenericPEType(id), (attrName, val) => {
+                this.net.setGenericPEAttr(id, attrName, val);
+            }, this.net.getGenericPEData(id));
+        }
+        else if (this.selectedPEs.length === 1) {
+            this.propertyWindow.close();
         }
         this.net.selectPE(id);
-        this.selectedPEId = id;
-        this.propertyWindow.open(this.net.getGenericPEType(id), (attrName, val) => {
-            this.net.setGenericPEAttr(id, attrName, val);
-        }, this.net.getGenericPEData(id));
+        this.selectedPEs.push(id);
     }
-    deselectPE() {
-        if (!this.selectedPEId)
+    deselectPE(id) {
+        if (this.selectedPEs.length === 1)
+            this.propertyWindow.close();
+        this.net.deselectPE(id);
+        this.selectedPEs = this.selectedPEs.filter(selectedId => selectedId !== id);
+    }
+    deselectAll() {
+        if (this.selectedPEs.length === 1) {
+            this.deselectPE(this.selectedPEs[0]);
             return;
-        this.net.deselectPE(this.selectedPEId);
-        this.propertyWindow.close();
-        this.selectedPEId = null;
-        this.dragging = false;
-        this.cornerIdx = null;
+        }
+        for (const id of this.selectedPEs)
+            this.net.deselectPE(id);
+        this.selectedPEs = [];
     }
-    drag(evt, registryChange = false) {
-        const mousePos = this.net.getMousePosition(evt);
-        if (!this.selectedPEId
-            || !this.dragMouseInitialPos)
-            throw "Dragging Error";
-        if (this.cornerIdx !== null) {
-            this.dragInitialPos = this.net.moveArcCorner(this.selectedPEId, this.cornerIdx, mousePos.sub(this.dragMouseInitialPos), registryChange, false, this.dragInitialPos);
+    getDragHandler(target) {
+        if (this.selectedPEs.length > 1) {
+            return this.net.getMultiplePEsDragHandler(this.selectedPEs);
         }
-        else if (this.peTextName !== null) {
-            this.dragInitialPos = this.net.movePEText(this.selectedPEId, this.peTextName, mousePos.sub(this.dragMouseInitialPos), registryChange, this.dragInitialPos);
+        const id = target.getAttribute('PEParent');
+        const dragWhat = target.getAttribute('drag');
+        if (!id || !dragWhat)
+            throw "Invalid target";
+        if (dragWhat === 'corner' || dragWhat === 'arcMidNode') {
+            const cornerIdx = parseInt(target.getAttribute('cornerIdx') || "-1");
+            if (dragWhat === 'arcMidNode')
+                this.net.addArcCorner(id, cornerIdx);
+            return this.net.getArcCornerDragHandler(id, cornerIdx);
         }
-        else {
-            this.dragInitialPos = this.net.movePE(this.selectedPEId, mousePos.sub(this.dragMouseInitialPos), registryChange, false, this.dragInitialPos);
+        else if (dragWhat === 'PEText') {
+            const textName = target.getAttribute('PEText') || "";
+            return this.net.getPETextDragHandler(id, textName);
         }
+        else if (dragWhat === "pe") {
+            return this.net.getPetriElementDragHandler(id);
+        }
+        return null;
     }
-    endDrag(evt) {
-        if (this.dragging) {
-            this.drag(evt, true);
-        }
-        this.dragging = false;
-        this.cornerIdx = null;
-        this.peTextName = null;
-        this.dragInitialPos = null;
+    endDrag() {
+        if (this.dragHandler)
+            this.dragHandler.endDrag();
+        this.dragHandler = null;
+    }
+    addSelectionRectangle() {
+        const rectAttrs = {
+            'fill': 'black',
+            'fill-opacity': '0.05',
+            'stroke': 'gray',
+            'stroke-width': '0.5'
+        };
+        this.selectionRectangle = createRect(this.dragInitialPos, 0, 0, rectAttrs);
+        this.net.addIE(this.selectionRectangle);
     }
     onMouseDown(evt) {
         const target = evt.target;
+        this.dragInitialPos = this.net.getMousePosition(evt);
         if (target.id === SVG_BG_ID) {
-            this.deselectPE();
+            this.deselectAll();
+            this.addSelectionRectangle();
             return;
         }
-        const PEId = target.getAttribute('PEParent');
-        if (!PEId)
+        const id = target.getAttribute('PEParent');
+        if (!id)
             return;
-        if (!this.selectedPEId) {
-            this.selectPE(PEId);
+        const peType = this.net.getGenericPEType(id);
+        if ((this.selectedPEs.length > 0 &&
+            ["place", "trans"].includes(peType)) &&
+            (evt.shiftKey || this.selectedPEs.includes(id))) {
+            this.selectPE(id);
         }
-        else if (this.selectedPEId !== PEId) {
-            this.deselectPE();
-            this.selectPE(PEId);
+        else {
+            this.deselectAll();
+            this.selectPE(id);
         }
-        const dragWhat = target.getAttribute('drag');
-        if (!dragWhat)
-            return;
-        this.dragging = true;
-        this.dragMouseInitialPos = this.net
-            .getMousePosition(evt);
-        if (dragWhat === 'corner') {
-            this.cornerIdx = parseInt(target.getAttribute('cornerIdx') || "-1");
-        }
-        else if (dragWhat === 'arcMidNode') {
-            this.cornerIdx = parseInt(target.getAttribute('cornerIdx') || "-1");
-            this.net.addArcCorner(this.selectedPEId, this.cornerIdx);
-        }
-        else if (dragWhat === 'PEText') {
-            this.peTextName = target.getAttribute('PEText');
-        }
+        this.dragHandler = this.getDragHandler(target);
     }
     onMouseMove(evt) {
-        if (this.dragging) {
-            this.drag(evt);
+        const mousePos = this.net.getMousePosition(evt);
+        const displacement = mousePos.sub(this.dragInitialPos);
+        if (this.dragHandler)
+            this.dragHandler.drag(displacement);
+        else if (this.selectionRectangle) {
+            setRectPos(this.selectionRectangle, new Vector(Math.min(this.dragInitialPos.x, mousePos.x), Math.min(this.dragInitialPos.y, mousePos.y)));
+            setRectSize(this.selectionRectangle, Math.abs(displacement.x), Math.abs(displacement.y));
         }
     }
     onMouseUp(evt) {
-        this.endDrag(evt);
+        this.endDrag();
+        if (this.selectionRectangle) {
+            const rectPos = getRectPos(this.selectionRectangle);
+            const rectSize = getRectSizeAsVector(this.selectionRectangle);
+            for (const id of this.net.getPEsInsiteRect(rectPos, rectSize)) {
+                this.selectPE(id);
+            }
+            this.selectionRectangle.remove();
+            this.selectionRectangle = null;
+        }
     }
     onMouseLeave(evt) {
-        this.endDrag(evt);
+        this.endDrag();
     }
     onKeyDown(evt) {
-        if (evt.key === "Delete" && this.selectedPEId) {
-            const id = this.selectedPEId;
-            this.deselectPE();
-            this.net.removeGenericPE(id);
+        if (evt.key === "Delete" && this.selectedPEs.length) {
+            const idsToRemove = [...this.selectedPEs];
+            this.deselectAll();
+            for (const id of idsToRemove)
+                this.net.removeGenericPE(id);
         }
     }
     onChangeTool() {
-        this.deselectPE();
+        this.deselectAll();
         super.onChangeTool();
     }
 }

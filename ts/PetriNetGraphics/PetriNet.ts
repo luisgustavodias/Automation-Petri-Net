@@ -8,6 +8,10 @@ interface Change {
     redo: () => void
 }
 
+export interface IDragHandler {
+    drag: (displacement: Vector) => void
+    endDrag: () => void
+}
 
 class UndoRedoManager {
     private undoList: Change[]
@@ -67,20 +71,20 @@ function createSVGNet() {
     return svgElement
 }
 
-export class PetriNet {
+class BasePetriNet {
     private static readonly GRID_SIZE = 10
 
     readonly svgElement: SVGSVGElement
-    private elements: { [id: PEId]: AGenericPetriElement }
+    protected elements: { [id: PEId]: AGenericPetriElement }
     inputs: Array<Input>
     simConfig: SimConfig
-    private preScript: string
-    private placeNumber: number
-    private transNumber: number
-    private undoRedoManager: UndoRedoManager
-    private _grid: boolean
-    
-    private constructor() {
+    protected preScript: string
+    protected placeNumber: number
+    protected transNumber: number
+    protected undoRedoManager: UndoRedoManager
+    protected _grid: boolean
+
+    protected constructor() {
         this.svgElement = createSVGNet()
         this.elements = {}
         this.inputs = []
@@ -94,10 +98,6 @@ export class PetriNet {
         this.transNumber = 1
         this._grid = false
         this.undoRedoManager = new UndoRedoManager()
-    }
-
-    private generateId() {
-        return window.crypto.randomUUID()
     }
 
     get grid() { 
@@ -115,6 +115,10 @@ export class PetriNet {
         this._grid = val
     }
 
+    protected generateId() {
+        return window.crypto.randomUUID()
+    }
+
     getGenericPE(id: PEId) {
         return this.elements[id]
     }
@@ -127,18 +131,10 @@ export class PetriNet {
         return this.elements[id].getData()
     }
 
-    selectPE(id: PEId) {
-        this.elements[id].select()
-    }
-
-    deselectPE(id: PEId) {
-        this.elements[id].deselect()
-    }  
-
-    private fitToGrid(pos: Vector) {
+    fitToGrid(pos: Vector) {
         return new Vector(
-            Math.round(pos.x/PetriNet.GRID_SIZE)*PetriNet.GRID_SIZE, 
-            Math.round(pos.y/PetriNet.GRID_SIZE)*PetriNet.GRID_SIZE
+            Math.round(pos.x/BasePetriNet.GRID_SIZE)*BasePetriNet.GRID_SIZE, 
+            Math.round(pos.y/BasePetriNet.GRID_SIZE)*BasePetriNet.GRID_SIZE
         )
     }
 
@@ -155,7 +151,15 @@ export class PetriNet {
         return pos
     }
 
-    private addGenericPE(
+    selectPE(id: PEId) {
+        this.elements[id].select()
+    }
+
+    deselectPE(id: PEId) {
+        this.elements[id].deselect()
+    }  
+
+    protected addGenericPE(
         genericPE: AGenericPetriElement, 
         registryChange: boolean = true
     ) {
@@ -224,254 +228,47 @@ export class PetriNet {
 
         return genericPE
     }
-    
-    setGenericPEAttr(
-        id: PEId, 
-        attrName: string, 
-        val: string, 
-        registryChange: boolean = true) 
-    {
-        const ele: any = this.elements[id]
-        const previousValue = ele[attrName]
-        ele[attrName] = val
-
-        if (registryChange) {
-            this.undoRedoManager.registryChange({
-                undo: () => this.setGenericPEAttr(
-                    id, attrName, previousValue, false
-                ),
-                redo: () => this.setGenericPEAttr(
-                    id, attrName, val, false
-                ),
-            })
-        }
-    }
-
-    private moveGenegic(
-        currentPos: Vector, 
-        displacement: Vector, 
-        initialPos: Vector, 
-        setPos: (pos: Vector) => void,
-        registryChange: boolean, 
-        ignoreGrid: boolean
-    ) {
-        const _initialPos = initialPos ? initialPos : currentPos;
-        
-        let targetPos = _initialPos.add(displacement)
-
-        if (!ignoreGrid && this.grid)
-            targetPos = this.fitToGrid(currentPos)
-
-        setPos(targetPos)
-
-        if (registryChange) {
-            this.undoRedoManager.registryChange({
-                undo: () => setPos(_initialPos),
-                redo: () => setPos(targetPos),
-            })
-        }
-
-        return _initialPos
-    }
-
-    movePE(
-        id: PEId, 
-        displacement: Vector, 
-        registryChange: boolean = true,
-        ignoreGrid: boolean = false,
-        initialPos: Vector | null = null
-    ) {
-        const genericPE = this.elements[id]
-
-        if (genericPE.PEType === 'arc') return
-
-        const petriElement = <APetriElement>genericPE;
-        
-        const _initialPos = initialPos ? initialPos : petriElement.position;
-        
-        petriElement.position = _initialPos.add(displacement)
-
-        if (!ignoreGrid && this.grid)
-            petriElement.position = this.fitToGrid(petriElement.position)
-
-        for (const arcId of petriElement.connectedArcs) {
-            const arc = <PetriArc>this.elements[arcId]
-
-            if (genericPE.PEType === 'place')
-                arc.updatePlacePos();
-            else
-                arc.updateTransPos();
-        }
-
-        if (registryChange) {
-            this.undoRedoManager.registryChange({
-                undo: () => this.movePE(
-                    id, new Vector(0, 0), false, true, _initialPos
-                ),
-                redo: () => this.movePE(
-                    id, displacement, false, true, _initialPos
-                ),
-            })
-        }
-
-        return _initialPos
-    }
-
-    addArcCorner(
-        arcId: PEId, 
-        cornerIndex: number, 
-        registryChange: boolean = true
-    ) {
-        const arc = <PetriArc>this.elements[arcId]
-        arc.addCorner(cornerIndex)
-
-        if (registryChange) {
-            this.undoRedoManager.registryChange({
-                undo: () => arc.removeCorner(cornerIndex),
-                redo: () => this.addArcCorner(arcId, cornerIndex, false),
-            })
-        }
-    }
-
-    moveArcCorner(
-        arcId: string, 
-        cornerIndex: number, 
-        displacement: Vector, 
-        registryChange: boolean = true,
-        ignoreGrid: boolean = false,
-        initialPos: Vector | null = null
-    ) {
-        const arc = <PetriArc>this.elements[arcId]
-
-        const _initialPos = initialPos ? initialPos : arc.getCornerPos(cornerIndex);
-        
-        arc.moveCorner(cornerIndex, _initialPos.add(displacement))
-
-        if (!ignoreGrid && this.grid)
-            arc.moveCorner(
-                cornerIndex, this.fitToGrid(arc.getCornerPos(cornerIndex))
-            )
-
-        if (registryChange) {
-            this.undoRedoManager.registryChange({
-                undo: () => this.moveArcCorner(
-                    arcId, 
-                    cornerIndex, 
-                    new Vector(0, 0), 
-                    false, 
-                    true, 
-                    _initialPos
-                ),
-                redo: () => this.moveArcCorner(
-                    arcId, 
-                    cornerIndex, 
-                    displacement, 
-                    false,
-                    true,
-                    _initialPos
-                ),
-            })
-        }
-
-        return _initialPos
-    }
-
-    movePEText(
-        id: string, 
-        attrName: string, 
-        displacement: Vector, 
-        registryChange: boolean = true,
-        initialPos: Vector | null = null
-    ) {
-        const genericPE = <AGenericPetriElement>this.elements[id]
-
-        const _initialPos = initialPos ? 
-            initialPos : 
-            genericPE.getPETextPosition(attrName);
-        
-        genericPE.setPETextPosition(
-            attrName, _initialPos.add(displacement)
-        )
-
-        if (registryChange) {
-            this.undoRedoManager.registryChange({
-                undo: () => this.movePEText(
-                    id, 
-                    attrName, 
-                    new Vector(0, 0), 
-                    false, 
-                    _initialPos
-                ),
-                redo: () => this.movePEText(
-                    id, 
-                    attrName, 
-                    displacement, 
-                    false,
-                    _initialPos
-                ),
-            })
-        }
-
-        return _initialPos
-    }
-
-    createPlace(coord: Vector) {
-        const place = new PetriPlace(this.generateId())
-        place.name = 'p' + this.placeNumber++
-        place.position = coord
-
-        this.addGenericPE(place)
-
-        return place.id
-    }
-
-    createTrans(coord: Vector) {
-        const trans = new PetriTrans(this.generateId())
-        trans.name = 't' + this.transNumber++
-        trans.position = coord
-
-        this.addGenericPE(trans)
-
-        return trans.id
-    }
-
-    createArc(placeId: string, transId: string, arcType: ArcType) {
-        const arc = new PetriArc(
-            this.generateId(), 
-            <PetriPlace>this.getGenericPE(placeId), 
-            <PetriTrans>this.getGenericPE(transId), 
-            arcType
-        )
-        
-        this.addGenericPE(arc)
-
-        return arc.id
-    }
-
-    undo() {
-        return this.undoRedoManager.undo()
-    }
-
-    redo() {
-        return this.undoRedoManager.redo()
-    }
 
     addIE(element: SVGAElement) {
         (<HTMLElement>document.getElementById('IEs')).appendChild(element)
     }
 
-    moveScreen(displacement: Vector) {
+    getNetData(): PetriNetData {
         const viewBox = this.svgElement.viewBox.baseVal
-        viewBox.x -= displacement.x
-        viewBox.y -= displacement.y
+
+        const elementsDataByPEType = Object.fromEntries(
+            ['place', 'trans', 'arc'].map(PEType => [
+                PEType,
+                Object.values(this.elements).filter(
+                    (ele) => ele.PEType === PEType
+                ).map(ele => ele.getData())
+            ])
+        )
+
+        return {
+            name: 'Untiteled_Net',
+
+            places: elementsDataByPEType['place'],
+            transitions: elementsDataByPEType['trans'],
+            arcs: elementsDataByPEType['arc'],
+            inputs: this.inputs,
+
+            grid: this.grid,
+            nextPlaceNumber: this.placeNumber,
+            nextTransNumber: this.transNumber,
+            viewBox: {
+                x: viewBox.x,
+                y: viewBox.y,
+                width: viewBox.width,
+                heigth: viewBox.height
+            },
+            preScript: "",
+            simConfig: this.simConfig
+        }
     }
 
-    zoom(focusPoint: Vector, scale: number) {
-        const viewBox = this.svgElement.viewBox.baseVal
-        viewBox.x += (focusPoint.x - viewBox.x)*(1 - scale)
-        viewBox.y += (focusPoint.y - viewBox.y)*(1 - scale)
-        viewBox.width = viewBox.width*scale
-        viewBox.height = viewBox.height*scale
+    static newNet() {
+        return new PetriNet()
     }
 
     private static loadPlace(data: PlaceData) {
@@ -533,44 +330,6 @@ export class PetriNet {
         return arc
     }
 
-    static newNet() {
-        return new PetriNet()
-    }
-
-    getNetData(): PetriNetData {
-        const viewBox = this.svgElement.viewBox.baseVal
-
-        const elementsDataByPEType = Object.fromEntries(
-            ['place', 'trans', 'arc'].map(PEType => [
-                PEType,
-                Object.values(this.elements).filter(
-                    (ele) => ele.PEType === PEType
-                ).map(ele => ele.getData())
-            ])
-        )
-
-        return {
-            name: 'Untiteled_Net',
-
-            places: elementsDataByPEType['place'],
-            transitions: elementsDataByPEType['trans'],
-            arcs: elementsDataByPEType['arc'],
-            inputs: this.inputs,
-
-            grid: this.grid,
-            nextPlaceNumber: this.placeNumber,
-            nextTransNumber: this.transNumber,
-            viewBox: {
-                x: viewBox.x,
-                y: viewBox.y,
-                width: viewBox.width,
-                heigth: viewBox.height
-            },
-            preScript: "",
-            simConfig: this.simConfig
-        }
-    }
-
     static loadNet(data: PetriNetData) {
         const net = new PetriNet()
 
@@ -593,5 +352,264 @@ export class PetriNet {
 
         console.log(net)
         return net
+    }
+}
+
+class PetriNetElementsCreation extends BasePetriNet {
+    createPlace(coord: Vector) {
+        const place = new PetriPlace(this.generateId())
+        place.name = 'p' + this.placeNumber++
+        place.position = coord
+
+        this.addGenericPE(place)
+
+        return place.id
+    }
+
+    createTrans(coord: Vector) {
+        const trans = new PetriTrans(this.generateId())
+        trans.name = 't' + this.transNumber++
+        trans.position = coord
+
+        this.addGenericPE(trans)
+
+        return trans.id
+    }
+
+    createArc(placeId: string, transId: string, arcType: ArcType) {
+        const arc = new PetriArc(
+            this.generateId(), 
+            <PetriPlace>this.getGenericPE(placeId), 
+            <PetriTrans>this.getGenericPE(transId), 
+            arcType
+        )
+        
+        this.addGenericPE(arc)
+
+        return arc.id
+    }
+
+    addArcCorner(
+        arcId: PEId, 
+        cornerIndex: number, 
+        registryChange: boolean = true
+    ) {
+        const arc = <PetriArc>this.elements[arcId]
+        arc.addCorner(cornerIndex)
+
+        if (registryChange) {
+            this.undoRedoManager.registryChange({
+                undo: () => arc.removeCorner(cornerIndex),
+                redo: () => this.addArcCorner(arcId, cornerIndex, false),
+            })
+        }
+    }
+}
+
+class PetriNetElementsMovement extends PetriNetElementsCreation {
+    private moveGeneric(
+        dragHandler: IDragHandler, 
+        pos: Vector, 
+        registryChange: boolean = true
+    ) {
+        dragHandler.drag(pos)
+
+        if (registryChange)
+            dragHandler.endDrag()
+    }
+
+    movePE(
+        id: PEId, 
+        pos: Vector, 
+        registryChange: boolean = true
+    ) {
+        this.moveGeneric(
+            this.getPetriElementDragHandler(id), 
+            pos, 
+            registryChange
+        )
+    }
+
+    moveArcCorner(
+        arcId: PEId, 
+        cornerIndex: number, 
+        pos: Vector, 
+        registryChange: boolean = true
+    ) {
+        this.moveGeneric(
+            this.getArcCornerDragHandler(arcId, cornerIndex), 
+            pos, 
+            registryChange
+        )
+    }
+
+    movePEText(
+        id: PEId,
+        attrName: string, 
+        pos: Vector, 
+        registryChange: boolean = true
+    ) {
+        this.moveGeneric(
+            this.getPETextDragHandler(id, attrName), 
+            pos, 
+            registryChange
+        )
+    }
+
+    private createDragHandler(
+        getPos: () => Vector, 
+        setPos: (pos: Vector) => void,
+        ignoreGrid: boolean
+    ): IDragHandler {
+        const initialPos = getPos()
+
+        const drag = (displacement: Vector) => {
+            const pos = initialPos.add(displacement)
+            if (!ignoreGrid && this.grid)
+                setPos(this.fitToGrid(pos))
+            else
+                setPos(pos)
+        }
+
+        const endDrag = () => {
+            const finalPos = getPos()
+
+            this.undoRedoManager.registryChange({
+                undo: () => setPos(initialPos),
+                redo: () => setPos(finalPos),
+            })
+        }
+
+        return {
+            drag: drag,
+            endDrag: endDrag
+        }
+    }
+
+    getPetriElementDragHandler(id: PEId) {
+        const petriElement = <APetriElement>this.getGenericPE(id)
+
+        const getPos = () => petriElement.position
+        const setPos = (pos: Vector) => {
+            petriElement.position = pos
+
+            for (const arcId of petriElement.connectedArcs) {
+                const arc = <PetriArc>this.getGenericPE(arcId)
+    
+                if (petriElement.PEType === 'place')
+                    arc.updatePlacePos();
+                else
+                    arc.updateTransPos();
+            }
+        }
+
+        return this.createDragHandler(getPos, setPos, false)
+    }
+
+    getArcCornerDragHandler(id: PEId, cornerIdx: number) {
+        const arc = <PetriArc>this.getGenericPE(id)
+
+        const getPos = () => arc.getCornerPos(cornerIdx)
+        const setPos = (pos: Vector) => { arc.moveCorner(cornerIdx, pos) }
+
+        return this.createDragHandler(getPos, setPos, false)
+    }
+
+    getPETextDragHandler(id: PEId, textName: string) {
+        const petriElement = <APetriElement>this.getGenericPE(id)
+
+        const getPos = () => petriElement.getPETextPosition(textName)
+        const setPos = (pos: Vector) => { petriElement.setPETextPosition(textName, pos) }
+
+        return this.createDragHandler(getPos, setPos, true)
+    }
+
+    getMultiplePEsDragHandler(ids: PEId[]) {
+        const dragHandlers = ids.map(id => this.getPetriElementDragHandler(id))
+        let lastDisplacement = new Vector(0, 0)
+
+        const drag = (displacement: Vector) => {
+            for (const dragHandler of dragHandlers)
+                dragHandler.drag(displacement)
+            lastDisplacement = displacement
+        }
+
+        const endDrag = () => {
+            this.undoRedoManager.registryChange({
+                undo: () => drag(new Vector(0, 0)),
+                redo: () => drag(lastDisplacement),
+            })
+        }
+
+        return {
+            drag: drag,
+            endDrag: endDrag
+        }
+    }
+}
+
+export class PetriNet extends PetriNetElementsMovement {
+    setGenericPEAttr(
+        id: PEId, 
+        attrName: string, 
+        val: string, 
+        registryChange: boolean = true) 
+    {
+        const ele: any = this.elements[id]
+        const previousValue = ele[attrName]
+        ele[attrName] = val
+
+        if (registryChange) {
+            this.undoRedoManager.registryChange({
+                undo: () => this.setGenericPEAttr(
+                    id, attrName, previousValue, false
+                ),
+                redo: () => this.setGenericPEAttr(
+                    id, attrName, val, false
+                ),
+            })
+        }
+    }
+
+    getPEsInsiteRect(rectPos: Vector, rectSize: Vector) {
+        return Object.values(this.elements).filter(ele => {
+            if (!(ele.PEType === 'place' || ele.PEType === 'trans'))
+                return false
+            
+            const pos = (<APetriElement>ele).position
+            const rectBottomLeft = rectPos.add(rectSize)
+
+            if (
+                pos.x < rectPos.x ||
+                pos.y < rectPos.y ||
+                pos.x > rectBottomLeft.x ||
+                pos.y > rectBottomLeft.y
+            ) {
+                return false
+            }
+            return true
+        }).map(ele => ele.id)
+    }
+
+    undo() {
+        return this.undoRedoManager.undo()
+    }
+
+    redo() {
+        return this.undoRedoManager.redo()
+    }
+
+    moveScreen(displacement: Vector) {
+        const viewBox = this.svgElement.viewBox.baseVal
+        viewBox.x -= displacement.x
+        viewBox.y -= displacement.y
+    }
+
+    zoom(focusPoint: Vector, scale: number) {
+        const viewBox = this.svgElement.viewBox.baseVal
+        viewBox.x += (focusPoint.x - viewBox.x)*(1 - scale)
+        viewBox.y += (focusPoint.y - viewBox.y)*(1 - scale)
+        viewBox.width = viewBox.width*scale
+        viewBox.height = viewBox.height*scale
     }
 }
