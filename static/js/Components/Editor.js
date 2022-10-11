@@ -197,10 +197,10 @@ class MouseTool extends GenericTool {
         const peType = this.net.getGenericPEType(id);
         if ((this.selectedPEs.length > 0 &&
             ["place", "trans"].includes(peType)) &&
-            (evt.shiftKey || this.selectedPEs.includes(id))) {
+            evt.shiftKey) {
             this.selectPE(id);
         }
-        else {
+        else if (!this.selectedPEs.includes(id)) {
             this.deselectAll();
             this.selectPE(id);
         }
