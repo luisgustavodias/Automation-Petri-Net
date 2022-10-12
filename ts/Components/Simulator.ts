@@ -31,12 +31,12 @@ const simulationModes = {
 }
 
 class SimSetMarkWindow {
-    private readonly modal: HTMLElement
+    private readonly modal: HTMLDialogElement
     private readonly input: HTMLInputElement
     private saveObserver: (val: number) => void
     
     constructor() {
-        this.modal = <HTMLElement>document.getElementById("sim-set-mark-modal")
+        this.modal = <HTMLDialogElement>document.getElementById("sim-set-mark-modal")
         this.input = <HTMLInputElement>document.getElementById("sim-set-mark-input")
         this.saveObserver = _ => {}
 
@@ -50,14 +50,14 @@ class SimSetMarkWindow {
     }
 
     open(val: number, saveObserver: (val: number) => void) {
-        this.modal.style.display = "flex"
+        this.modal.showModal()
         this.input.value = String(val)
-        this.input.focus()
+        setTimeout(() => this.input.focus(), 0)
         this.saveObserver = saveObserver
     }
 
     private close() {
-        this.modal.style.display = "none"
+        this.modal.close()
     }
 
     private save() {

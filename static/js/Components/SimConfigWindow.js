@@ -23,10 +23,10 @@ export class SimConfigWindow {
         this.inputElements.arcDebug.checked = config.arcDebug;
         this.inputElements.guardDebug.checked = config.guardDebug;
         this.saveObserver = saveObserver;
-        this.modal.style.display = "block";
+        this.modal.showModal();
     }
     close() {
-        this.modal.style.display = "none";
+        this.modal.close();
     }
     saveConfig() {
         if (!this.saveObserver)

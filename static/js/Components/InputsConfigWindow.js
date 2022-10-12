@@ -71,14 +71,14 @@ class InputConfig {
     }
     open(inputs, saveObserver) {
         this.saveObserver = saveObserver;
-        modal.style.display = "block";
+        modal.showModal();
         tbody.innerHTML = "";
         for (const input of inputs) {
             addInput(input);
         }
     }
     close() {
-        modal.style.display = "none";
+        modal.close();
     }
     save() {
         if (!this.saveObserver)

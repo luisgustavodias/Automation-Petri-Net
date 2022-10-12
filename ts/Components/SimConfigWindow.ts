@@ -1,7 +1,7 @@
 import { SimConfig, SimMode } from "../PNData"
 
 export class SimConfigWindow {
-    private readonly modal: HTMLDivElement
+    private readonly modal: HTMLDialogElement
     private readonly inputElements: {
         simMode: HTMLSelectElement
         arcDebug: HTMLInputElement
@@ -10,8 +10,8 @@ export class SimConfigWindow {
     private saveObserver: ((config: SimConfig) => void) | null
     
     constructor() {
-        this.modal = document.
-            getElementById('sim-config-modal') as HTMLDivElement
+        this.modal = <HTMLDialogElement>document.
+            getElementById('sim-config-modal')
         
         this.inputElements = {
             simMode: <HTMLSelectElement>document.getElementById('simMode'),
@@ -33,11 +33,11 @@ export class SimConfigWindow {
         this.inputElements.arcDebug.checked = config.arcDebug
         this.inputElements.guardDebug.checked = config.guardDebug
         this.saveObserver = saveObserver
-        this.modal.style.display = "block"
+        this.modal.showModal()
     }
 
     close() {
-        this.modal.style.display = "none";
+        this.modal.close()
     }
 
     saveConfig() {

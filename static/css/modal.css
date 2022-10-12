@@ -1,93 +1,56 @@
-/* The Modal (background) */
+.modal::backdrop {
+    background: rgba(0,0,0,0.3);
+}
+
 .modal {
-    display: none;
-    position: fixed;
-    z-index: 1;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    overflow: auto;
-    background-color: rgba(0,0,0,0.4);
-}
+    background-color: white;
+    color: black;
+    border: 1px solid var(--color-border);
+    padding: 0.5rem;
 
-.modal-close {
-    color: var(--color-border);
-    float: right;
-    margin-left: auto;
-    font-size: 28px;
-    font-weight: bold;
-}
-
-.modal-close:hover,
-.modal-close:focus {
-    color: var(--color-primary-light-darker);
-    text-decoration: none;
-    cursor: pointer;
+    animation: animatetop 0.8s;
 }
 
 .modal-header {
     display: flex;
     align-items: center;
-    padding: 3px 20px;
-    background-color: var(--color-primary-light);
-    color: black;
-    margin-bottom: 5px;
+    padding: 0.25rem;
+    margin-bottom: 0.75rem;
     border-bottom: 1px solid var(--color-border);
 }
 
 .modal-header h2 {
     font-size: 16pt;
-    margin: 5px;
+    margin: 0;
+    margin-right: 1rem;
 }
 
-.modal-body {
-    padding: 2px 16px;
-    display: flex;
-    align-items: center;
+.modal-close {
+    float: right;
+    margin-left: auto;
+    font-size: 20pt;
+    font-weight: bold;
 }
 
-.modal-body > div {
-    margin: auto;
+.modal-close:hover,
+.modal-close:focus {
+    text-decoration: none;
+    cursor: pointer;
 }
 
 .modal-footer {
     display: flex;
-    align-items: center;
-    height: 30px;
-    padding: 5px 16px;
-    background-color: var(--color-primary-light);
-    color: black;
+    justify-content: right;
+    padding: 0.25rem;
+    margin-top: 0.75rem ;
     border-top: 1px solid var(--color-border);
 }
 
-.modal-footer div {
-    float: right; 
-    margin-left: auto;
-    display: flex;
-    flex-direction: row;
-}
-
 .modal-footer .btn {
-    margin-left: 5px;
-}
-
-.modal-content {
-    position: relative;
-    background-color: #fefefe;
-    /* margin: auto; */
-    margin-top: 50px;
-    margin-left: auto;
-    margin-right: auto;
-    padding: 0;
-    border: 1px solid var(--color-border);
-    width: 80%;
-    box-shadow: 0 4px 8px 0 rgba(0,0,0,0.2),0 6px 20px 0 rgba(0,0,0,0.19);
-    animation-name: animatetop;
-    animation-duration: 0.4s
+    margin-left: 0.5rem;
 }
 
 @keyframes animatetop {
-    from {top: -300px; opacity: 0}
+    from {top: -20rem; opacity: 0.5}
     to {top: 0; opacity: 1}
 }

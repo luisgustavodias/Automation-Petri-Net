@@ -155,7 +155,7 @@ export class Application {
     }
 
     private bindGenCodeButtons() {
-        const genCodeModal = <HTMLElement>document
+        const genCodeModal = <HTMLDialogElement>document
             .getElementById('gencode-modal')
 
         const handlers = {
@@ -163,7 +163,7 @@ export class Application {
                 if (!this.editor)
                     return
 
-                genCodeModal.style.display = 'block'
+                genCodeModal.showModal()
                 const ele = <HTMLTextAreaElement>document
                     .getElementById('gencode-out')
         
@@ -172,10 +172,10 @@ export class Application {
                 )
             },
             "gencode-modal-close": () => {
-                genCodeModal.style.display = 'none'
+                genCodeModal.close()
             },
             "gencode-close": () => {
-                genCodeModal.style.display = 'none'
+                genCodeModal.close()
             },
         }
 

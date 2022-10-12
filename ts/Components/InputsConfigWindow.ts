@@ -14,7 +14,7 @@ const inputDataMapper = {
     initialValue: 3,
     description: 4
 }
-const modal = <HTMLElement>document.getElementById("inputs-modal")
+const modal = <HTMLDialogElement>document.getElementById("inputs-modal")
 const tbody = <HTMLElement>document.getElementById("inputs-config")
 const selectAllRadioButton = <HTMLInputElement>document
     .querySelector("#inputs-modal th input")
@@ -100,7 +100,7 @@ class InputConfig {
 
     open(inputs: Input[], saveObserver: SaveObserver) {
         this.saveObserver = saveObserver
-        modal.style.display = "block";
+        modal.showModal()
         tbody.innerHTML = "";
         for (const input of inputs) {
             addInput(input);
@@ -108,7 +108,7 @@ class InputConfig {
     }
 
     close() {
-        modal.style.display = "none"
+        modal.close()
     }
 
     save() {

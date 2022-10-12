@@ -40,13 +40,13 @@ class SimSetMarkWindow {
         document.getElementById("sim-set-mark-cancel").onclick = _ => this.close();
     }
     open(val, saveObserver) {
-        this.modal.style.display = "flex";
+        this.modal.showModal();
         this.input.value = String(val);
-        this.input.focus();
+        setTimeout(() => this.input.focus(), 0);
         this.saveObserver = saveObserver;
     }
     close() {
-        this.modal.style.display = "none";
+        this.modal.close();
     }
     save() {
         this.close();

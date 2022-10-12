@@ -136,16 +136,16 @@ export class Application {
             "nav-btn-gencode": () => {
                 if (!this.editor)
                     return;
-                genCodeModal.style.display = 'block';
+                genCodeModal.showModal();
                 const ele = document
                     .getElementById('gencode-out');
                 ele.value = generateCode(this.editor.net.getNetData());
             },
             "gencode-modal-close": () => {
-                genCodeModal.style.display = 'none';
+                genCodeModal.close();
             },
             "gencode-close": () => {
-                genCodeModal.style.display = 'none';
+                genCodeModal.close();
             },
         };
         for (const [btnId, handler] of Object.entries(handlers)) {

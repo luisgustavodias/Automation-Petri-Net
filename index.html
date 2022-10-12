@@ -173,8 +173,8 @@
         </svg> -->
 
         <svg id="sim-btn-pause" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <rect x=25 y=25 width=20 height="50" />
-            <rect x=55 y=25 width=20 height="50" />
+                <rect x=25 y=25 width=20 height="50" />
+                <rect x=55 y=25 width=20 height="50" />
         </svg>
 
         <svg id="sim-btn-stop" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
@@ -185,24 +185,18 @@
         <span id="simulation-time"></span>
     </div>
 
-    <div id="gencode-modal" class="modal">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Generated Code</h2>
-                <span id="gencode-modal-close" class="modal-close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <textarea id="gencode-out" cols="50" rows="10"></textarea>
-            </div>
-            <div class="modal-footer">
-                <div>
-                    <button id="gencode-close" class="btn btn-secondary">Close</button>
-                </div>
-            </div>
+    <dialog id="gencode-modal" class="modal">
+        <div class="modal-header">
+            <h2>Generated Code</h2>
+            <span id="gencode-modal-close" class="modal-close">&times;</span>
         </div>
-    </div>
+        <textarea id="gencode-out" cols="50" rows="10"></textarea>
+        <div class="modal-footer">
+            <button id="gencode-close" class="btn btn-secondary">Close</button>
+        </div>
+    </dialog>
 
-    <div id="inputs-modal" class="modal">
+    <dialog id="inputs-modal" class="modal">
         <template id="input-row">
             <tr>
                 <td><input type="checkbox"></td>
@@ -218,98 +212,87 @@
             </tr>
         </template>
 
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Inputs Configuration</h2>
-                <span id="inputs-modal-close" class="modal-close">&times;</span>
+        <div class="modal-header">
+            <h2>Inputs Configuration</h2>
+            <span id="inputs-modal-close" class="modal-close">&times;</span>
+        </div>
+        <div style="min-height: 10rem;">
+            <div class="input-buttons">
+                <button id="new-input-button" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 48 48">
+                        <path fill="white" d="M22.5 38V25.5H10V22.5H22.5V10H25.5V22.5H38V25.5H25.5V38Z"/>
+                    </svg>
+                    Add
+                </button>
+                <button id="remove-inputs-button" class="btn btn-primary">
+                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
+                        <path fill="white" d="M15 39H33Q33 39 33 39Q33 39 33 39V15H15V39Q15 39 15 39Q15 39 15 39ZM10.5 11V8H17.2L19.2 6H28.8L30.8 8H37.5V11ZM15 42Q13.8 42 12.9 41.1Q12 40.2 12 39V12H36V39Q36 40.2 35.1 41.1Q34.2 42 33 42ZM15 39H33Q33 39 33 39Q33 39 33 39H15Q15 39 15 39Q15 39 15 39Z"/>
+                    </svg>
+                    Remove
+                </button>
             </div>
-            <div class="modal-body">
-                <div>
-                    <div class="input-buttons">
-                        <button id="new-input-button" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewbox="0 0 48 48">
-                                <path fill="white" d="M22.5 38V25.5H10V22.5H22.5V10H25.5V22.5H38V25.5H25.5V38Z"/>
-                            </svg>
-                            Add
-                        </button>
-                        <button id="remove-inputs-button" class="btn btn-primary">
-                            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48">
-                                <path fill="white" d="M15 39H33Q33 39 33 39Q33 39 33 39V15H15V39Q15 39 15 39Q15 39 15 39ZM10.5 11V8H17.2L19.2 6H28.8L30.8 8H37.5V11ZM15 42Q13.8 42 12.9 41.1Q12 40.2 12 39V12H36V39Q36 40.2 35.1 41.1Q34.2 42 33 42ZM15 39H33Q33 39 33 39Q33 39 33 39H15Q15 39 15 39Q15 39 15 39Z"/>
-                            </svg>
-                            Remove
-                        </button>
-                    </div>
-                    <table id="inputs-config-table">
-                        <thead>
-                            <tr>
-                                <th style="width: 20px; padding: 3px;">
-                                    <input type="checkbox">
-                                </th>
-                                <th style="width: 180px;">Name</th>
-                                <th style="width: 60px;">Type</th>
-                                <th style="width: 50px;">Initial Value</th>
-                                <th style="width: 180px;">Description</th>
-                            </tr>
-                        </thead>
-                        <tbody id="inputs-config">
-                            
-                        </tbody>
-                    </table>
-                </div>
-            </div>
-            <div class="modal-footer">
-                <div>
-                    <button id="inputs-config-save" class="btn btn-primary">Save</button>
-                    <button id="inputs-config-cancel" class="btn btn-secondary">Cancel</button>
-                </div>
-            </div>
+            <table id="inputs-config-table">
+                <thead>
+                    <tr>
+                        <th style="width: 20px; padding: 3px;">
+                            <input type="checkbox">
+                        </th>
+                        <th style="width: 180px;">Name</th>
+                        <th style="width: 60px;">Type</th>
+                        <th style="width: 50px;">Initial Value</th>
+                        <th style="width: 180px;">Description</th>
+                    </tr>
+                </thead>
+                <tbody id="inputs-config">
+                    
+                </tbody>
+            </table>
+        </div>
+        <div class="modal-footer">
+            <button id="inputs-config-save" class="btn btn-primary">Save</button>
+            <button id="inputs-config-cancel" class="btn btn-secondary">Cancel</button>
         </div>
     </div>
+    </dialog>
 
-    <div id="sim-config-modal" class="modal" style="display: none;">
-        <div class="modal-content">
-            <div class="modal-header">
-                <h2>Simulation Configuration</h2>
-                <span class="modal-close">&times;</span>
-            </div>
-            <div class="modal-body">
-                <form id="simConfigForm">
-                    <div>
-                        <label>Simulation Mode: </label>
-                        <select name="simMode" id="simMode">
-                            <option value="Automation" selected>Automation</option>
-                            <option value="Classic">Classic</option>
-                            <option value="VisObj">VisObj</option>
-                        </select>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="arcDebug" id="arcDebug">
-                        <label for="arcDebug">Debug arcs</label>
-                    </div>
-                    <div>
-                        <input type="checkbox" name="guardDebug" id="guardDebug">
-                        <label for="guardDebug">Debug guards</label>
-                    </div>
-                </form>
-                <!-- <p><b>Mode 1:</b>Fire only 1 transition by scan cicle <br>
-                    <b>Mode 2:</b>Fire multiple transitions by scan cicle <br>
-                    <b>Mode 3:</b>Fire multiple transitions by scan cicle, but only the transitions
-                    that started the scan cicle enabled
-                </p> -->
-
-                <!-- <h3>Pre Script</h3>
-                <p>This piece of code runs at each beagning of a scan cicle</p>
-                <textarea name="pre-script" id="pre-script" cols="120" rows="10"
-                    placeholder="Write your script here"></textarea> -->
-            </div>
-            <div class="modal-footer">
-                <div style="float: right">
-                    <button id="sim-config-save" class="btn btn-primary">Save</button>
-                    <button id="sim-config-cancel" class="btn btn-secondary">Cancel</button>
-                </div>
-            </div>
+    <dialog id="sim-config-modal" class="modal">
+        <div class="modal-header">
+            <h2>Simulation Configuration</h2>
+            <span class="modal-close">&times;</span>
         </div>
-    </div>
+        <form id="simConfigForm">
+            <div>
+                <label>Simulation Mode: </label>
+                <select name="simMode" id="simMode">
+                    <option value="Automation" selected>Automation</option>
+                    <option value="Classic">Classic</option>
+                    <option value="VisObj">VisObj</option>
+                </select>
+            </div>
+            <div>
+                <input type="checkbox" name="arcDebug" id="arcDebug">
+                <label for="arcDebug">Debug arcs</label>
+            </div>
+            <div>
+                <input type="checkbox" name="guardDebug" id="guardDebug">
+                <label for="guardDebug">Debug guards</label>
+            </div>
+        </form>
+        <!-- <p><b>Mode 1:</b>Fire only 1 transition by scan cicle <br>
+            <b>Mode 2:</b>Fire multiple transitions by scan cicle <br>
+            <b>Mode 3:</b>Fire multiple transitions by scan cicle, but only the transitions
+            that started the scan cicle enabled
+        </p> -->
+
+        <!-- <h3>Pre Script</h3>
+        <p>This piece of code runs at each beagning of a scan cicle</p>
+        <textarea name="pre-script" id="pre-script" cols="120" rows="10"
+            placeholder="Write your script here"></textarea> -->
+        <div class="modal-footer">
+            <button id="sim-config-save" class="btn btn-primary">Save</button>
+            <button id="sim-config-cancel" class="btn btn-secondary">Cancel</button>
+        </div>
+    </dialog>
 
     <div class="flex-row">
         <div id="side-bar">
@@ -415,22 +398,16 @@
 
         </div>
 
-        <div id="sim-set-mark-modal" class="modal" style="display: none;">
-            <div class="modal-content" style="margin: auto; width: unset;">
-                <div class="modal-header">
-                    <h2>Set the Mark</h2>
-                </div>
-                <div class="modal-body" style="margin-bottom: 5px;">
-                    <input type="number" min="0" id="sim-set-mark-input" style="font-size: 12pt;">
-                </div>
-                <div class="modal-footer">
-                    <div style="float: right">
-                        <button id="sim-set-mark-save" class="btn btn-primary">Save</button>
-                        <button id="sim-set-mark-cancel" class="btn btn-secondary">Cancel</button>
-                    </div>
-                </div>
+        <dialog id="sim-set-mark-modal" class="modal">
+            <div class="modal-header">
+                <h2>Set the Mark</h2>
             </div>
-        </div>
+            <input type="number" min="0" id="sim-set-mark-input" style="font-size: 12pt;" onfocus="this.select()">
+            <div class="modal-footer">
+                <button id="sim-set-mark-save" class="btn btn-primary">Save</button>
+                <button id="sim-set-mark-cancel" class="btn btn-secondary">Cancel</button>
+            </div>
+        </dialog>
 
     </div>
 
