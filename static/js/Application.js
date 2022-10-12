@@ -7,6 +7,7 @@ import { PropertyWindow } from "./Components/PropertyWindow.js";
 import { SimConfigWindow } from "./Components/SimConfigWindow.js";
 import { Simulator } from "./Components/Simulator.js";
 import ToolBar from "./Components/ToolBar.js";
+import { delay } from "./utils/utils.js";
 const FILE_PICKER_OPTIONS = {
     types: [{
             description: 'Automation Petri Net',
@@ -168,20 +169,26 @@ export class Application {
                     this.simulator = createSimulator();
                 this.simulator.step();
             },
-            restart: () => {
+            restart: async () => {
                 if (!this.simulator)
                     return;
+                this.simulator.stop();
+                while (!this.simulator.isStopped())
+                    await delay(50);
                 this.simulator = createSimulator();
+                this.simulator.start();
             },
             pause: () => {
                 if (!this.simulator)
                     return;
                 this.simulator.pause();
             },
-            stop: () => {
+            stop: async () => {
                 if (!this.simulator)
                     return;
                 this.simulator.stop();
+                while (!this.simulator.isStopped())
+                    await delay(50);
                 this.simulator = null;
             },
         };

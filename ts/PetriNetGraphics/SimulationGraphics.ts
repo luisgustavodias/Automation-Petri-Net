@@ -95,6 +95,7 @@ class TokenAnimation {
 export class SimulationGraphics {
     private readonly net: PetriNet
     private readonly tokenAnimByArc: {[arcId: PEId]: TokenAnimation}
+    private exitFlag: boolean
 
     constructor(net: PetriNet) {
         this.net = net
@@ -106,6 +107,7 @@ export class SimulationGraphics {
                 return [arc.id, new TokenAnimation(arc.getArcPath())]
             }
         ))
+        this.exitFlag = false
     }
 
     updatePlaceMark = (placeId: PEId, mark: number) => {
@@ -145,11 +147,11 @@ export class SimulationGraphics {
         const animations = arcs.map(arc => this.tokenAnimByArc[arc.id])
         animations.forEach(anim => anim.start())
 
-        function animFunc(timestamp: number) {
+        const animFunc = (timestamp: number) => {
             if (!startTime) { startTime = timestamp }
 
             const t = (timestamp - startTime)
-            if (t > animDuration) {
+            if (t > animDuration || this.exitFlag) {
                 animations.forEach(anim => anim.stop())
                 return
             }
@@ -166,6 +168,8 @@ export class SimulationGraphics {
     }
 
     async fireTrans(trans: LogicalTrans) {
+        if (this.exitFlag) return
+
         const transGraphics = <PetriTrans>this.net
             .getGenericPE(trans.id)
         
@@ -226,5 +230,9 @@ export class SimulationGraphics {
 
     resetDebugTrans = (trans: LogicalTrans) => {
         
+    }
+
+    stopAnimations() {
+        this.exitFlag = true
     }
 }

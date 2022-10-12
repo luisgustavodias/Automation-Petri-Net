@@ -57,12 +57,14 @@ class TokenAnimation {
 export class SimulationGraphics {
     net;
     tokenAnimByArc;
+    exitFlag;
     constructor(net) {
         this.net = net;
         this.tokenAnimByArc = Object.fromEntries(net.getNetData().arcs.filter(arcData => ['Input', 'Output'].includes(arcData.arcType)).map(arcData => {
             const arc = net.getGenericPE(arcData.id);
             return [arc.id, new TokenAnimation(arc.getArcPath())];
         }));
+        this.exitFlag = false;
     }
     updatePlaceMark = (placeId, mark) => {
         const place = this.net.getGenericPE(placeId);
@@ -94,23 +96,25 @@ export class SimulationGraphics {
         let startTime = null;
         const animations = arcs.map(arc => this.tokenAnimByArc[arc.id]);
         animations.forEach(anim => anim.start());
-        function animFunc(timestamp) {
+        const animFunc = (timestamp) => {
             if (!startTime) {
                 startTime = timestamp;
             }
             const t = (timestamp - startTime);
-            if (t > animDuration) {
+            if (t > animDuration || this.exitFlag) {
                 animations.forEach(anim => anim.stop());
                 return;
             }
             for (const anim of animations)
                 anim.update(t);
             requestAnimationFrame(animFunc);
-        }
+        };
         requestAnimationFrame(animFunc);
         await delay(animDuration);
     }
     async fireTrans(trans) {
+        if (this.exitFlag)
+            return;
         const transGraphics = this.net
             .getGenericPE(trans.id);
         for (const arc of trans.inputsArcs) {
@@ -155,4 +159,7 @@ export class SimulationGraphics {
     };
     resetDebugTrans = (trans) => {
     };
+    stopAnimations() {
+        this.exitFlag = true;
+    }
 }

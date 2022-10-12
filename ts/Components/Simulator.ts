@@ -112,6 +112,7 @@ class SimulationEventHandler {
 
 class Simulator {
     private readonly simulation: SimulationBaseMode
+    private readonly graphics: SimulationGraphics
     private readonly inputWindow: InputWindow
     readonly eventHandler: SimulationEventHandler
     private state: SimState
@@ -119,11 +120,12 @@ class Simulator {
     constructor(net: PetriNet, inputWindow: InputWindow) { 
         this.inputWindow = inputWindow
         this.inputWindow.open(net.inputs)
+        this.graphics = new SimulationGraphics(net)
         this.simulation = new simulationModes[net.simConfig.simMode](
             new LogicalNet(
                 net.getNetData()
             ),
-            new SimulationGraphics(net),
+            this.graphics,
             () => this.inputWindow.readInputs()
         )
         this.eventHandler = new SimulationEventHandler(net, this.simulation)
@@ -178,6 +180,7 @@ class Simulator {
     }
 
     stop() {
+        this.graphics.stopAnimations()
         if (this.state !== SimState.Stopped) {
             if (this.state === SimState.Paused)
                 this._stop()
@@ -194,6 +197,10 @@ class Simulator {
     debugStep() {
         this.start()
         this.state = SimState.Pausing
+    }
+
+    isStopped() {
+        return this.state === SimState.Stopped
     }
 }
 

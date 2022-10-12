@@ -90,13 +90,15 @@ class SimulationEventHandler {
 }
 class Simulator {
     simulation;
+    graphics;
     inputWindow;
     eventHandler;
     state;
     constructor(net, inputWindow) {
         this.inputWindow = inputWindow;
         this.inputWindow.open(net.inputs);
-        this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData()), new SimulationGraphics(net), () => this.inputWindow.readInputs());
+        this.graphics = new SimulationGraphics(net);
+        this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData()), this.graphics, () => this.inputWindow.readInputs());
         this.eventHandler = new SimulationEventHandler(net, this.simulation);
         this.state = SimState.Paused;
     }
@@ -139,6 +141,7 @@ class Simulator {
             this.state = SimState.Pausing;
     }
     stop() {
+        this.graphics.stopAnimations();
         if (this.state !== SimState.Stopped) {
             if (this.state === SimState.Paused)
                 this._stop();
@@ -153,6 +156,9 @@ class Simulator {
     debugStep() {
         this.start();
         this.state = SimState.Pausing;
+    }
+    isStopped() {
+        return this.state === SimState.Stopped;
     }
 }
 export { Simulator };
