@@ -49,8 +49,8 @@ class SimSetMarkWindow {
         this.modal.style.display = "none";
     }
     save() {
-        this.saveObserver(parseInt(this.input.value));
         this.close();
+        this.saveObserver(parseInt(this.input.value));
     }
 }
 class SimulationEventHandler {
@@ -66,15 +66,26 @@ class SimulationEventHandler {
         const parentId = evt.target.getAttribute('PEParent');
         if (!parentId)
             return;
-        const ele = this.net.getGenericPE(parentId);
-        if (ele.PEType != "place")
+        if (this.net.getGenericPEType(parentId) != "place")
             return;
-        const mark = this.simulation.getPlaceMark(ele.id);
+        const place = this.net.getGenericPE(parentId);
+        const mark = this.simulation.getPlaceMark(place.id);
+        const setPlaceMark = (val) => {
+            if (place.placeType === 'BOOL' && val > 1) {
+                alert("Can't insert more than one token in a place of type BOOL");
+                return;
+            }
+            if (val < 0) {
+                alert("The number of token can't be negative");
+                return;
+            }
+            this.simulation.setPlaceMark(place.id, val);
+        };
         if (evt.shiftKey) {
-            this.setMarkWindow.open(mark, val => this.simulation.setPlaceMark(ele.id, val));
+            this.setMarkWindow.open(mark, setPlaceMark);
             return;
         }
-        this.simulation.setPlaceMark(ele.id, mark + 1);
+        setPlaceMark(mark + 1);
     }
 }
 class Simulator {

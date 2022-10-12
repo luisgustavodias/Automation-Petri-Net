@@ -6,6 +6,7 @@ import { SimulationClassicMode } from "../Simulation/ClassicMode.js"
 import { SimulationGraphics } from "../PetriNetGraphics/SimulationGraphics.js"
 import { SimulationAutomationMode } from "../Simulation/AutomationMode.js"
 import { SimulationVisObjMode } from "../Simulation/VisObjMode.js"
+import { PetriPlace } from "../PetriNetGraphics/PetriNetElements.js"
 
 const FIRE_TRANS_ANIMATION_TIME = 1500
 const FIRE_TRANS_INTERVAL = 200
@@ -60,8 +61,8 @@ class SimSetMarkWindow {
     }
 
     private save() {
-        this.saveObserver(parseInt(this.input.value))
         this.close()
+        this.saveObserver(parseInt(this.input.value))
     }
 }
 
@@ -81,21 +82,31 @@ class SimulationEventHandler {
 
         if (!parentId) return
 
-        const ele = this.net.getGenericPE(parentId)
+        if (this.net.getGenericPEType(parentId) != "place") return
+        
+        const place = <PetriPlace>this.net.getGenericPE(parentId)
+        
+        const mark = this.simulation.getPlaceMark(place.id)
 
-        if (ele.PEType != "place") return
+        const setPlaceMark = (val: number) => {
+            if (place.placeType === 'BOOL' && val > 1) {
+                alert("Can't insert more than one token in a place of type BOOL")
+                return
+            } 
+            if (val < 0) {
+                alert("The number of token can't be negative")
+                return
+            }
 
-        const mark = this.simulation.getPlaceMark(ele.id)
+            this.simulation.setPlaceMark(place.id, val)
+        }
 
         if (evt.shiftKey) {
-            this.setMarkWindow.open(
-                mark,
-                val => this.simulation.setPlaceMark(ele.id, val)
-            )
+            this.setMarkWindow.open(mark, setPlaceMark)
             return
         }
 
-        this.simulation.setPlaceMark(ele.id, mark + 1)
+        setPlaceMark(mark + 1)
     }
 }
 
