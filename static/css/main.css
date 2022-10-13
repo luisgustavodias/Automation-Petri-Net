@@ -1,14 +1,26 @@
 :root {
-    --color-primary-lighter: #e8e8e8;
-    --color-primary-light: #caced1;
-    --color-primary: #858c92;
-    --color-primary-dark: #6c757d;
-    --color-primary-darker: #333;
     --color-border: #777;
-    /* --color-secondary: blue; */
-    --color-secondary: #1a3c99;
-    --color-secondary-light: #2344a1;
-    --color-secondary-lighter: #3e63c7;
+    
+    --color-primary: #1a3c99;
+    --color-primary-hover: #2950bd;
+    --color-secondary: #6c757d;
+    --color-secondary-hover: #868c91;
+
+    --color-bg-primary: #f9f9f9;
+    --color-bg-secondary: #f0f0f0;
+
+    --color-bg-modal: white;
+
+    --color-navbar-bg: #333;
+    --color-navbar-bg-hover: #444;
+    
+    --color-toolbar-item: black;
+    --color-toolbar-item-bg: white;
+    --color-toolbar-item-bg-active: #fafafa;
+    
+    --color-text-primary: black;
+    --color-text-secondary: white;
+    --color-text-navbar: white;
 }
 
 .btn {
@@ -23,17 +35,17 @@
 }
 
 .btn-primary {
-    background-color: var(--color-secondary);
+    background-color: var(--color-primary);
 }
 
 .btn-primary:hover {
-    background-color: var(--color-secondary-light);
+    background-color: var(--color-primary-hover);
 }
 
 .btn-secondary {
-    background-color: var(--color-primary-dark);
+    background-color: var(--color-secondary);
 }
 
 .btn-secondary:hover {
-    background-color: var(--color-primary);
+    background-color: var(--color-secondary-hover);
 }

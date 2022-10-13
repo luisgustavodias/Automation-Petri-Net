@@ -1,7 +1,7 @@
 div.input-buttons {
     display: flex;
     flex-direction: row;
-    margin-bottom: 5px;
+    margin-bottom: 0.5rem;
 }
 
 #inputs-modal input, #inputs-modal select {
@@ -10,12 +10,12 @@ div.input-buttons {
 }
 
 #inputs-modal .modal-content {
-    max-width: 600px;
+    max-width: 40rem;
 }
 
 #inputs-modal input[type="checkbox"] {
     margin: 0;
-    accent-color: var(--color-secondary);
+    accent-color: var(--color-primary);
 }
 
 #inputs-modal input:focus, 
@@ -26,7 +26,6 @@ div.input-buttons {
 
 #inputs-config-table {
     border-collapse: collapse;
-    margin-bottom: 15px;
 }
 
 #inputs-config-table td {
@@ -38,21 +37,15 @@ div.input-buttons {
     border: 1px solid var(--color-border);
     font-size: 9pt;
     padding: 2pt;
-    color: white;
-    background-color: var(--color-primary-darker);
+    color: var(--color-text-primary);
 }
 
 
 .btn svg {
-    height: 12pt;
-    width: 12pt;
+    height: 14pt;
+    width: 14pt;
 }
 
-.btn {
-    margin-left: 5px;
-}
-
-#modal-footer {
-    float: right; 
-    margin-left: auto;
+div.input-buttons .btn {
+    margin-right: 0.5rem;
 }

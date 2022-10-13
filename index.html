@@ -32,7 +32,7 @@
 
         #svg-div {
             position: absolute;
-            left: 202px;
+            left: 201px;
             width: 100%;
             height: 100%;
             border-bottom: 2px solid black;
@@ -114,8 +114,8 @@
                 <a id="nav-btn-sim-config">Configuration</a>
             </div>
         </div>
-        <a id="nav-btn-inputs-config">Inputs</a>
-        <a id="nav-btn-gencode">Generate Code</a>
+        <button id="nav-btn-inputs-config">Inputs</button>
+        <button id="nav-btn-gencode">Generate Code</button>
 
         <span id="alpha-version" >Alpha Version</span>
     </div>
@@ -127,35 +127,35 @@
                 stroke="black" transform="translate(7 7)" />
         </svg>
         <svg id="place-tool" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <circle cx="50" cy="50" r="28" fill="white" stroke="black" stroke-width="4" />
+            <circle cx="50" cy="50" r="28" fill="var(--bg-color)" stroke="var(--color)" stroke-width="4" />
         </svg>
         <svg id="trans-tool" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <rect x="-27.5" y="-15" width="55" height="30" transform="translate(50 50)" fill="black" stroke="black" />
+            <rect x="-27.5" y="-15" width="55" height="30" transform="translate(50 50)" fill="var(--color)" stroke="var(--color)" />
         </svg>
 
         <svg id="arc-tool" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <line x1="20" y1="20" x2="70" y2="70" stroke="black" stroke-width="4" />
-            <polygon points="80,80 70,60 60,70" stroke="black" stroke-width="4" />
+            <line x1="20" y1="20" x2="70" y2="70" stroke="var(--color)" stroke-width="4" />
+            <polygon points="80,80 70,60 60,70" stroke="var(--color)" fill="var(--color)" stroke-width="4" />
         </svg>
 
         <div class="tool-bar-separation"></div>
 
         <svg id="sim-btn-restart" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 38 38">
-            <g transform="translate(6 6)">
+            <g transform="translate(6 6)" stroke="var(--color)" fill="var(--color)">
                 <path
                     d="M20,12c0,4.411-3.589,8-8,8s-8-3.589-8-8c0-2.52,1.174-4.768,3-6.235V3.353C4.016,5.085,2,8.309,2,12c0,5.514,4.486,10,10,10s10-4.486,10-10S17.514,2,12,2v2C16.411,4,20,7.589,20,12z"
-                    stroke="black" stroke-width="0.5" />
-                <path d="M2 2L9 2 9 9z" stroke="black" stroke-width="0.5" />
+                    stroke-width="0.5" />
+                <path d="M2 2L9 2 9 9z" stroke-width="0.5" />
             </g>
 
         </svg>
 
         <svg id="sim-btn-start" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 26 26">
-            <path d="M -6 -6 L 5 0 L -6 6, L -6 6" transform="translate(13 13)" />
+            <path d="M -6 -6 L 5 0 L -6 6, L -6 6" fill="var(--color)" transform="translate(13 13)" />
         </svg>
 
         <svg id="sim-btn-step" xmlns="http://www.w3.org/2000/svg" class="tool-bar-item" viewBox="0 0 34 34">
-            <g transform="translate(12 17)">
+            <g transform="translate(12 17)" fill="var(--color)">
                 <path d="M -6 -6 L 5 0 L -6 6, L -6 6" />
                 <rect x="6" y="-6" width="4" height="12" />
                 <rect x="12" y="-6" width="4" height="12" />
@@ -173,12 +173,14 @@
         </svg> -->
 
         <svg id="sim-btn-pause" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
+            <g fill="var(--color)">
                 <rect x=25 y=25 width=20 height="50" />
                 <rect x=55 y=25 width=20 height="50" />
+            </g>
         </svg>
 
         <svg id="sim-btn-stop" class="tool-bar-item" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100">
-            <rect x=25 y=25 width=50 height="50" />
+            <rect x=25 y=25 width=50 height="50" fill="var(--color)" />
         </svg>
 
         <span id="simulating-text"></span>
