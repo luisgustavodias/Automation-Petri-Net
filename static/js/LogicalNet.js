@@ -54,6 +54,7 @@ class LogicalTrans {
     inhibitorArcs;
     guard;
     delay;
+    priority;
     guardFunc;
     timeToEnable;
     _isGuardEnable;
@@ -63,6 +64,12 @@ class LogicalTrans {
         this.id = data.id;
         try {
             this.delay = parseFloat(data.delay);
+        }
+        catch (e) {
+            throw "Can't convert delay to float.";
+        }
+        try {
+            this.priority = parseFloat(data.priority);
         }
         catch (e) {
             throw "Can't convert delay to float.";
@@ -161,7 +168,8 @@ class LogicalNet {
                 .filter(arcData => arcData.transId === transData.id)
                 .map(arcData => this.arcs[arcData.id]))
         ]));
-        this.transInOrder = Object.values(this.transitions);
+        // Sort transition in descresing order of priority
+        this.transInOrder = Object.values(this.transitions).sort((a, b) => b.priority - a.priority);
         this.simConfig = netData.simConfig;
     }
 }

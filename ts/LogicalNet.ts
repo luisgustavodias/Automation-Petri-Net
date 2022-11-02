@@ -63,6 +63,7 @@ class LogicalTrans {
     readonly inhibitorArcs: LogicalPetriArc[]
     readonly guard: string
     readonly delay: number
+    readonly priority: number
     private readonly guardFunc: GuardFunc
     private timeToEnable: number
     private _isGuardEnable: boolean
@@ -73,6 +74,11 @@ class LogicalTrans {
         this.id = data.id
         try {
             this.delay = parseFloat(data.delay)
+        } catch(e) {
+            throw "Can't convert delay to float."
+        }
+        try {
+            this.priority = parseFloat(data.priority)
         } catch(e) {
             throw "Can't convert delay to float."
         }
@@ -204,7 +210,8 @@ class LogicalNet {
             ]
         ))
 
-        this.transInOrder = Object.values(this.transitions)
+        // Sort transition in descresing order of priority
+        this.transInOrder = Object.values(this.transitions).sort((a, b) => b.priority - a.priority)
         this.simConfig = netData.simConfig
     }
 }
