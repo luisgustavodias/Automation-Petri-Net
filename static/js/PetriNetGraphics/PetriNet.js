@@ -86,7 +86,10 @@ class BasePetriNet {
         this._grid = val;
     }
     generateId() {
+        if (window.crypto.randomUUID)
         return window.crypto.randomUUID();
+        else
+            return String(Math.random());
     }
     getGenericPE(id) {
         return this.elements[id];
