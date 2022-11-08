@@ -46,6 +46,7 @@ interface TransBasicData extends GenericPEBasicData {
     name: string
     delay: string
     guard: string
+    priority: string
 }
 
 interface ArcBasicData extends GenericPEBasicData {
