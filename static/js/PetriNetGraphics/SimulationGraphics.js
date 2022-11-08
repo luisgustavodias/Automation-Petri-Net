@@ -29,7 +29,7 @@ class TokenAnimation {
                 endTime: endTime
             });
         }
-        this.token = createCircle(this.animSteps[0].startPoint, 2);
+        this.token = createCircle(this.animSteps[0].startPoint, 2, { fill: 'var(--color-default)' });
         this.currentStep = -1;
     }
     start() {
@@ -78,7 +78,7 @@ export class SimulationGraphics {
     };
     resetArcColor = (arc) => {
         const arcGraphics = this.net.getGenericPE(arc.id);
-        arcGraphics.setArcColor('black');
+        arcGraphics.setArcColor('var(--color-default)');
     };
     setTransColor = (trans, color) => {
         trans.svgElement.children[0].setAttribute('fill', color);
@@ -89,7 +89,7 @@ export class SimulationGraphics {
     };
     disableTrans = (trans) => {
         const transGraphics = this.net.getGenericPE(trans.id);
-        this.setTransColor(transGraphics, 'black');
+        this.setTransColor(transGraphics, 'var(--color-default)');
     };
     async animateTokens(arcs) {
         const animDuration = FIRE_TRANS_ANIMATION_TIME / 2;
@@ -122,7 +122,7 @@ export class SimulationGraphics {
                 .getGenericPE(arc.place.id);
             placeGraphics.mark -= arc.weight;
         }
-        this.setTransColor(transGraphics, TRANS_FIRE_COLOR);
+        this.setTransColor(transGraphics, 'var(--color-trans-firing)');
         await this.animateTokens(trans.inputsArcs);
         await this.animateTokens(trans.outputsArcs);
         for (const arc of trans.outputsArcs) {
@@ -142,20 +142,22 @@ export class SimulationGraphics {
     };
     debugArc = (arc) => {
         const arcGraphics = this.net.getGenericPE(arc.id);
-        arcGraphics.setArcColor(arc.isEnable() ? 'green' : 'red');
+        arcGraphics.setArcColor(arc.isEnable() ? 'var(--color-arc-enabled)' : 'var(--color-arc-disabled)');
     };
     debugGuard = (trans) => {
-        this.setTransGuardColor(trans.id, trans.isGuardEnable() ? 'green' : 'red');
+        this.setTransGuardColor(trans.id, trans.isGuardEnable() ?
+            'var(--color-guard-enabled)' :
+            'var(--color-guard-disabled)');
     };
     debugTrans = (trans) => {
         const transGraphics = this.net
             .getGenericPE(trans.id);
         if (trans.isEnable())
-            this.setTransColor(transGraphics, 'green');
+            this.setTransColor(transGraphics, 'var(--color-trans-enabled)');
         else if (trans.isWaitingDelay())
-            this.setTransColor(transGraphics, 'orange');
+            this.setTransColor(transGraphics, 'var(--color-trans-waiting)');
         else
-            this.setTransColor(transGraphics, 'black');
+            this.setTransColor(transGraphics, 'var(--color-default)');
     };
     resetDebugTrans = (trans) => {
     };

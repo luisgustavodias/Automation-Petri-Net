@@ -57,7 +57,7 @@ class TokenAnimation {
             })
         }
 
-        this.token = createCircle(this.animSteps[0].startPoint, 2)
+        this.token = createCircle(this.animSteps[0].startPoint, 2, {fill: 'var(--color-default)'})
         this.currentStep = -1
     }
 
@@ -124,7 +124,7 @@ export class SimulationGraphics {
 
     resetArcColor = (arc: LogicalPetriArc) => {
         const arcGraphics = <PetriArc>this.net.getGenericPE(arc.id)
-        arcGraphics.setArcColor('black')
+        arcGraphics.setArcColor('var(--color-default)')
     }
 
     setTransColor = (trans: PetriTrans, color: string) => {
@@ -138,7 +138,7 @@ export class SimulationGraphics {
 
     disableTrans = (trans: LogicalTrans) => {
         const transGraphics = <PetriTrans>this.net.getGenericPE(trans.id)
-        this.setTransColor(transGraphics, 'black')
+        this.setTransColor(transGraphics, 'var(--color-default)')
     }
 
     private async animateTokens(arcs: LogicalPetriArc[]) {
@@ -180,7 +180,7 @@ export class SimulationGraphics {
             placeGraphics.mark -= arc.weight
         }
         
-        this.setTransColor(transGraphics, TRANS_FIRE_COLOR)
+        this.setTransColor(transGraphics, 'var(--color-trans-firing)')
         await this.animateTokens(trans.inputsArcs)
         await this.animateTokens(trans.outputsArcs)
 
@@ -207,13 +207,15 @@ export class SimulationGraphics {
         const arcGraphics = <PetriArc>this.net.getGenericPE(arc.id)
 
         arcGraphics.setArcColor(
-            arc.isEnable() ? 'green' : 'red'
+            arc.isEnable() ? 'var(--color-arc-enabled)' : 'var(--color-arc-disabled)'
         )
     }
 
     debugGuard = (trans: LogicalTrans) => {
         this.setTransGuardColor(
-            trans.id, trans.isGuardEnable() ? 'green' : 'red'
+            trans.id, trans.isGuardEnable() ? 
+                'var(--color-guard-enabled)' : 
+                'var(--color-guard-disabled)'
         )
     }
 
@@ -221,11 +223,11 @@ export class SimulationGraphics {
         const transGraphics = <PetriTrans>this.net
             .getGenericPE(trans.id)
         if (trans.isEnable()) 
-            this.setTransColor(transGraphics, 'green')
+            this.setTransColor(transGraphics, 'var(--color-trans-enabled)')
         else if (trans.isWaitingDelay())
-            this.setTransColor(transGraphics, 'orange')
+            this.setTransColor(transGraphics, 'var(--color-trans-waiting)')
         else
-            this.setTransColor(transGraphics, 'black')
+            this.setTransColor(transGraphics, 'var(--color-default)')
     }
 
     resetDebugTrans = (trans: LogicalTrans) => {

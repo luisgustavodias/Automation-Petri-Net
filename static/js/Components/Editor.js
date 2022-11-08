@@ -34,7 +34,7 @@ class ArcTool extends GenericTool {
         this.net = net;
         this.line = createLine(new Vector(20, 20), new Vector(20, 80));
         // this.currentNet.addIE(<SVGAElement><unknown>this.line)
-        this.line.setAttribute('stroke', 'black');
+        this.line.setAttribute('stroke', 'var(--color-default)');
         this.line.setAttribute('stroke-dasharray', '3 1');
         // this.line.setAttribute('stroke-width', '4')
         this.firstPE = null;

@@ -60,11 +60,11 @@ class APetriElement extends AGenericPetriElement {
     }
     select() {
         this.selected = true;
-        this.svgElement.children[0].setAttribute('stroke', 'blue');
+        this.svgElement.children[0].setAttribute('stroke', 'var(--color-select)');
     }
     deselect() {
         this.selected = true;
-        this.svgElement.children[0].setAttribute('stroke', 'black');
+        this.svgElement.children[0].setAttribute('stroke', 'var(--color-default)');
     }
     connectArc(PEId) {
         if (this.connectedArcs.indexOf(PEId) !== -1) {
@@ -101,8 +101,8 @@ class PetriPlace extends APetriElement {
         this._initialMark = '0';
         this._mark = 0;
         this.svgElement.appendChild(createCircle(new Vector(0, 0), PetriPlace.placeRadius, {
-            fill: 'white',
-            stroke: 'black',
+            fill: 'var(--color-bg)',
+            stroke: 'var(--color-default)',
             drag: 'pe',
             PEParent: id
         }));
@@ -199,15 +199,15 @@ class PetriPlace extends APetriElement {
         else {
             const r = 0.68 * PetriPlace.placeRadius;
             tokens = [
-                createCircle(new Vector(0, 0), r)
+                this.createToken(new Vector(0, 0), r)
             ];
-            tokens[0].setAttribute('PEParent', this.id);
             const textElement = document.createElementNS('http://www.w3.org/2000/svg', 'text');
-            textElement.setAttribute('fill', 'white');
+            textElement.style.fill = 'var(--color-bg)';
             textElement.setAttribute('text-anchor', 'middle');
             textElement.setAttribute('dominant-baseline', 'middle');
             textElement.setAttribute('transform', 'translate(0 0.5)');
             textElement.setAttribute('PEParent', this.id);
+            textElement.setAttribute('drag', 'pe');
             if (val > 99) {
                 textElement.innerHTML = '99+';
             }
@@ -227,9 +227,10 @@ class PetriPlace extends APetriElement {
         this._initialMark = val;
         this.mark = parseInt(val);
     }
-    createToken(pos) {
-        const token = createCircle(pos, PetriPlace.tokenRadius);
+    createToken(pos, radius = PetriPlace.tokenRadius) {
+        const token = createCircle(pos, radius, { fill: 'var(--color-default)' });
         token.setAttribute('PEParent', this.id);
+        token.setAttribute('drag', 'pe');
         return token;
     }
     getConnectionPoint(u) {
@@ -254,11 +255,12 @@ class PetriTrans extends APetriElement {
     static transWidth = 5.5;
     static transHeight = 3;
     PEType = 'trans';
+    priority = '0';
     constructor(id) {
         super(id, 'trans-model');
         this.svgElement.appendChild(createRect(new Vector(0, 0), PetriTrans.transWidth * 2, PetriTrans.transHeight * 2, {
-            fill: 'black',
-            stroke: 'black',
+            fill: 'var(--color-default)',
+            stroke: 'var(--color-default)',
             drag: 'pe',
             PEParent: id
         }));
@@ -312,6 +314,7 @@ class PetriTrans extends APetriElement {
             name: this.name,
             delay: this.delay,
             guard: this.guard,
+            priority: this.priority,
             position: this.position,
             textsPosition: {
                 name: this.getPETextPosition('name'),
@@ -334,6 +337,7 @@ class PetriArc extends AGenericPetriElement {
         this.trans = trans;
         const arrowGroup = createGroup();
         this.arrow = new CurvedArrow(arrowGroup, place.position, trans.position, this.id);
+        this.arrow.setColor('var(--color-default)');
         this.svgElement.appendChild(arrowGroup);
         this.svgElement.appendChild(createGroup());
         this.svgElement.appendChild(createText('1', new Vector(0, 0), {
@@ -426,11 +430,11 @@ class PetriArc extends AGenericPetriElement {
         const node = createRect(pos, 3, 3);
         node.setAttribute('PEParent', this.id);
         node.setAttribute('cornerIdx', String(idx));
-        node.setAttribute('stroke', 'black');
+        node.setAttribute('stroke', 'var(--color-default)');
         node.setAttribute('stroke-width', '0.6');
         node.setAttribute('drag', type);
         if (type === 'arcMidNode') {
-            node.setAttribute('fill', 'blue');
+            node.setAttribute('fill', 'var(--color-select)');
         }
         else {
             node.setAttribute('fill', 'yellow');
@@ -488,12 +492,12 @@ class PetriArc extends AGenericPetriElement {
     }
     select() {
         this.selected = true;
-        this.setArcColor('blue');
+        this.setArcColor('var(--color-select)');
         this.showNodes();
     }
     deselect() {
         this.selected = false;
-        this.setArcColor('black');
+        this.setArcColor('var(--color-default)');
         this.cleanNodes();
     }
     getArcPath() {

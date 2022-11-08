@@ -56,9 +56,10 @@ function createSVGNet() {
     const svgElement = document.createElementNS(
         'http://www.w3.org/2000/svg', 'svg'
     )
-    svgElement.innerHTML = `<rect id="svg-background" 
+    svgElement.innerHTML = `
+    <rect id="svg-background" 
         x="-5000" y="-5000" 
-        width="10000" height="10000" fill="white"/>
+        width="10000" height="10000" fill="var(--color-bg)"/>
     <g id="elements">
         <g id="arcs"></g>
         <g id="pe"></g>
@@ -110,14 +111,14 @@ class BasePetriNet {
                 .setAttribute('fill', 'url(#grid-pattern)')
         } else {
             (<HTMLElement>document.getElementById('svg-background'))
-                .setAttribute('fill', 'white')
+                .setAttribute('fill', 'var(--color-bg)')
         }
         this._grid = val
     }
 
     protected generateId() {
         if (window.crypto.randomUUID)
-        return window.crypto.randomUUID()
+            return window.crypto.randomUUID()
         else
             return String(Math.random())
     }

@@ -47,7 +47,7 @@ export class CurvedArrow {
             new Vector(0, 0), 
             CurvedArrow.negBallRadius,
             {
-                'fill': 'white',
+                'fill-opacity': '0',
                 'stroke': 'black',
                 'stroke-width': '0.8'
             }
@@ -72,15 +72,20 @@ export class CurvedArrow {
     }
 
     draw() {
+        const headPos = this.getHeadPos()
+        const u = this.points[this.points.length - 2].sub(headPos).norm()
+
         const pointsStr = this.points
-            .map(p => `${p.x} ${p.y}`).join(', ')
+            .map((p, i) => {
+                if (i === this.points.length-1) {
+                    p = p.sub(u.mul(-6))
+                }
+                return `${p.x} ${p.y}`
+            }).join(', ')
 
         this.polyline.setAttribute('points', pointsStr)
         this.clickablePolyline.setAttribute('points', pointsStr)
 
-        const headPos = this.getHeadPos()
-        const u = this.points[this.points.length - 2].sub(headPos).norm()
-        
         if (this.arcType === 'Inhibitor') {
             this.drawHead(u, headPos.sub(
                 u.mul(-2*CurvedArrow.negBallRadius)
@@ -203,6 +208,7 @@ export class CurvedArrow {
     setColor(color: string) {
         this.polyline.setAttribute('stroke', color)
         this.arrowHead.setAttribute('fill', color)
+        this.negBall.setAttribute('stroke', color)
     }
 }
 
