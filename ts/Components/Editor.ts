@@ -101,18 +101,32 @@ class ArcTool extends GenericTool {
         )
     }
 
-    onMouseUp(evt: Event): void {
+    onMouseUp(evt: MouseEvent): void {
         const target = <SVGAElement>evt.target
         console.log(target)
 
-        if (target.id === SVG_BG_ID) {
+        if (!this.firstPE) return
+        
+        const parentId = target.getAttribute('PEParent')
+
+        if (!parentId) {
+            if (this.firstPE.PEType === 'place') {
+                this.net.createArc(
+                    this.firstPE.id, 
+                    this.net.createTrans(this.net.getMousePosition(evt)), 
+                    'Input'
+                )
+            } else if (this.firstPE.PEType === 'trans') {
+                this.net.createArc(
+                    this.net.createPlace(this.net.getMousePosition(evt)), 
+                    this.firstPE.id, 
+                    'Output'
+                )
+            }
+
             this.restart()
             return
         }
-
-        const parentId = target.getAttribute('PEParent')
-
-        if (!parentId || !this.firstPE) return
 
         const genericPE = this.net.getGenericPE(
             parentId

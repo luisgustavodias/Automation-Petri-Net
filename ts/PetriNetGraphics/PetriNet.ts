@@ -92,7 +92,8 @@ class BasePetriNet {
         this.simConfig = {
             simMode: "Automation",
             arcDebug: false,
-            guardDebug: false
+            guardDebug: false,
+            priorityMode: "fixed"
         }
         this.preScript = ""
         this.placeNumber = 1

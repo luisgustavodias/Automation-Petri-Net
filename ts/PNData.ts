@@ -4,12 +4,14 @@ type ArcType = "Input" | "Output" | "Test" | "Inhibitor"
 type InputType = "INT" | "BOOL"
 type PetriElementType = "place" | "trans" | "arc"
 type SimMode = "Automation" | "Classic" | "VisObj"
+type PriorityMode = "random" | "fixed"
 type InputValues = { [inputName: string]: number}
 
 interface SimConfig {
     simMode: SimMode
     arcDebug: boolean
     guardDebug: boolean
+    priorityMode: PriorityMode
 }
 
 interface IVector {
@@ -115,4 +117,4 @@ interface PetriNetData {
 export { PEId, Input, InputValues, PlaceType, ArcType, PetriElementType, InputType,
     GenericPEBasicData, PlaceBasicData, TransBasicData,
     ArcBasicData, PlaceData, TransData, ArcData, PetriNetBasicData,
-    PetriNetData, SimMode, SimConfig }
+    PetriNetData, SimMode, PriorityMode, SimConfig }

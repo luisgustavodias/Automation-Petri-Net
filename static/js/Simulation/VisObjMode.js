@@ -1,4 +1,4 @@
-import { delay } from "../utils/utils.js";
+import { delay, shuffle } from "../utils/utils.js";
 import { SimulationBaseMode } from "./BaseMode.js";
 export class SimulationVisObjMode extends SimulationBaseMode {
     enebledTransitions = [];
@@ -13,7 +13,10 @@ export class SimulationVisObjMode extends SimulationBaseMode {
         await Promise.all(animations);
         this.enebledTransitions = [];
         this.updateInputValues();
-        for (const trans of this.net.transInOrder) {
+        const transInOrder = this.net.simConfig.priorityMode === "random" ?
+            shuffle(this.net.transInOrder) :
+            this.net.transInOrder;
+        for (const trans of transInOrder) {
             this.updateTrans(trans);
             this.graphics.debugTrans(trans);
             if (this.net.simConfig.guardDebug)

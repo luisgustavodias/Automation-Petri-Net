@@ -8,7 +8,8 @@ export class SimConfigWindow {
         this.inputElements = {
             simMode: document.getElementById('simMode'),
             arcDebug: document.getElementById('arcDebug'),
-            guardDebug: document.getElementById('guardDebug')
+            guardDebug: document.getElementById('guardDebug'),
+            priorityMode: document.getElementById('priorityMode')
         };
         this.saveObserver = null;
         this.modal.querySelector('.modal-close')
@@ -41,7 +42,8 @@ export class SimConfigWindow {
         return {
             simMode: this.inputElements.simMode.value,
             arcDebug: this.inputElements.arcDebug.checked,
-            guardDebug: this.inputElements.guardDebug.checked
+            guardDebug: this.inputElements.guardDebug.checked,
+            priorityMode: this.inputElements.priorityMode.value,
         };
     }
 }

@@ -1,4 +1,4 @@
-import { SimConfig, SimMode } from "../PNData"
+import { PriorityMode, SimConfig, SimMode } from "../PNData"
 
 export class SimConfigWindow {
     private readonly modal: HTMLDialogElement
@@ -6,6 +6,7 @@ export class SimConfigWindow {
         simMode: HTMLSelectElement
         arcDebug: HTMLInputElement
         guardDebug: HTMLInputElement
+        priorityMode: HTMLSelectElement
     }
     private saveObserver: ((config: SimConfig) => void) | null
     
@@ -16,7 +17,8 @@ export class SimConfigWindow {
         this.inputElements = {
             simMode: <HTMLSelectElement>document.getElementById('simMode'),
             arcDebug: <HTMLInputElement>document.getElementById('arcDebug'),
-            guardDebug: <HTMLInputElement>document.getElementById('guardDebug')
+            guardDebug: <HTMLInputElement>document.getElementById('guardDebug'),
+            priorityMode: <HTMLSelectElement>document.getElementById('priorityMode')
         }
         this.saveObserver = null;
 
@@ -56,7 +58,8 @@ export class SimConfigWindow {
         return {
             simMode: <SimMode>this.inputElements.simMode.value,
             arcDebug: this.inputElements.arcDebug.checked,
-            guardDebug: this.inputElements.guardDebug.checked
+            guardDebug: this.inputElements.guardDebug.checked,
+            priorityMode: <PriorityMode>this.inputElements.priorityMode.value,
         }
     }
 }
