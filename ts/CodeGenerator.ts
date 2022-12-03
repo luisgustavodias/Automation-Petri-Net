@@ -3,11 +3,6 @@ import { Input, PEId, PetriNetData } from "./PNData";
 
 type TimerNames = {[id:PEId]: string}
 
-interface EdgeTrigger {
-    type: 'rt' | 'ft'
-    input: string
-}
-
 const isNotEmptyString = (s: string) => s !== ''
 
 function getArcEnableCondition(arc: LogicalPetriArc) {
@@ -65,11 +60,26 @@ function fireArc(arc: LogicalPetriArc) {
     }
 }
 
+function convertToSTTime(delay: number) {
+    const seconds = Math.floor(delay)
+    const miliseconds = Math.floor((delay - seconds)*1000)
+
+    return "T#" + (seconds ? `${seconds}S` : '') 
+        + (miliseconds ? `${miliseconds}MS` : '')
+}
+
+function updateTON(trans: LogicalTrans, timerName: string) {
+    const TON_IN = getTransEnableCondition(trans)
+    const TON_PT = convertToSTTime(trans.delay)
+    return `${timerName}(IN := ${TON_IN}, PT := ${TON_PT})\n`
+}
+
 function generateTransCode(trans: LogicalTrans, timerName?: string) {
     const transCondition = getTransEnableCondition(trans)
     const ifExpression = trans.delay ? `${timerName}.Q` : transCondition
+
     return [
-        trans.delay ? `${timerName}(IN := ${transCondition})\n` : '',
+        timerName ? updateTON(trans, timerName) : '',
         `IF ${ifExpression} THEN\n`,
         trans.delay ? `    ${timerName}.IN := FALSE;\n` : '',
         trans.inputsArcs.map(arc => indent(fireArc(arc))).join(''),
@@ -107,9 +117,11 @@ function getAllEdgeTriggers(transitions: LogicalTrans[]) {
         }
     }
 
-    return [...triggers].map(
-        t => `    ${t}: ${t[0].toUpperCase()}_TRIG;`
-    )
+    return [...triggers]
+}
+
+function declareEdgeTrigger(trigger: string) {
+    return `    ${trigger}: ${trigger[0].toUpperCase()}_TRIG;`
 }
 
 function initializeVariables(net: LogicalNet, netInputs: Input[], timerNames: TimerNames) {
@@ -125,7 +137,8 @@ function initializeVariables(net: LogicalNet, netInputs: Input[], timerNames: Ti
             .map(timerName => `    ${timerName}: TON;`)
             .join('\n')
         + '\n\n    // edge triggers\n'
-        + getAllEdgeTriggers(Object.values(net.transitions)).join('\n')
+        + getAllEdgeTriggers(Object.values(net.transitions))
+            .map(declareEdgeTrigger).join('\n')
         + '\nEND_VAR'
 }
 
@@ -140,12 +153,20 @@ function processTimers(net: PetriNetData) {
     return timerNames
 }
 
+function updateEdgeTriggers(net: LogicalNet) {
+    const triggers = getAllEdgeTriggers(Object.values(net.transitions))
+
+    return triggers.map(t => `${t}(CLK := ${t.slice(3)});`)
+}
+
 function generateCode(netData: PetriNetData) {
     const timerNames = processTimers(netData)
     const net = new LogicalNet(netData)
 
     return initializeVariables(net, netData.inputs, timerNames)
         + '\n\nPROGRAM\n'
+        + updateEdgeTriggers(net)
+        + '\n'
         + net.transInOrder
             .map(trans => generateTransCode(trans, timerNames[trans.id]))
             .join('\n\n')

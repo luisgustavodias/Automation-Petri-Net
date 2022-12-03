@@ -44,11 +44,22 @@ function fireArc(arc) {
         return `${arc.place.name} := ${val};\n`;
     }
 }
+function convertToSTTime(delay) {
+    const seconds = Math.floor(delay);
+    const miliseconds = Math.floor((delay - seconds) * 1000);
+    return "T#" + (seconds ? `${seconds}S` : '')
+        + (miliseconds ? `${miliseconds}MS` : '');
+}
+function updateTON(trans, timerName) {
+    const TON_IN = getTransEnableCondition(trans);
+    const TON_PT = convertToSTTime(trans.delay);
+    return `${timerName}(IN := ${TON_IN}, PT := ${TON_PT})\n`;
+}
 function generateTransCode(trans, timerName) {
     const transCondition = getTransEnableCondition(trans);
     const ifExpression = trans.delay ? `${timerName}.Q` : transCondition;
     return [
-        trans.delay ? `${timerName}(IN := ${transCondition})\n` : '',
+        timerName ? updateTON(trans, timerName) : '',
         `IF ${ifExpression} THEN\n`,
         trans.delay ? `    ${timerName}.IN := FALSE;\n` : '',
         trans.inputsArcs.map(arc => indent(fireArc(arc))).join(''),
@@ -74,7 +85,10 @@ function getAllEdgeTriggers(transitions) {
             triggers.add(`${result[1]}_${result[3]}`);
         }
     }
-    return [...triggers].map(t => `    ${t}: ${t[0].toUpperCase()}_TRIG;`);
+    return [...triggers];
+}
+function declareEdgeTrigger(trigger) {
+    return `    ${trigger}: ${trigger[0].toUpperCase()}_TRIG;`;
 }
 function initializeVariables(net, netInputs, timerNames) {
     return 'VAR\n'
@@ -87,7 +101,8 @@ function initializeVariables(net, netInputs, timerNames) {
             .map(timerName => `    ${timerName}: TON;`)
             .join('\n')
         + '\n\n    // edge triggers\n'
-        + getAllEdgeTriggers(Object.values(net.transitions)).join('\n')
+        + getAllEdgeTriggers(Object.values(net.transitions))
+            .map(declareEdgeTrigger).join('\n')
         + '\nEND_VAR';
 }
 function processTimers(net) {
@@ -98,11 +113,17 @@ function processTimers(net) {
     }
     return timerNames;
 }
+function updateEdgeTriggers(net) {
+    const triggers = getAllEdgeTriggers(Object.values(net.transitions));
+    return triggers.map(t => `${t}(CLK := ${t.slice(3)});`);
+}
 function generateCode(netData) {
     const timerNames = processTimers(netData);
     const net = new LogicalNet(netData);
     return initializeVariables(net, netData.inputs, timerNames)
         + '\n\nPROGRAM\n'
+        + updateEdgeTriggers(net)
+        + '\n'
         + net.transInOrder
             .map(trans => generateTransCode(trans, timerNames[trans.id]))
             .join('\n\n')
