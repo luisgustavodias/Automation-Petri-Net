@@ -47,7 +47,7 @@ export abstract class SimulationBaseMode {
         Object.values(this.net.transitions)
             .forEach(this.graphics.disableTrans)
         Object.values(this.net.transitions)
-            .forEach(this.graphics.disableTrans)
+            .forEach(this.graphics.resetGuard)
         Object.values(this.net.arcs)
             .forEach(this.graphics.resetArcColor)
     }

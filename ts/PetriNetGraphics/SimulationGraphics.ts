@@ -219,6 +219,10 @@ export class SimulationGraphics {
         )
     }
 
+    resetGuard = (trans: LogicalTrans) => {
+        this.setTransGuardColor(trans.id, 'var(--color-text)')
+    }
+
     debugTrans = (trans: LogicalTrans) => {
         const transGraphics = <PetriTrans>this.net
             .getGenericPE(trans.id)

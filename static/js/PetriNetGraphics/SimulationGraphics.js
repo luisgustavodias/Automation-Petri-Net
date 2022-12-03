@@ -149,6 +149,9 @@ export class SimulationGraphics {
             'var(--color-guard-enabled)' :
             'var(--color-guard-disabled)');
     };
+    resetGuard = (trans) => {
+        this.setTransGuardColor(trans.id, 'var(--color-text)');
+    };
     debugTrans = (trans) => {
         const transGraphics = this.net
             .getGenericPE(trans.id);

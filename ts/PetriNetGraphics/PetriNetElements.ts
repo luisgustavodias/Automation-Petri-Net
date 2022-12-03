@@ -149,6 +149,7 @@ class PetriPlace extends APetriElement {
             {
                 drag: 'PEText',
                 PEText: 'name',
+                fill: 'var(--color-text)',
                 PEParent: id
             }
         ))
@@ -158,6 +159,7 @@ class PetriPlace extends APetriElement {
             {
                 drag: 'PEText',
                 PEText: 'placeType',
+                fill: 'var(--color-text)',
                 PEParent: id
             }
         ))
@@ -330,6 +332,7 @@ class PetriTrans extends APetriElement {
             {
                 drag: 'PEText',
                 PEText: 'name',
+                fill: 'var(--color-text)',
                 PEParent: id
             }
         ))
@@ -339,6 +342,7 @@ class PetriTrans extends APetriElement {
             {
                 drag: 'PEText',
                 PEText: 'delay',
+                fill: 'var(--color-text)',
                 PEParent: id
             }
         ))
@@ -349,6 +353,7 @@ class PetriTrans extends APetriElement {
                 drag: 'PEText',
                 PEText: 'guard',
                 'text-anchor': 'end',
+                fill: 'var(--color-text)',
                 style: 'font-family: courier',
                 PEParent: id
             }
@@ -436,6 +441,7 @@ class PetriArc extends AGenericPetriElement {
             {
                 'text-anchor': 'middle',
                 'dominant-baseline': 'central',
+                fill: 'var(--color-text)',
                 drag: 'PEText',
                 PEText: 'weight',
                 visibility: 'hidden',

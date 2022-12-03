@@ -110,11 +110,13 @@ class PetriPlace extends APetriElement {
         this.svgElement.appendChild(createText('p1', new Vector(6.5, -8), {
             drag: 'PEText',
             PEText: 'name',
+            fill: 'var(--color-text)',
             PEParent: id
         }));
         this.svgElement.appendChild(createText('INT', new Vector(7, 8.5), {
             drag: 'PEText',
             PEText: 'placeType',
+            fill: 'var(--color-text)',
             PEParent: id
         }));
     }
@@ -267,17 +269,20 @@ class PetriTrans extends APetriElement {
         this.svgElement.appendChild(createText('p1', new Vector(6, -5.5), {
             drag: 'PEText',
             PEText: 'name',
+            fill: 'var(--color-text)',
             PEParent: id
         }));
         this.svgElement.appendChild(createText('', new Vector(6, 5.5), {
             drag: 'PEText',
             PEText: 'delay',
+            fill: 'var(--color-text)',
             PEParent: id
         }));
         this.svgElement.appendChild(createText('', new Vector(-6, -5.5), {
             drag: 'PEText',
             PEText: 'guard',
             'text-anchor': 'end',
+            fill: 'var(--color-text)',
             style: 'font-family: courier',
             PEParent: id
         }));
@@ -343,6 +348,7 @@ class PetriArc extends AGenericPetriElement {
         this.svgElement.appendChild(createText('1', new Vector(0, 0), {
             'text-anchor': 'middle',
             'dominant-baseline': 'central',
+            fill: 'var(--color-text)',
             drag: 'PEText',
             PEText: 'weight',
             visibility: 'hidden',
