@@ -109,6 +109,7 @@ class LogicalTrans {
             .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
             .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
             .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
+            .replaceAll(/(?<=(\w|\s))=(?=(\w|\s))/gi, '===')
         return eval(`(${inputNames.join(',')}, rt, ft) => ${decodedGuard}`)
     }
 
