@@ -89,6 +89,12 @@ export class Application {
                     return;
                 await saveNet(this.editor.net);
             },
+            "nav-btn-export": () => {
+                if (!this.editor)
+                    return;
+                const ele = document.getElementById("nav-btn-export");
+                ele.href = "data:text/plain;charset=utf-8," + JSON.stringify(this.editor.net.getNetData());
+            },
             "nav-btn-toggle-grid": () => {
                 if (!this.editor)
                     return;
@@ -109,6 +115,18 @@ export class Application {
             const btn = document.getElementById(btnId);
             btn.onclick = handler;
         }
+        const fileInputElement = document.getElementById("nav-btn-import");
+        fileInputElement.onchange = async () => {
+            if (this.editor)
+                this.editor.close();
+            if (!fileInputElement.files?.length)
+                return;
+            const data = await fileInputElement.files[0].text();
+            if (!data)
+                return;
+            const net = PetriNet.loadNet(JSON.parse(data));
+            this.editor = new Editor(net, this.propertyWindow);
+        };
     }
     bindToolBarButtons() {
         const tools = [

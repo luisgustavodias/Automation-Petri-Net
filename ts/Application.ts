@@ -101,6 +101,25 @@ export class Application {
                 if (!this.editor) return
                 await saveNet(this.editor.net)
             },
+            "nav-btn-save-browser": async () => {
+                if (!this.editor) return
+                localStorage.setItem("netData", JSON.stringify(this.editor.net.getNetData()))
+            },
+            "nav-btn-load-browser": async () => {
+                if (this.editor)
+                    this.editor.close()
+                const data = localStorage.getItem("netData")
+                if (!data)
+                    return
+                const net = PetriNet.loadNet(JSON.parse(data))
+                this.editor = new Editor(net, this.propertyWindow)
+            },
+            "nav-btn-export": () => {
+                if (!this.editor) return
+
+                const ele = <HTMLAnchorElement>document.getElementById("nav-btn-export")
+                ele.href = "data:text/plain;charset=utf-8," + JSON.stringify(this.editor.net.getNetData())
+            },
             "nav-btn-toggle-grid": () => {
                 if (!this.editor) return
                 this.editor.net.grid = !this.editor.net.grid
@@ -128,6 +147,19 @@ export class Application {
                 btnId
             )
             btn.onclick = handler
+        }
+
+        const fileInputElement = <HTMLInputElement>document.getElementById("nav-btn-import")
+        fileInputElement.onchange = async () => {
+            if (this.editor)
+                    this.editor.close()
+            if (!fileInputElement.files?.length)
+                return
+            const data = await fileInputElement.files[0].text()
+            if (!data)
+                return
+            const net = PetriNet.loadNet(JSON.parse(data))
+            this.editor = new Editor(net, this.propertyWindow)
         }
     }
 
