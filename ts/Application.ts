@@ -9,6 +9,7 @@ import { Simulator } from "./Components/Simulator.js";
 import ToolBar from "./Components/ToolBar.js";
 import Vector from "./utils/Vector.js";
 import { delay } from "./utils/utils.js";
+import { PetriNetData } from "./PNData.js";
 
 const FILE_PICKER_OPTIONS = {
     types: [{
@@ -69,14 +70,21 @@ export class Application {
         this.bindSimulationButtons()
         this.bindGenCodeButtons()
         this.addEditorEventListeners()
+
+        this.setTheme(localStorage.getItem("theme") ?? "light")
     }
 
     getEditor() {
         return this.editor
     }
 
-    openNet(net: PetriNet) {
-        this.editor = new Editor(PetriNet.newNet(), this.propertyWindow)
+    loadNet(netData: PetriNetData) {
+        this.editor = new Editor(PetriNet.loadNet(netData), this.propertyWindow)
+    }
+
+    setTheme(theme: string) {
+        document.body.className = `${theme}-theme net-${theme}-theme`
+        localStorage.setItem("theme", theme)
     }
 
     private bindNavBarButtons() {
@@ -123,6 +131,10 @@ export class Application {
             "nav-btn-toggle-grid": () => {
                 if (!this.editor) return
                 this.editor.net.grid = !this.editor.net.grid
+            },
+            "nav-btn-toggle-theme": () => {
+                const currentTheme = localStorage.getItem("theme")
+                this.setTheme(currentTheme === "light" ? "dark" : "light")
             },
             "nav-btn-sim-config": async () => {
                 if (!this.editor) return

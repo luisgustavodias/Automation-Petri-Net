@@ -58,12 +58,17 @@ export class Application {
         this.bindSimulationButtons();
         this.bindGenCodeButtons();
         this.addEditorEventListeners();
+        this.setTheme(localStorage.getItem("theme") ?? "light");
     }
     getEditor() {
         return this.editor;
     }
-    openNet(net) {
-        this.editor = new Editor(PetriNet.newNet(), this.propertyWindow);
+    loadNet(netData) {
+        this.editor = new Editor(PetriNet.loadNet(netData), this.propertyWindow);
+    }
+    setTheme(theme) {
+        document.body.className = `${theme}-theme net-${theme}-theme`;
+        localStorage.setItem("theme", theme);
     }
     bindNavBarButtons() {
         const handlers = {
@@ -99,6 +104,10 @@ export class Application {
                 if (!this.editor)
                     return;
                 this.editor.net.grid = !this.editor.net.grid;
+            },
+            "nav-btn-toggle-theme": () => {
+                const currentTheme = localStorage.getItem("theme");
+                this.setTheme(currentTheme === "light" ? "dark" : "light");
             },
             "nav-btn-sim-config": async () => {
                 if (!this.editor)

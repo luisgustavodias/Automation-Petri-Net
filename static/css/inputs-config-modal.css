@@ -4,11 +4,6 @@ div.input-buttons {
     margin-bottom: 0.5rem;
 }
 
-#inputs-modal input, #inputs-modal select {
-    border: none;
-    width: 98%;
-}
-
 #inputs-modal .modal-content {
     max-width: 40rem;
 }

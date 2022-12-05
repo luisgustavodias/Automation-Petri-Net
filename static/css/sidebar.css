@@ -1,14 +1,17 @@
 #side-bar {
+    box-sizing: border-box;
     position: absolute;
-    width: 200px;
+    width: 13rem;
     height: 100%;
     left: 0;
     background-color: var(--color-bg-primary);
     border-right: 1px solid var(--color-border);
+    color: var(--color-text-primary);
+    padding: 0.5rem;
 }
 
 #property-window div {
-    padding: 10px;
+    padding: 0.25rem;
 }
 
 #property-window label {
@@ -16,17 +19,8 @@
     padding-top: 10px;
 }
 
-#property-window select {
-    width: 99%;
-}
-
-#property-window input {
-    width: 94%;
-}
-
-#inputs-window {
-    padding-left: 0.5rem; 
-    padding-top: 0.5rem;
+#property-window select, #property-window input {
+    width: 100%;
 }
 
 #inputs-window table {
@@ -39,16 +33,29 @@
     border: 1px solid var(--color-border);
 }
 
+#inputs-window .input-name {
+    padding-inline: 0.25rem;
+    max-width: 8rem;
+    overflow: hidden;
+}
+
 #inputs-window th{
     justify-content: center;
     text-align: center;
     margin: auto;
     padding: 4px;
     border: 1px solid var(--color-border);
-    color: white;
     background-color: var(--color-primary-darker);
 }
 
 #inputs-window input[type="checkbox"] {
     accent-color: var(--color-secondary);
+}
+
+#inputs-window input[type="number"] {
+    width: 3rem;
+}
+
+#property-window input, #property-window select {
+    margin-top: 0.25rem;
 }

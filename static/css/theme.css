@@ -1,0 +1,93 @@
+.light-theme {
+    --color-border: #777;
+    
+    --color-primary: #1a3c99;
+    --color-primary-hover: #2950bd;
+    --color-secondary: #6c757d;
+    --color-secondary-hover: #868c91;
+
+    --color-bg-primary: #f9f9f9;
+    --color-bg-secondary: #f0f0f0;
+
+    --color-bg-modal: white;
+
+    --color-navbar-bg: #333;
+    --color-navbar-bg-hover: #444;
+
+    --color-toolbar-item-bg: white;
+    --color-toolbar-item-bg-focus: #fafafa;
+    --color-toolbar-item: black;
+    
+    --color-text-primary: black;
+    --color-text-secondary: white;
+    --color-text-navbar: white;
+
+    --color-bg-input: #f4f4f4;
+    --color-bg-input-focus: #e0e0e0;
+    --color-input-border: #888;
+    --color-input-border-focus: #888;
+}
+
+.dark-theme {
+    --color-border: #777;
+    
+    --color-primary: #1a3c99;
+    --color-primary-hover: #2950bd;
+    --color-secondary: #6c757d;
+    --color-secondary-hover: #868c91;
+
+    --color-bg-primary: #282828;
+    --color-bg-secondary: #f0f0f0;
+
+    --color-bg-editor: #1d1d1d;
+
+    --color-bg-modal: white;
+
+    --color-navbar-bg: #333;
+    --color-navbar-bg-hover: #444;
+
+    --color-toolbar-item-bg: #282828;
+    --color-toolbar-item-bg-focus: #383838;
+    --color-toolbar-item: white;
+    
+    --color-text-primary: white;
+    --color-text-secondary: black;
+    --color-text-navbar: white;
+
+    --color-bg-input: #444;
+    --color-bg-input-focus: #555;
+    --color-input-border: #666;
+    --color-input-border-focus: #666;
+}
+
+.net-light-theme {
+    --color-default: black;
+    --color-bg: white;
+    --color-grid: #c0c0c0;
+    --color-select: blue;
+    --color-guard-disabled: red;
+    --color-guard-enabled: green;
+    --color-trans-disabled: var(--color-default);
+    --color-trans-enabled: green;
+    --color-trans-firing: red;
+    --color-trans-waiting: orange;
+    --color-arc-enabled: green;
+    --color-arc-disabled: red;
+    --color-text: black;
+}
+
+.net-dark-theme {
+    --color-default: #f9f9f9;
+    --color-bg: #222;
+    --color-grid: #444;
+    --color-select: #1a3c99;
+    --color-guard-disabled: red;
+    --color-guard-enabled: green;
+    --color-trans-disabled: var(--color-primary);
+    --color-trans-enabled: green;
+    --color-trans-firing: red;
+    --color-trans-waiting: orange;
+    --color-arc-enabled: green;
+    --color-arc-disabled: red;
+    --color-text: white;
+}

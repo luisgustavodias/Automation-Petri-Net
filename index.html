@@ -8,6 +8,7 @@
     <title>Automation Petri Net</title>
     <link rel="icon" type="image/x-icon" href="static/icons/favicon.svg">
     <link rel="stylesheet" href="static/css/main.css">
+    <link rel="stylesheet" href="static/css/theme.css">
     <link rel="stylesheet" href="static/css/navbar.css">
     <link rel="stylesheet" href="static/css/toolbar.css">
     <link rel="stylesheet" href="static/css/sidebar.css">
@@ -28,11 +29,18 @@
         .flex-row {
             display: flex;
             flex-direction: row;
+            height: 100%;
+        }
+
+        .editor {
+            position: absolute;
+            left: 13rem;
+            width: 100%;
+            height: 100%;
         }
 
         #svg-div {
-            position: absolute;
-            left: 201px;
+            position: relative;
             width: 100%;
             height: 100%;
             border-bottom: 2px solid black;
@@ -52,7 +60,7 @@
         }
 
         #simulating-text, #simulation-time {
-            color: rgb(50, 50, 50);
+            color: var(--color-text-primary);
             align-self: center;
             padding-left: 1rem;
         }
@@ -93,6 +101,8 @@
                 <a id="nav-btn-save-file">Save</a>
                 <!-- <a idnav-btn-="save-as">Save as</a> -->
                 <a id="nav-btn-close-file">Close</a>
+                <a id="nav-btn-save-browser" style="display: none;">Save in browser</a>
+                <a id="nav-btn-load-browser" style="display: none;">Load from browser</a>
                 <a onclick="document.getElementById('nav-btn-import').click()">Import</a>
                 <input id="nav-btn-import" type="file" style="display: none;">
                 <a id="nav-btn-export" href="" download="my_net.txt">Export</a>
@@ -104,6 +114,7 @@
             </button>
             <div class="dropdown-content">
                 <a id="nav-btn-toggle-grid">Toggle Grid</a>
+                <a id="nav-btn-toggle-theme">Toggle Theme</a>
             </div>
         </div>
         <div class="dropdown">
@@ -212,7 +223,7 @@
                         <option value="INT">INT</option>
                     </select>
                 </td>
-                <td><input type="text" style="width: 40px;"></td>
+                <td><input type="text" style="width: 100%;"></td>
                 <td><input type="text"></td>
             </tr>
         </template>
@@ -243,7 +254,7 @@
                             <input type="checkbox">
                         </th>
                         <th style="width: 180px;">Name</th>
-                        <th style="width: 60px;">Type</th>
+                        <th style="width: auto;">Type</th>
                         <th style="width: 50px;">Initial Value</th>
                         <th style="width: 180px;">Description</th>
                     </tr>
@@ -283,7 +294,7 @@
                 <label for="guardDebug">Debug guards</label>
             </div>
             <div>
-                <label>Simulation Mode: </label>
+                <label>Priority Mode: </label>
                 <select name="priorityMode" id="priorityMode">
                     <option value="fixed" selected>Fixed</option>
                     <option value="random">Random</option>
@@ -328,7 +339,7 @@
                     <label>Guard</label>
                     <input id="pw-trans-guard" type="text">
                     <label>Priority</label>
-                    <input id="pw-trans-guard" type="text">
+                    <input id="pw-trans-priority" type="text">
                 </div>
                 <div id="pw-arc" style="display: none;">
                     <label>Type</label>
@@ -346,8 +357,8 @@
             <div id="inputs-window" style="display: none;">
                 <table>
                     <thead>
-                        <th style="width: 72%;">Input</th>
-                        <th>Value</th>
+                        <th style="width: 8rem;">Input</th>
+                        <th style="width: 3rem;">Value</th>
                     </thead>
                     <tbody>
                         
@@ -357,58 +368,60 @@
             </div>
         </div>
 
-        <svg xmlns="http://www.w3.org/2000/svg">
+        <svg xmlns="http://www.w3.org/2000/svg" style="z-index: -1;">
             <defs>
                 <pattern id="grid-pattern" width="10" height="10" patternUnits="userSpaceOnUse">
-                    <rect x="0" y="0" width="10" height="10" stroke="#c0c0c0" fill="white" stroke-width="0.2"/>
+                    <rect x="0" y="0" width="10" height="10" stroke="var(--color-grid)" fill="var(--color-bg)" stroke-width="0.2"/>
                 </pattern>
             </defs>
         </svg>
 
-        <div id="welcome-window">
-            <h1>Automation Petri Net</h1>
-            <h5>A Petri Net editor, simulator and code generator for automation</h5>
+        <div class="editor">
+            <div id="svg-div" style="display: block;"></div>
 
-            <h4>Start</h4>
-            <a onclick="document.getElementById('nav-btn-new-file').click()">
-                New File
-            </a>
-            <a onclick="document.getElementById('nav-btn-load-file').click()">
-                Open File
-            </a>
+            <div id="welcome-window">
+                <h1>Automation Petri Net</h1>
+                <h5>A Petri Net editor, simulator and code generator for automation</h5>
 
-            <div id="fast-tutorial">
-                <h4>Fast Tutorial</h4>
-                <div>
-                    <img src="static/icons/mouse/mouse-left-btn.svg"/> 
-                    Select and drag element
-                </div>
-                <div>
-                    <img src="static/icons/mouse/mouse-right-btn.svg"/> 
-                    Pan
-                </div>
-                <div>
-                    <img src="static/icons/mouse/mouse-weel.svg"/> 
-                    Zoom
-                </div>
-                <div>
-                    <kbd>Ctrl</kbd> + <kbd>z</kbd> 
-                    <span>Undo</span>
-                </div>
-                <div>
-                    <kbd>Ctrl</kbd> + <kbd>y</kbd> 
-                    <span>Redo</span>
-                </div>
-                <div>
-                    <kbd>Delete</kbd> 
-                    <span>Delete the selected element</span>
+                <h4>Start</h4>
+                <a onclick="document.getElementById('nav-btn-new-file').click()">
+                    New File
+                </a>
+                <a onclick="document.getElementById('nav-btn-load-file').click()">
+                    Open File
+                </a>
+
+                <div id="fast-tutorial">
+                    <h4>Fast Tutorial</h4>
+                    <div>
+                        <img src="static/icons/mouse/mouse-left-btn.svg"/> 
+                        Select and drag element
+                    </div>
+                    <div>
+                        <img src="static/icons/mouse/mouse-right-btn.svg"/> 
+                        Pan
+                    </div>
+                    <div>
+                        <img src="static/icons/mouse/mouse-weel.svg"/> 
+                        Zoom
+                    </div>
+                    <div>
+                        <kbd>Ctrl</kbd> + <kbd>z</kbd> 
+                        <span>Undo</span>
+                    </div>
+                    <div>
+                        <kbd>Ctrl</kbd> + <kbd>y</kbd> 
+                        <span>Redo</span>
+                    </div>
+                    <div>
+                        <kbd>Delete</kbd> 
+                        <span>Delete the selected element</span>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div id="svg-div" style="display: none;">
-
-        </div>
+        
 
         <dialog id="sim-set-mark-modal" class="modal">
             <div class="modal-header">

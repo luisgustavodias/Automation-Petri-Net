@@ -14,6 +14,7 @@ abstract class AGenericInput {
         this.element = document.createElement('input')
 
         td1.innerHTML = inputName
+        td1.className = 'input-name'
 
         this.element.type = inputType
         this.name = inputName

@@ -9,6 +9,7 @@ class AGenericInput {
         const td2 = document.createElement('td');
         this.element = document.createElement('input');
         td1.innerHTML = inputName;
+        td1.className = 'input-name';
         this.element.type = inputType;
         this.name = inputName;
         inputsTableBody.append(row);
