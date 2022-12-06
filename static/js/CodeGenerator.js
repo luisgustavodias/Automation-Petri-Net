@@ -115,7 +115,7 @@ function processTimers(net) {
 }
 function updateEdgeTriggers(net) {
     const triggers = getAllEdgeTriggers(Object.values(net.transitions));
-    return triggers.map(t => `${t}(CLK := ${t.slice(3)});`);
+    return triggers.map(t => `${t}(CLK := ${t.slice(3)});`).join('\n');
 }
 function generateCode(netData) {
     const timerNames = processTimers(netData);

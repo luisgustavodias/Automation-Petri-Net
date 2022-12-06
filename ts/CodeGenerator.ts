@@ -156,7 +156,7 @@ function processTimers(net: PetriNetData) {
 function updateEdgeTriggers(net: LogicalNet) {
     const triggers = getAllEdgeTriggers(Object.values(net.transitions))
 
-    return triggers.map(t => `${t}(CLK := ${t.slice(3)});`)
+    return triggers.map(t => `${t}(CLK := ${t.slice(3)});`).join('\n')
 }
 
 function generateCode(netData: PetriNetData) {
