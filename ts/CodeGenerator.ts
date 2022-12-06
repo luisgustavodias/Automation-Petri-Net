@@ -71,7 +71,7 @@ function convertToSTTime(delay: number) {
 function updateTON(trans: LogicalTrans, timerName: string) {
     const TON_IN = getTransEnableCondition(trans)
     const TON_PT = convertToSTTime(trans.delay)
-    return `${timerName}(IN := ${TON_IN}, PT := ${TON_PT})\n`
+    return `${timerName}(IN := ${TON_IN}, PT := ${TON_PT});\n`
 }
 
 function generateTransCode(trans: LogicalTrans, timerName?: string) {
