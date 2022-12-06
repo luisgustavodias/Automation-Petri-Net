@@ -7,13 +7,13 @@ const isNotEmptyString = (s: string) => s !== ''
 
 function getArcEnableCondition(arc: LogicalPetriArc) {
     if (['Input', 'Test'].includes(arc.arcType)) {
-        if (arc.place.placeType === 'BOOL' || arc.weight === 1)
+        if (arc.place.placeType === 'BOOL')
             return arc.place.name
         
         return `${arc.place.name} >= ${arc.weight}`
     } 
     if (arc.arcType === 'Inhibitor') {
-        if (arc.place.placeType === 'BOOL' || arc.weight === 1)
+        if (arc.place.placeType === 'BOOL')
             return `NOT ${arc.place.name}`
         
         return `${arc.place.name} < ${arc.weight}`
