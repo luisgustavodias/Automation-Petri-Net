@@ -2,12 +2,12 @@ import { LogicalNet } from "./LogicalNet.js";
 const isNotEmptyString = (s) => s !== '';
 function getArcEnableCondition(arc) {
     if (['Input', 'Test'].includes(arc.arcType)) {
-        if (arc.place.placeType === 'BOOL' || arc.weight === 1)
+        if (arc.place.placeType === 'BOOL')
             return arc.place.name;
         return `${arc.place.name} >= ${arc.weight}`;
     }
     if (arc.arcType === 'Inhibitor') {
-        if (arc.place.placeType === 'BOOL' || arc.weight === 1)
+        if (arc.place.placeType === 'BOOL')
             return `NOT ${arc.place.name}`;
         return `${arc.place.name} < ${arc.weight}`;
     }
@@ -53,7 +53,7 @@ function convertToSTTime(delay) {
 function updateTON(trans, timerName) {
     const TON_IN = getTransEnableCondition(trans);
     const TON_PT = convertToSTTime(trans.delay);
-    return `${timerName}(IN := ${TON_IN}, PT := ${TON_PT})\n`;
+    return `${timerName}(IN := ${TON_IN}, PT := ${TON_PT});\n`;
 }
 function generateTransCode(trans, timerName) {
     const transCondition = getTransEnableCondition(trans);
