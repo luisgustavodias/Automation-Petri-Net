@@ -97,15 +97,13 @@
             </button>
             <div class="dropdown-content">
                 <a id="nav-btn-new-file">New</a>
-                <a id="nav-btn-load-file">Load</a>
-                <a id="nav-btn-save-file">Save</a>
+                <a id="nav-btn-load-file" style="display: none;">Load</a>
+                <a id="nav-btn-save-file" style="display: none;">Save</a>
                 <!-- <a idnav-btn-="save-as">Save as</a> -->
+                <a onclick="document.getElementById('nav-btn-import').click()">Load</a>
                 <a id="nav-btn-close-file">Close</a>
-                <a id="nav-btn-save-browser" style="display: none;">Save in browser</a>
-                <a id="nav-btn-load-browser" style="display: none;">Load from browser</a>
-                <a onclick="document.getElementById('nav-btn-import').click()">Import</a>
                 <input id="nav-btn-import" type="file" style="display: none;">
-                <a id="nav-btn-export" href="" download="my_net.txt">Export</a>
+                <a id="nav-btn-export" href="" download="my_net.txt">Save</a>
             </div>
         </div>
         <div class="dropdown">

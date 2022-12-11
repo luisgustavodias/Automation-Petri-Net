@@ -109,19 +109,6 @@ export class Application {
                 if (!this.editor) return
                 await saveNet(this.editor.net)
             },
-            "nav-btn-save-browser": async () => {
-                if (!this.editor) return
-                localStorage.setItem("netData", JSON.stringify(this.editor.net.getNetData()))
-            },
-            "nav-btn-load-browser": async () => {
-                if (this.editor)
-                    this.editor.close()
-                const data = localStorage.getItem("netData")
-                if (!data)
-                    return
-                const net = PetriNet.loadNet(JSON.parse(data))
-                this.editor = new Editor(net, this.propertyWindow)
-            },
             "nav-btn-export": () => {
                 if (!this.editor) return
 

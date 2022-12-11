@@ -403,7 +403,6 @@ class Editor {
     close() {
         this.net.svgElement.remove()
         this.divElement.style.display = 'none'
-        
     }
 }
 
