@@ -81,7 +81,7 @@ function generateTransCode(trans: LogicalTrans, timerName?: string) {
     return [
         timerName ? updateTON(trans, timerName) : '',
         `IF ${ifExpression} THEN\n`,
-        trans.delay ? `    ${timerName})(IN := FALSE);\n` : '',
+        trans.delay ? `    ${timerName}(IN := FALSE);\n` : '',
         trans.inputsArcs.map(arc => indent(fireArc(arc))).join(''),
         trans.outputsArcs.map(arc => indent(fireArc(arc))).join(''),
         'END_IF'
