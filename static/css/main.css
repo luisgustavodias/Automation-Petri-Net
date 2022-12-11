@@ -27,8 +27,8 @@
     --color-input-border: #888;
     --color-input-border-focus: #888;
 
-    --color-textarea-bg: #444;
-    --color-textarea-text: #f8f8f8;
+    --color-textarea-bg: #f8f8f8;
+    --color-textarea-text: black;
 }
 
 input {

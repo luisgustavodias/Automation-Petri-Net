@@ -26,6 +26,9 @@
     --color-bg-input-focus: #e0e0e0;
     --color-input-border: #888;
     --color-input-border-focus: #888;
+
+    --color-textarea-bg: #f8f8f8;
+    --color-textarea-text: black;
 }
 
 .dark-theme {
@@ -58,6 +61,9 @@
     --color-bg-input-focus: #555;
     --color-input-border: #666;
     --color-input-border-focus: #666;
+
+    --color-textarea-bg: #444;
+    --color-textarea-text: #f8f8f8;
 }
 
 .net-light-theme {
