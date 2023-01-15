@@ -1,3 +1,12 @@
+export class SimulationError extends Error {
+    message;
+    elementId;
+    constructor(message, elementId) {
+        super(message);
+        this.message = message;
+        this.elementId = elementId;
+    }
+}
 class LogicalPlace {
     id;
     name;
@@ -9,10 +18,13 @@ class LogicalPlace {
         this.name = data.name;
         this.placeType = data.placeType;
         try {
-            this.initialMark = parseFloat(data.initialMark);
+            this.initialMark = parseInt(data.initialMark);
         }
         catch (e) {
-            throw "Can't convert initialMark to Integer.";
+            throw new SimulationError("Invalid initial mark: expected integer", this.id);
+        }
+        if (this.initialMark < 0) {
+            throw new SimulationError("Invalid initial mark: can't be negative", this.id);
         }
         this.mark = this.initialMark;
     }
@@ -30,10 +42,13 @@ class LogicalPetriArc {
         this.place = place;
         this.arcType = data.arcType;
         try {
-            this.weight = parseFloat(data.weight);
+            this.weight = parseInt(data.weight);
         }
         catch (e) {
-            throw "Can't convert weight to Integer.";
+            throw new SimulationError("Invalid arc weight: expected integer", this.id);
+        }
+        if (this.weight <= 0) {
+            throw new SimulationError("Invalid arc weight: must be greater than zero", this.id);
         }
     }
     isEnable() {
@@ -66,13 +81,16 @@ class LogicalTrans {
             this.delay = parseFloat(data.delay);
         }
         catch (e) {
-            throw "Can't convert delay to float.";
+            throw new SimulationError("Invalid transition delay: expected float", this.id);
+        }
+        if (this.delay < 0) {
+            throw new SimulationError("Invalid transition delay: can't be negative", this.id);
         }
         try {
             this.priority = parseFloat(data.priority);
         }
         catch (e) {
-            throw "Can't convert delay to float.";
+            throw new SimulationError("Invalid transitions priority: expected float", this.id);
         }
         this.guard = data.guard;
         if (data.guard) {
@@ -80,7 +98,28 @@ class LogicalTrans {
                 this.guardFunc = this.createGuardFunc(data.guard, netInputNames);
             }
             catch (e) {
-                throw 'Invalid guard expression';
+                throw new SimulationError("Invalid guard expression: syntax Error", this.id);
+            }
+            const decodeGuard = this.decodeGuard(data.guard);
+            const expectedVarNames = [...netInputNames, 'rt', 'ft'];
+            const varNames = [...(" " + decodeGuard).matchAll(/[(\s><=|&]([A-z]\w*)/g)].map(s => s[1]);
+            for (const varName of varNames) {
+                if (!expectedVarNames.includes(varName)) {
+                    throw new SimulationError(`Invalid guard expression: the input "${varName}" was not defined`, this.id);
+                }
+            }
+            const functionCalls = [...(" " + decodeGuard).matchAll(/[(\s><=|&]([A-z]\w*)\s*\(/g)].map(s => s[1]);
+            const callables = ['rt', 'ft'];
+            for (const functionCall of functionCalls) {
+                if (!callables.includes(functionCall)) {
+                    throw new SimulationError(`Invalid guard expression: the "${functionCall}" is not callable`, this.id);
+                }
+            }
+            const edgeTriggerInputs = [...(" " + decodeGuard).matchAll(/(rt|ft)\((\'|\")(\w*)(\'|\")\)/g)].map(s => s[2]);
+            for (const edgeTriggerInput of edgeTriggerInputs) {
+                if (!netInputNames.includes(edgeTriggerInput)) {
+                    throw new SimulationError(`Invalid guard expression: the input of a "ft" or "rt" call must be a net input name`, this.id);
+                }
             }
         }
         else {
@@ -93,13 +132,17 @@ class LogicalTrans {
         this.timeToEnable = this.delay;
         this._isGuardEnable = false;
     }
-    createGuardFunc(guard, inputNames) {
-        const decodedGuard = guard
+    decodeGuard(guard) {
+        return guard
             .replaceAll(/(?<=(\)|\s))and(?=(\(|\s))/gi, '&&')
             .replaceAll(/(?<=(\)|\s))or(?=(\(|\s))/gi, '||')
             .replaceAll(/(?<=(\(|\)|\s|^))not(?=(\(|\s))/gi, '!')
-            .replaceAll(/(?<=(\w|\s))=(?=(\w|\s))/gi, '===');
-        return eval(`(${inputNames.join(',')}, rt, ft) => ${decodedGuard}`);
+            .replaceAll(/(?<=(\w|\s))=(?=(\w|\s))/gi, '===')
+            .replaceAll('&gt;', '>')
+            .replaceAll('&lt;', '<');
+    }
+    createGuardFunc(guard, inputNames) {
+        return eval(`(${inputNames.join(',')}, rt, ft) => ${this.decodeGuard(guard)}`);
     }
     getArcs() {
         return [...this.inputsArcs,

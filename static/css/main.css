@@ -113,3 +113,12 @@ textarea {
 .btn-secondary:hover {
     background-color: var(--color-secondary-hover);
 }
+
+#error-modal .modal-body {
+    padding: 1rem 3rem;
+}
+
+#error-select-element {
+    cursor: pointer;
+    text-decoration: underline;
+}

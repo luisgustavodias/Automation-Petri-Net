@@ -10,6 +10,7 @@ import ToolBar from "./Components/ToolBar.js";
 import Vector from "./utils/Vector.js";
 import { delay } from "./utils/utils.js";
 import { PetriNetData } from "./PNData.js";
+import { SimulationError } from "./LogicalNet.js";
 
 const FILE_PICKER_OPTIONS = {
     types: [{
@@ -87,22 +88,68 @@ export class Application {
         localStorage.setItem("theme", theme)
     }
 
+    closeEditor() {
+        if (!this.editor) return
+
+        if (!window.confirm("Unsaved changes will be lost, do you want to continue?"))
+            return
+        
+        this.editor.close()
+        this.editor = null
+    }
+
+    stopSimulation() {
+
+    }
+
+    startSimulation() {
+        if (this.simulator) return
+
+        this.editor!.currentTool.onChangeTool()
+        try {
+            this.simulator = new Simulator(
+                this.editor!.net,
+                this.inputWindow
+            )
+        } catch (e) {
+            if (!(e instanceof SimulationError)) return
+
+            const {message, elementId} = e;
+            this.simulator = null
+            this.editor!.selectTool('mouse-tool')
+            const errorModal = <HTMLDialogElement>document.getElementById("error-modal")
+            errorModal.showModal()
+            document.getElementById("error-message")!.innerHTML = message
+            document.getElementById("error-select-element")!.onclick = elementId ?
+                () => {
+                    this.propertyWindow.open(
+                        this.editor!.net.getGenericPEType(elementId),
+                        (attrName, val) => {
+                            this.editor!.net.setGenericPEAttr(elementId, attrName, val)
+                        },
+                        this.editor!.net.getGenericPEData(elementId)
+                    )
+                    this.editor!.net.selectPE(elementId)
+                    errorModal.close()
+                }
+                : () => {}
+            
+            throw e
+        }
+    }
+
     private bindNavBarButtons() {
         const handlers = {
             "nav-btn-new-file": () => {
-                if (this.editor)
-                    this.editor.close()
+                this.closeEditor()
                 this.editor = new Editor(PetriNet.newNet(), this.propertyWindow)
             },
             "nav-btn-close-file": () => {
-                if (!this.editor) return
-                this.editor.close()
-                this.editor = null
+                this.closeEditor()
             },
             "nav-btn-load-file": async () => {
                 const net = await loadNet()
-                if (this.editor)
-                    this.editor.close()
+                this.closeEditor()
                 this.editor = new Editor(net, this.propertyWindow)
             },
             "nav-btn-save-file": async () => {
@@ -219,31 +266,23 @@ export class Application {
     }
 
     private bindSimulationButtons() {
-        const createSimulator = () => {
-            this.editor!.currentTool.onChangeTool()
-            return new Simulator(
-                this.editor!.net,
-                this.inputWindow
-            )
-        }
-
         const handlers = {
             start: () => {
                 if (!this.simulator)
-                    this.simulator = createSimulator()
-                this.simulator.start()
+                    this.startSimulation()
+                this.simulator!.start()
             },
             step: () => {
                 if (!this.simulator)
-                    this.simulator = createSimulator()
-                this.simulator.step()
+                    this.startSimulation()
+                this.simulator!.step()
             },
             restart: async () => {
                 if (!this.simulator) return
                 this.simulator.stop()
                 while (!this.simulator.isStopped())
                     await delay(50)
-                this.simulator = createSimulator()
+                this.startSimulation()
                 this.simulator.start()
             },
             pause: () => {
@@ -270,6 +309,9 @@ export class Application {
                 handler()
             }
         }
+
+        const errorModal = <HTMLDialogElement>document.getElementById("error-modal");
+        document.getElementById("close-error-modal")!.onclick = () => errorModal.close()
     }
 
     private addEditorEventListeners() {

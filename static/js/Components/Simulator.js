@@ -96,11 +96,11 @@ class Simulator {
     state;
     constructor(net, inputWindow) {
         this.inputWindow = inputWindow;
-        this.inputWindow.open(net.inputs);
         this.graphics = new SimulationGraphics(net);
         this.simulation = new simulationModes[net.simConfig.simMode](new LogicalNet(net.getNetData()), this.graphics, () => this.inputWindow.readInputs());
         this.eventHandler = new SimulationEventHandler(net, this.simulation);
         this.state = SimState.Paused;
+        this.inputWindow.open(net.inputs);
     }
     setSimText(text) {
         const simText = document

@@ -8,6 +8,7 @@ import { SimConfigWindow } from "./Components/SimConfigWindow.js";
 import { Simulator } from "./Components/Simulator.js";
 import ToolBar from "./Components/ToolBar.js";
 import { delay } from "./utils/utils.js";
+import { SimulationError } from "./LogicalNet.js";
 const FILE_PICKER_OPTIONS = {
     types: [{
             description: 'Automation Petri Net',
@@ -70,23 +71,56 @@ export class Application {
         document.body.className = `${theme}-theme net-${theme}-theme`;
         localStorage.setItem("theme", theme);
     }
+    closeEditor() {
+        if (!this.editor)
+            return;
+        if (!window.confirm("Unsaved changes will be lost, do you want to continue?"))
+            return;
+        this.editor.close();
+        this.editor = null;
+    }
+    stopSimulation() {
+    }
+    startSimulation() {
+        if (this.simulator)
+            return;
+        this.editor.currentTool.onChangeTool();
+        try {
+            this.simulator = new Simulator(this.editor.net, this.inputWindow);
+        }
+        catch (e) {
+            if (!(e instanceof SimulationError))
+                return;
+            const { message, elementId } = e;
+            this.simulator = null;
+            this.editor.selectTool('mouse-tool');
+            const errorModal = document.getElementById("error-modal");
+            errorModal.showModal();
+            document.getElementById("error-message").innerHTML = message;
+            document.getElementById("error-select-element").onclick = elementId ?
+                () => {
+                    this.propertyWindow.open(this.editor.net.getGenericPEType(elementId), (attrName, val) => {
+                        this.editor.net.setGenericPEAttr(elementId, attrName, val);
+                    }, this.editor.net.getGenericPEData(elementId));
+                    this.editor.net.selectPE(elementId);
+                    errorModal.close();
+                }
+                : () => { };
+            throw e;
+        }
+    }
     bindNavBarButtons() {
         const handlers = {
             "nav-btn-new-file": () => {
-                if (this.editor)
-                    this.editor.close();
+                this.closeEditor();
                 this.editor = new Editor(PetriNet.newNet(), this.propertyWindow);
             },
             "nav-btn-close-file": () => {
-                if (!this.editor)
-                    return;
-                this.editor.close();
-                this.editor = null;
+                this.closeEditor();
             },
             "nav-btn-load-file": async () => {
                 const net = await loadNet();
-                if (this.editor)
-                    this.editor.close();
+                this.closeEditor();
                 this.editor = new Editor(net, this.propertyWindow);
             },
             "nav-btn-save-file": async () => {
@@ -181,19 +215,15 @@ export class Application {
         }
     }
     bindSimulationButtons() {
-        const createSimulator = () => {
-            this.editor.currentTool.onChangeTool();
-            return new Simulator(this.editor.net, this.inputWindow);
-        };
         const handlers = {
             start: () => {
                 if (!this.simulator)
-                    this.simulator = createSimulator();
+                    this.startSimulation();
                 this.simulator.start();
             },
             step: () => {
                 if (!this.simulator)
-                    this.simulator = createSimulator();
+                    this.startSimulation();
                 this.simulator.step();
             },
             restart: async () => {
@@ -202,7 +232,7 @@ export class Application {
                 this.simulator.stop();
                 while (!this.simulator.isStopped())
                     await delay(50);
-                this.simulator = createSimulator();
+                this.startSimulation();
                 this.simulator.start();
             },
             pause: () => {
@@ -227,6 +257,8 @@ export class Application {
                 handler();
             };
         }
+        const errorModal = document.getElementById("error-modal");
+        document.getElementById("close-error-modal").onclick = () => errorModal.close();
     }
     addEditorEventListeners() {
         let movingScreenOffset;

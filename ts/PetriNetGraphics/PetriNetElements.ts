@@ -204,8 +204,8 @@ class PetriPlace extends APetriElement {
             tokens = [
                 this.createToken(new Vector(-d, -d)),
                 this.createToken(new Vector(-d, d)),
-                this.createToken(new Vector(d, -d)),                
-                this.createToken(new Vector(d, d))                
+                this.createToken(new Vector(d, -d)),
+                this.createToken(new Vector(d, d))
             ]
         } else if (val === 5) {
             const d = PetriPlace.tokenRadius * 1.7
@@ -213,8 +213,8 @@ class PetriPlace extends APetriElement {
                 this.createToken(new Vector(0, 0)),
                 this.createToken(new Vector(-d, -d)),
                 this.createToken(new Vector(-d, d)),
-                this.createToken(new Vector(d, -d)),                
-                this.createToken(new Vector(d, d))                
+                this.createToken(new Vector(d, -d)),
+                this.createToken(new Vector(d, d))
             ]
         } else if (val === 6) {
             const d1 = PetriPlace.tokenRadius * 1.3
@@ -224,8 +224,8 @@ class PetriPlace extends APetriElement {
                 this.createToken(new Vector(-d2, d1)),
                 this.createToken(new Vector(0, -d1)),
                 this.createToken(new Vector(0, d1)),
-                this.createToken(new Vector(d2, -d1)),                
-                this.createToken(new Vector(d2, d1))                
+                this.createToken(new Vector(d2, -d1)),
+                this.createToken(new Vector(d2, d1))
             ]
         } else if (val === 7) {
             const d1 = PetriPlace.tokenRadius * 1.3
@@ -236,8 +236,8 @@ class PetriPlace extends APetriElement {
                 this.createToken(new Vector(0, -d2)),
                 this.createToken(new Vector(0, 0)),
                 this.createToken(new Vector(0, d2)),
-                this.createToken(new Vector(d2, -d1)),                
-                this.createToken(new Vector(d2, d1))                
+                this.createToken(new Vector(d2, -d1)),
+                this.createToken(new Vector(d2, d1))
             ]
         } else {
             const r = 0.68*PetriPlace.placeRadius

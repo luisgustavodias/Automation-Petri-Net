@@ -119,7 +119,6 @@ class Simulator {
 
     constructor(net: PetriNet, inputWindow: InputWindow) { 
         this.inputWindow = inputWindow
-        this.inputWindow.open(net.inputs)
         this.graphics = new SimulationGraphics(net)
         this.simulation = new simulationModes[net.simConfig.simMode](
             new LogicalNet(
@@ -130,6 +129,7 @@ class Simulator {
         )
         this.eventHandler = new SimulationEventHandler(net, this.simulation)
         this.state = SimState.Paused
+        this.inputWindow.open(net.inputs)
     }
 
     private setSimText(text: string) {

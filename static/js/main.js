@@ -115,6 +115,7 @@ function testTokenAnimation(net) {
 }
 function main() {
     const app = new Application();
+    app.loadNet(JSON.parse('{"name":"Untiteled_Net","places":[{"id":"5a201c92-27db-4dd1-968d-b7d38922fb0a","elementType":"place","name":"p1","placeType":"INT","initialMark":"-2","position":{"x":83.92857142857142,"y":91.51785714285714},"textsPosition":{"name":{"x":6.5,"y":-8},"placeType":{"x":7,"y":8.5}}}],"transitions":[],"arcs":[],"inputs":[],"grid":false,"nextPlaceNumber":2,"nextTransNumber":1,"viewBox":{"x":0,"y":0,"width":1500,"heigth":300},"preScript":"","simConfig":{"simMode":"Automation","arcDebug":false,"guardDebug":false,"priorityMode":"fixed"}}'));
     app.run();
 }
 window.onload = main;
