@@ -128,15 +128,15 @@ function initializeVariables(net: LogicalNet, netInputs: Input[], timerNames: Ti
     return 'VAR\n'
         + '    // places\n'
         + Object.values(net.places).map(initializePlace).join('\n')
-        + '\n\n    // inputs\n'
+        + '\n'
         + Object.values(netInputs).map(
             inp => initializeVar(inp.name, inp.type)
         ).join('\n')
-        + '\n\n    // transitions delays\n'
+        + '\n'
         + Object.values(timerNames)
             .map(timerName => `    ${timerName}: TON;`)
             .join('\n')
-        + '\n\n    // edge triggers\n'
+        + '\n'
         + getAllEdgeTriggers(Object.values(net.transitions))
             .map(declareEdgeTrigger).join('\n')
         + '\nEND_VAR'
